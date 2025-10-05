@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { LiveKitRoom, VideoConference, RoomAudioRenderer, useRoomContext } from "@livekit/components-react";
+import { LiveKitRoom, VideoConference, RoomAudioRenderer, useRoomContext, useDataChannel } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,51 +10,43 @@ import { MonitorUp, Copy, Check, Pencil, Eraser, Square, Circle, X } from "lucid
 import { Room } from "livekit-client";
 import Whiteboard from "@/components/Whiteboard";
 
-function RoomPage() {
-  const searchParams = useSearchParams();
-  const roomName = searchParams?.get("room") || "";
-  const userName = searchParams?.get("name") || "";
-  const isTutor = searchParams?.get("isTutor") === "true";
-  const sessionCode = searchParams?.get("code") || "";
-
-  const [token, setToken] = useState("");
+function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; userName: string; sessionCode: string }) {
+  const room = useRoomContext();
   const [copied, setCopied] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
 
-  useEffect(() => {
-    if (!roomName || !userName) return;
-
-    (async () => {
-      try {
-        const resp = await fetch("/api/livekit-token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ roomName, participantName: userName, isTutor }),
-        });
-        const data = await resp.json();
-        setToken(data.token);
-      } catch (e) {
-        console.error("Error fetching token:", e);
+  // Listen for whiteboard state changes from tutor
+  useDataChannel((message) => {
+    try {
+      const decoder = new TextDecoder();
+      const text = decoder.decode(message.payload);
+      const data = JSON.parse(text);
+      
+      if (data.type === "toggleWhiteboard") {
+        setShowWhiteboard(data.show);
       }
-    })();
-  }, [roomName, userName, isTutor]);
+    } catch (error) {
+      console.error("Error processing whiteboard toggle:", error);
+    }
+  });
+
+  const toggleWhiteboard = () => {
+    const newState = !showWhiteboard;
+    setShowWhiteboard(newState);
+    
+    // If tutor, broadcast the state to all participants
+    if (isTutor) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(JSON.stringify({ type: "toggleWhiteboard", show: newState }));
+      room.localParticipant.publishData(data, { reliable: true });
+    }
+  };
 
   const copyCode = () => {
     navigator.clipboard.writeText(sessionCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  if (token === "") {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Connecting to session...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-900">
@@ -85,37 +77,82 @@ function RoomPage() {
               </CardContent>
             </Card>
           )}
-          <Button
-            variant={showWhiteboard ? "default" : "secondary"}
-            onClick={() => setShowWhiteboard(!showWhiteboard)}
-          >
-            {showWhiteboard ? "Show Video" : "Show Whiteboard"}
-          </Button>
+          {isTutor && (
+            <Button
+              variant={showWhiteboard ? "default" : "secondary"}
+              onClick={toggleWhiteboard}
+            >
+              {showWhiteboard ? "Show Video" : "Show Whiteboard"}
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <LiveKitRoom
-          video={true}
-          audio={true}
-          token={token}
-          serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
-          data-lk-theme="default"
-          className="h-full"
-        >
-          {showWhiteboard ? (
-            <Whiteboard />
-          ) : (
-            <>
-              <VideoConference />
-              <RoomAudioRenderer />
-              {isTutor && <ScreenShareControls />}
-            </>
-          )}
-        </LiveKitRoom>
+        {showWhiteboard ? (
+          <Whiteboard />
+        ) : (
+          <>
+            <VideoConference />
+            <RoomAudioRenderer />
+            {isTutor && <ScreenShareControls />}
+          </>
+        )}
       </div>
     </div>
+  );
+}
+
+function RoomPage() {
+  const searchParams = useSearchParams();
+  const roomName = searchParams?.get("room") || "";
+  const userName = searchParams?.get("name") || "";
+  const isTutor = searchParams?.get("isTutor") === "true";
+  const sessionCode = searchParams?.get("code") || "";
+
+  const [token, setToken] = useState("");
+
+  useEffect(() => {
+    if (!roomName || !userName) return;
+
+    (async () => {
+      try {
+        const resp = await fetch("/api/livekit-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomName, participantName: userName, isTutor }),
+        });
+        const data = await resp.json();
+        setToken(data.token);
+      } catch (e) {
+        console.error("Error fetching token:", e);
+      }
+    })();
+  }, [roomName, userName, isTutor]);
+
+  if (token === "") {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Connecting to session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <LiveKitRoom
+      video={true}
+      audio={true}
+      token={token}
+      serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
+      data-lk-theme="default"
+      className="h-full"
+    >
+      <RoomContent isTutor={isTutor} userName={userName} sessionCode={sessionCode} />
+    </LiveKitRoom>
   );
 }
 
