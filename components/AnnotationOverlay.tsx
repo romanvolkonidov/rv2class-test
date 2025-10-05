@@ -22,9 +22,26 @@ interface AnnotationAction {
   endPoint?: RelativePoint;
 }
 
+interface VideoMetrics {
+  cssWidth: number;
+  cssHeight: number;
+  contentWidth: number;
+  contentHeight: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 export default function AnnotationOverlay({ onClose }: { onClose: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const metricsRef = useRef<VideoMetrics>({
+    cssWidth: 0,
+    cssHeight: 0,
+    contentWidth: 0,
+    contentHeight: 0,
+    offsetX: 0,
+    offsetY: 0,
+  });
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState<AnnotationTool>("pencil");
   const [color, setColor] = useState("#FF0000");
@@ -87,55 +104,117 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
   useEffect(() => {
     if (!screenShareElement || !canvasRef.current || !containerRef.current) return;
 
-    const updateCanvasPosition = () => {
-      const video = screenShareElement;
-      const canvas = canvasRef.current;
-      const container = containerRef.current;
-      if (!video || !canvas || !container) return;
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
 
-      const rect = video.getBoundingClientRect();
-      
-      // Position the container to match the video
+    const updateCanvasPosition = () => {
+      if (!screenShareElement || !canvas || !container) return;
+
+      const rect = screenShareElement.getBoundingClientRect();
+      const cssWidth = rect.width;
+      const cssHeight = rect.height;
+
+      // Default metrics assume video fills the element
+      let contentWidth = cssWidth;
+      let contentHeight = cssHeight;
+      let offsetX = 0;
+      let offsetY = 0;
+
+      const naturalWidth = screenShareElement.videoWidth;
+      const naturalHeight = screenShareElement.videoHeight;
+
+      if (naturalWidth && naturalHeight && cssWidth && cssHeight) {
+        // Check object-fit style (default is 'contain' for LiveKit)
+        const objectFit = window.getComputedStyle(screenShareElement).objectFit || 'contain';
+        
+        if (objectFit === 'cover') {
+          const scale = Math.max(cssWidth / naturalWidth, cssHeight / naturalHeight);
+          contentWidth = naturalWidth * scale;
+          contentHeight = naturalHeight * scale;
+          offsetX = (cssWidth - contentWidth) / 2;
+          offsetY = (cssHeight - contentHeight) / 2;
+        } else {
+          // 'contain' or 'fill'
+          const scale = Math.min(cssWidth / naturalWidth, cssHeight / naturalHeight);
+          contentWidth = naturalWidth * scale;
+          contentHeight = naturalHeight * scale;
+          offsetX = (cssWidth - contentWidth) / 2;
+          offsetY = (cssHeight - contentHeight) / 2;
+        }
+      }
+
+      metricsRef.current = {
+        cssWidth,
+        cssHeight,
+        contentWidth,
+        contentHeight,
+        offsetX,
+        offsetY,
+      };
+
+      // Position the container to match the video exactly
       container.style.left = `${rect.left}px`;
       container.style.top = `${rect.top}px`;
-      container.style.width = `${rect.width}px`;
-      container.style.height = `${rect.height}px`;
-      
-      // Set canvas size to match video
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      
+      container.style.width = `${cssWidth}px`;
+      container.style.height = `${cssHeight}px`;
+
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = cssWidth * dpr;
+      canvas.height = cssHeight * dpr;
+      canvas.style.width = `${cssWidth}px`;
+      canvas.style.height = `${cssHeight}px`;
+
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+      }
+
       redrawCanvas();
     };
 
     updateCanvasPosition();
-    
-    // Update on resize or video size change
-    const resizeObserver = new ResizeObserver(updateCanvasPosition);
+
+    const handleResize = () => updateCanvasPosition();
+
+    const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(screenShareElement);
-    window.addEventListener('resize', updateCanvasPosition);
-    window.addEventListener('scroll', updateCanvasPosition);
+    screenShareElement.addEventListener("loadedmetadata", handleResize);
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("scroll", handleResize, true);
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener('resize', updateCanvasPosition);
-      window.removeEventListener('scroll', updateCanvasPosition);
+      screenShareElement.removeEventListener("loadedmetadata", handleResize);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleResize, true);
     };
   }, [screenShareElement]);
 
   // Convert absolute pixel coordinates to relative (0-1 range)
-  const toRelative = (x: number, y: number, canvas: HTMLCanvasElement): RelativePoint => {
+  const toRelative = (x: number, y: number): RelativePoint => {
+    const metrics = metricsRef.current;
+    const effectiveWidth = metrics.contentWidth || metrics.cssWidth || 1;
+    const effectiveHeight = metrics.contentHeight || metrics.cssHeight || 1;
+
+    const normalizedX = (x - metrics.offsetX) / effectiveWidth;
+    const normalizedY = (y - metrics.offsetY) / effectiveHeight;
+
     return {
-      x: x / canvas.width,
-      y: y / canvas.height,
+      x: Math.min(Math.max(normalizedX, 0), 1),
+      y: Math.min(Math.max(normalizedY, 0), 1),
     };
   };
 
-  // Convert relative coordinates to absolute pixels
-  const toAbsolute = (point: RelativePoint, canvas: HTMLCanvasElement): { x: number; y: number } => {
+  // Convert relative coordinates to absolute pixels within the video content
+  const toAbsolute = (point: RelativePoint): { x: number; y: number } => {
+    const metrics = metricsRef.current;
+    const effectiveWidth = metrics.contentWidth || metrics.cssWidth || 1;
+    const effectiveHeight = metrics.contentHeight || metrics.cssHeight || 1;
+
     return {
-      x: point.x * canvas.width,
-      y: point.y * canvas.height,
+      x: metrics.offsetX + point.x * effectiveWidth,
+      y: metrics.offsetY + point.y * effectiveHeight,
     };
   };
 
@@ -154,7 +233,13 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
       const data = JSON.parse(text);
       
       if (data.type === "annotate" && canvasRef.current) {
-        drawAction(data.action);
+        const action = data.action;
+        // Add received action to history so it persists
+        setHistory(prev => {
+          const newHistory = [...prev.slice(0, historyStep), action];
+          return newHistory;
+        });
+        setHistoryStep(prev => prev + 1);
       } else if (data.type === "clearAnnotations") {
         clearCanvas();
       }
@@ -163,33 +248,15 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
     }
   });
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Set canvas size to full screen
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      redrawCanvas();
-    };
-
-    resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
-  }, []);
-
   const drawAction = (action: AnnotationAction) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Convert relative width to absolute pixels (scale based on canvas width)
-    const absoluteWidth = action.width * canvas.width;
+    const metrics = metricsRef.current;
+    const effectiveWidth = metrics.contentWidth || metrics.cssWidth || canvas.width;
+    const absoluteWidth = action.width * effectiveWidth;
 
     ctx.strokeStyle = action.color;
     ctx.lineWidth = absoluteWidth;
@@ -200,7 +267,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
       ctx.globalCompositeOperation = "source-over";
       ctx.beginPath();
       action.points.forEach((point, index) => {
-        const abs = toAbsolute(point, canvas);
+        const abs = toAbsolute(point);
         if (index === 0) {
           ctx.moveTo(abs.x, abs.y);
         } else {
@@ -213,7 +280,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
       ctx.lineWidth = absoluteWidth * 3;
       ctx.beginPath();
       action.points.forEach((point, index) => {
-        const abs = toAbsolute(point, canvas);
+        const abs = toAbsolute(point);
         if (index === 0) {
           ctx.moveTo(abs.x, abs.y);
         } else {
@@ -223,14 +290,14 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
       ctx.stroke();
       ctx.globalCompositeOperation = "source-over";
     } else if (action.tool === "rectangle" && action.startPoint && action.endPoint) {
-      const start = toAbsolute(action.startPoint, canvas);
-      const end = toAbsolute(action.endPoint, canvas);
+      const start = toAbsolute(action.startPoint);
+      const end = toAbsolute(action.endPoint);
       const width = end.x - start.x;
       const height = end.y - start.y;
       ctx.strokeRect(start.x, start.y, width, height);
     } else if (action.tool === "circle" && action.startPoint && action.endPoint) {
-      const start = toAbsolute(action.startPoint, canvas);
-      const end = toAbsolute(action.endPoint, canvas);
+      const start = toAbsolute(action.startPoint);
+      const end = toAbsolute(action.endPoint);
       const radius = Math.sqrt(
         Math.pow(end.x - start.x, 2) +
         Math.pow(end.y - start.y, 2)
@@ -247,7 +314,10 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
 
     history.slice(0, historyStep).forEach((action) => {
       drawAction(action);
@@ -256,6 +326,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -263,22 +334,28 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
     const rect = canvas.getBoundingClientRect();
     let clientX: number, clientY: number;
     if ('touches' in e) {
-      clientX = e.touches[0].clientX - rect.left;
-      clientY = e.touches[0].clientY - rect.top;
+      const touch = e.touches[0];
+      clientX = touch.clientX;
+      clientY = touch.clientY;
     } else {
-      clientX = e.clientX - rect.left;
-      clientY = e.clientY - rect.top;
+      clientX = e.clientX;
+      clientY = e.clientY;
     }
 
-    // Convert to relative coordinates
-    const relativePoint = toRelative(clientX, clientY, canvas);
+    // Get position relative to canvas
+    const canvasX = clientX - rect.left;
+    const canvasY = clientY - rect.top;
+
+    // Convert to relative coordinates (0-1 range)
+    const relativePoint = toRelative(canvasX, canvasY);
 
     setIsDrawing(true);
     setStartPoint(relativePoint);
 
     if (tool === "pencil" || tool === "eraser") {
-      // Store relative line width (relative to canvas width)
-      const relativeWidth = lineWidth / canvas.width;
+      const metrics = metricsRef.current;
+      const effectiveWidth = metrics.contentWidth || metrics.cssWidth || canvas.width;
+      const relativeWidth = effectiveWidth ? lineWidth / effectiveWidth : 0;
       
       const action: AnnotationAction = {
         tool,
@@ -294,6 +371,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
     e.preventDefault();
+    e.stopPropagation();
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -301,15 +379,20 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
     const rect = canvas.getBoundingClientRect();
     let clientX: number, clientY: number;
     if ('touches' in e) {
-      clientX = e.touches[0].clientX - rect.left;
-      clientY = e.touches[0].clientY - rect.top;
+      const touch = e.touches[0];
+      clientX = touch.clientX;
+      clientY = touch.clientY;
     } else {
-      clientX = e.clientX - rect.left;
-      clientY = e.clientY - rect.top;
+      clientX = e.clientX;
+      clientY = e.clientY;
     }
 
-    // Convert to relative coordinates
-    const relativePoint = toRelative(clientX, clientY, canvas);
+    // Get position relative to canvas
+    const canvasX = clientX - rect.left;
+    const canvasY = clientY - rect.top;
+
+    // Convert to relative coordinates (0-1 range)
+    const relativePoint = toRelative(canvasX, canvasY);
 
     if (tool === "pencil" || tool === "eraser") {
       const currentAction = history[historyStep - 1];
@@ -322,7 +405,9 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
       redrawCanvas();
       
       // Store relative line width
-      const relativeWidth = lineWidth / canvas.width;
+      const metrics = metricsRef.current;
+      const effectiveWidth = metrics.contentWidth || metrics.cssWidth || canvas.width;
+      const relativeWidth = effectiveWidth ? lineWidth / effectiveWidth : 0;
       
       const tempAction: AnnotationAction = {
         tool,
@@ -339,6 +424,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
     if (!isDrawing) return;
     setIsDrawing(false);
     e.preventDefault();
+    e.stopPropagation();
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -346,19 +432,26 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
     const rect = canvas.getBoundingClientRect();
     let clientX: number, clientY: number;
     if ('changedTouches' in e) {
-      clientX = e.changedTouches[0].clientX - rect.left;
-      clientY = e.changedTouches[0].clientY - rect.top;
+      const touch = e.changedTouches[0];
+      clientX = touch.clientX;
+      clientY = touch.clientY;
     } else {
-      clientX = e.clientX - rect.left;
-      clientY = e.clientY - rect.top;
+      clientX = e.clientX;
+      clientY = e.clientY;
     }
 
-    // Convert to relative coordinates
-    const relativePoint = toRelative(clientX, clientY, canvas);
+    // Get position relative to canvas
+    const canvasX = clientX - rect.left;
+    const canvasY = clientY - rect.top;
+
+    // Convert to relative coordinates (0-1 range)
+    const relativePoint = toRelative(canvasX, canvasY);
 
     if ((tool === "rectangle" || tool === "circle") && startPoint) {
       // Store relative line width
-      const relativeWidth = lineWidth / canvas.width;
+      const metrics = metricsRef.current;
+      const effectiveWidth = metrics.contentWidth || metrics.cssWidth || canvas.width;
+      const relativeWidth = effectiveWidth ? lineWidth / effectiveWidth : 0;
       
       const action: AnnotationAction = {
         tool,
@@ -400,7 +493,10 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
     setHistory([]);
     setHistoryStep(0);
   };
@@ -451,26 +547,28 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
         />
       </div>
 
-      {/* Toolbar - positioned at top center of screen */}
-      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 z-[60]">
-        <div className="flex items-center gap-2 flex-wrap">
+      {/* Toolbar - responsive design for mobile and desktop */}
+      <div className="fixed top-2 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 z-[60] max-w-[95vw]">
+        <div className="flex items-center gap-1.5 flex-wrap justify-center">
           {/* Close Button */}
           <Button
             size="icon"
             variant="destructive"
             onClick={onClose}
             title="Close Annotations"
+            className="h-9 w-9 flex-shrink-0"
           >
             <X className="h-4 w-4" />
           </Button>
 
           {/* Drawing Tools */}
-          <div className="flex gap-1 border-r pr-2 ml-2">
+          <div className="flex gap-1 border-r border-gray-300 pr-1.5 flex-shrink-0">
             <Button
               size="icon"
               variant={tool === "pencil" ? "default" : "ghost"}
               onClick={() => setTool("pencil")}
               title="Pencil"
+              className="h-9 w-9"
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -479,6 +577,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
               variant={tool === "eraser" ? "default" : "ghost"}
               onClick={() => setTool("eraser")}
               title="Eraser"
+              className="h-9 w-9"
             >
               <Eraser className="h-4 w-4" />
             </Button>
@@ -487,6 +586,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
               variant={tool === "rectangle" ? "default" : "ghost"}
               onClick={() => setTool("rectangle")}
               title="Rectangle"
+              className="h-9 w-9"
             >
               <Square className="h-4 w-4" />
             </Button>
@@ -495,52 +595,56 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
               variant={tool === "circle" ? "default" : "ghost"}
               onClick={() => setTool("circle")}
               title="Circle"
+              className="h-9 w-9"
             >
               <Circle className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Color Picker */}
-          <div className="flex items-center gap-2 border-r pr-2">
+          {/* Color Picker - Compact on mobile */}
+          <div className="flex items-center gap-1.5 border-r border-gray-300 pr-1.5 flex-shrink-0">
             <input
               type="color"
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              className="w-10 h-10 rounded cursor-pointer"
+              className="w-9 h-9 rounded cursor-pointer border-2 border-gray-300"
+              title="Pick Color"
             />
-            <div className="flex gap-1">
+            <div className="hidden sm:flex gap-1">
               {["#FF0000", "#0000FF", "#00FF00", "#FFFF00", "#FF00FF"].map((c) => (
                 <button
                   key={c}
-                  className="w-6 h-6 rounded border-2 border-gray-300 hover:border-gray-500"
+                  className="w-6 h-6 rounded border-2 border-gray-300 hover:border-gray-500 flex-shrink-0"
                   style={{ backgroundColor: c }}
                   onClick={() => setColor(c)}
+                  aria-label={`Color ${c}`}
                 />
               ))}
             </div>
           </div>
 
-          {/* Line Width */}
-          <div className="flex items-center gap-2 border-r pr-2">
+          {/* Line Width - Hidden on very small screens */}
+          <div className="hidden sm:flex items-center gap-2 border-r border-gray-300 pr-1.5 flex-shrink-0">
             <input
               type="range"
               min="1"
               max="20"
               value={lineWidth}
               onChange={(e) => setLineWidth(Number(e.target.value))}
-              className="w-24"
+              className="w-20"
             />
-            <span className="text-sm text-gray-600 w-8">{lineWidth}px</span>
+            <span className="text-xs text-gray-600 w-7">{lineWidth}px</span>
           </div>
 
           {/* History Controls */}
-          <div className="flex gap-1 border-r pr-2">
+          <div className="flex gap-1 border-r border-gray-300 pr-1.5 flex-shrink-0">
             <Button
               size="icon"
               variant="ghost"
               onClick={undo}
               disabled={historyStep === 0}
               title="Undo"
+              className="h-9 w-9"
             >
               <Undo className="h-4 w-4" />
             </Button>
@@ -550,6 +654,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
               onClick={redo}
               disabled={historyStep === history.length}
               title="Redo"
+              className="h-9 w-9"
             >
               <Redo className="h-4 w-4" />
             </Button>
@@ -561,6 +666,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
             variant="ghost"
             onClick={clearAndBroadcast}
             title="Clear All Annotations"
+            className="h-9 w-9 flex-shrink-0"
           >
             <Trash2 className="h-4 w-4" />
           </Button>

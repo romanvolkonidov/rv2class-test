@@ -6,8 +6,7 @@ import { LiveKitRoom, VideoConference, RoomAudioRenderer, useRoomContext, useDat
 import "@livekit/components-styles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MonitorUp, Copy, Check, Pencil, Edit3 } from "lucide-react";
-import { Room } from "livekit-client";
+import { Copy, Check, Edit3 } from "lucide-react";
 import Whiteboard from "@/components/Whiteboard";
 import AnnotationOverlay from "@/components/AnnotationOverlay";
 
@@ -109,7 +108,6 @@ function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; use
           <>
             <VideoConference />
             <RoomAudioRenderer />
-            {isTutor && <ScreenShareControls />}
             {showAnnotations && <AnnotationOverlay onClose={() => setShowAnnotations(false)} />}
           </>
         )}
@@ -167,49 +165,6 @@ function RoomPage() {
     >
       <RoomContent isTutor={isTutor} userName={userName} sessionCode={sessionCode} />
     </LiveKitRoom>
-  );
-}
-
-function ScreenShareControls() {
-  const room = useRoomContext();
-  const [isSharing, setIsSharing] = useState(false);
-
-  const startScreenShare = async () => {
-    try {
-      await room.localParticipant.setScreenShareEnabled(true, {
-        audio: true,
-        selfBrowserSurface: "include",
-        surfaceSwitching: "include",
-        systemAudio: "include",
-      } as any);
-      setIsSharing(true);
-    } catch (error) {
-      console.error("Error starting screen share:", error);
-      alert("Failed to start screen sharing. Please ensure you grant permission.");
-    }
-  };
-
-  const stopScreenShare = async () => {
-    try {
-      await room.localParticipant.setScreenShareEnabled(false);
-      setIsSharing(false);
-    } catch (error) {
-      console.error("Error stopping screen share:", error);
-    }
-  };
-
-  return (
-    <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-50">
-      <Button
-        onClick={isSharing ? stopScreenShare : startScreenShare}
-        size="lg"
-        variant={isSharing ? "destructive" : "default"}
-        className="shadow-lg"
-      >
-        <MonitorUp className="mr-2 h-5 w-5" />
-        {isSharing ? "Stop Sharing" : "Share Screen"}
-      </Button>
-    </div>
   );
 }
 
