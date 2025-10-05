@@ -6,14 +6,16 @@ import { LiveKitRoom, VideoConference, RoomAudioRenderer, useRoomContext, useDat
 import "@livekit/components-styles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MonitorUp, Copy, Check, Pencil, Eraser, Square, Circle, X } from "lucide-react";
+import { MonitorUp, Copy, Check, Pencil, Edit3 } from "lucide-react";
 import { Room } from "livekit-client";
 import Whiteboard from "@/components/Whiteboard";
+import AnnotationOverlay from "@/components/AnnotationOverlay";
 
 function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; userName: string; sessionCode: string }) {
   const room = useRoomContext();
   const [copied, setCopied] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
+  const [showAnnotations, setShowAnnotations] = useState(false);
 
   // Listen for whiteboard state changes from tutor
   useDataChannel((message) => {
@@ -77,19 +79,30 @@ function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; use
               </CardContent>
             </Card>
           )}
-          {isTutor && (
-            <Button
-              variant={showWhiteboard ? "default" : "secondary"}
-              onClick={toggleWhiteboard}
-            >
-              {showWhiteboard ? "Show Video" : "Show Whiteboard"}
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {!showWhiteboard && (
+              <Button
+                variant={showAnnotations ? "default" : "secondary"}
+                onClick={() => setShowAnnotations(!showAnnotations)}
+              >
+                <Edit3 className="mr-2 h-4 w-4" />
+                {showAnnotations ? "Hide Annotations" : "Annotate"}
+              </Button>
+            )}
+            {isTutor && (
+              <Button
+                variant={showWhiteboard ? "default" : "secondary"}
+                onClick={toggleWhiteboard}
+              >
+                {showWhiteboard ? "Show Video" : "Show Whiteboard"}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative">
         {showWhiteboard ? (
           <Whiteboard />
         ) : (
@@ -97,6 +110,7 @@ function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; use
             <VideoConference />
             <RoomAudioRenderer />
             {isTutor && <ScreenShareControls />}
+            {showAnnotations && <AnnotationOverlay onClose={() => setShowAnnotations(false)} />}
           </>
         )}
       </div>
