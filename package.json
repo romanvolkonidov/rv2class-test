@@ -1,0 +1,40 @@
+{
+  "name": "rv2class",
+  "version": "1.0.0",
+  "description": "Professional English tutoring platform with video, screen sharing, and whiteboard",
+  "main": "firebase_config.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@livekit/components-react": "^2.9.15",
+    "@livekit/components-styles": "^1.1.6",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@types/node": "^24.6.2",
+    "@types/react": "^19.2.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "firebase": "^12.3.0",
+    "livekit-client": "^2.15.8",
+    "livekit-server-sdk": "^2.14.0",
+    "lucide-react": "^0.544.0",
+    "next": "^15.5.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/react-dom": "^19.2.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
+  }
+}
