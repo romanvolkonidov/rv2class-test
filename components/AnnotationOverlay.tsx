@@ -7,30 +7,137 @@ import { useRoomContext, useDataChannel } from "@livekit/components-react";
 
 type AnnotationTool = "pencil" | "eraser" | "rectangle" | "circle";
 
-interface Point {
-  x: number;
-  y: number;
+// Use relative coordinates (0-1 range) instead of absolute pixels
+interface RelativePoint {
+  x: number; // 0-1 range
+  y: number; // 0-1 range
 }
 
 interface AnnotationAction {
   tool: AnnotationTool;
   color: string;
-  width: number;
-  points?: Point[];
-  startPoint?: Point;
-  endPoint?: Point;
+  width: number; // This will also be relative (0-1 range)
+  points?: RelativePoint[];
+  startPoint?: RelativePoint;
+  endPoint?: RelativePoint;
 }
 
 export default function AnnotationOverlay({ onClose }: { onClose: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState<AnnotationTool>("pencil");
   const [color, setColor] = useState("#FF0000");
   const [lineWidth, setLineWidth] = useState(3);
   const [history, setHistory] = useState<AnnotationAction[]>([]);
   const [historyStep, setHistoryStep] = useState(0);
-  const [startPoint, setStartPoint] = useState<Point | null>(null);
+  const [startPoint, setStartPoint] = useState<RelativePoint | null>(null);
+  const [screenShareElement, setScreenShareElement] = useState<HTMLVideoElement | null>(null);
   const room = useRoomContext();
+
+  // Find the screen share video element
+  useEffect(() => {
+    const findScreenShareVideo = () => {
+      // Look for video elements with screen_share track
+      const videos = document.querySelectorAll('video');
+      for (const video of videos) {
+        // Check if this is a screen share video (LiveKit adds data-lk-source attribute)
+        const source = video.getAttribute('data-lk-source');
+        if (source === 'screen_share' || source === 'screen_share_audio') {
+          setScreenShareElement(video);
+          return video;
+        }
+      }
+      
+      // Fallback: look for the largest video element (usually the screen share)
+      let largestVideo: HTMLVideoElement | null = null;
+      let largestArea = 0;
+      videos.forEach(video => {
+        const area = video.clientWidth * video.clientHeight;
+        if (area > largestArea) {
+          largestArea = area;
+          largestVideo = video;
+        }
+      });
+      
+      if (largestVideo) {
+        setScreenShareElement(largestVideo);
+      }
+      
+      return largestVideo;
+    };
+
+    // Try to find immediately
+    const video = findScreenShareVideo();
+    
+    // If not found, keep trying (screen share might not be active yet)
+    if (!video) {
+      const interval = setInterval(() => {
+        const found = findScreenShareVideo();
+        if (found) {
+          clearInterval(interval);
+        }
+      }, 500);
+      
+      return () => clearInterval(interval);
+    }
+  }, []);
+
+  // Update canvas size and position to match screen share video
+  useEffect(() => {
+    if (!screenShareElement || !canvasRef.current || !containerRef.current) return;
+
+    const updateCanvasPosition = () => {
+      const video = screenShareElement;
+      const canvas = canvasRef.current;
+      const container = containerRef.current;
+      if (!video || !canvas || !container) return;
+
+      const rect = video.getBoundingClientRect();
+      
+      // Position the container to match the video
+      container.style.left = `${rect.left}px`;
+      container.style.top = `${rect.top}px`;
+      container.style.width = `${rect.width}px`;
+      container.style.height = `${rect.height}px`;
+      
+      // Set canvas size to match video
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      
+      redrawCanvas();
+    };
+
+    updateCanvasPosition();
+    
+    // Update on resize or video size change
+    const resizeObserver = new ResizeObserver(updateCanvasPosition);
+    resizeObserver.observe(screenShareElement);
+    window.addEventListener('resize', updateCanvasPosition);
+    window.addEventListener('scroll', updateCanvasPosition);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateCanvasPosition);
+      window.removeEventListener('scroll', updateCanvasPosition);
+    };
+  }, [screenShareElement]);
+
+  // Convert absolute pixel coordinates to relative (0-1 range)
+  const toRelative = (x: number, y: number, canvas: HTMLCanvasElement): RelativePoint => {
+    return {
+      x: x / canvas.width,
+      y: y / canvas.height,
+    };
+  };
+
+  // Convert relative coordinates to absolute pixels
+  const toAbsolute = (point: RelativePoint, canvas: HTMLCanvasElement): { x: number; y: number } => {
+    return {
+      x: point.x * canvas.width,
+      y: point.y * canvas.height,
+    };
+  };
 
   // Send annotation data to other participants
   const sendAnnotationData = (action: AnnotationAction) => {
@@ -81,8 +188,11 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Convert relative width to absolute pixels (scale based on canvas width)
+    const absoluteWidth = action.width * canvas.width;
+
     ctx.strokeStyle = action.color;
-    ctx.lineWidth = action.width;
+    ctx.lineWidth = absoluteWidth;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
@@ -90,37 +200,43 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
       ctx.globalCompositeOperation = "source-over";
       ctx.beginPath();
       action.points.forEach((point, index) => {
+        const abs = toAbsolute(point, canvas);
         if (index === 0) {
-          ctx.moveTo(point.x, point.y);
+          ctx.moveTo(abs.x, abs.y);
         } else {
-          ctx.lineTo(point.x, point.y);
+          ctx.lineTo(abs.x, abs.y);
         }
       });
       ctx.stroke();
     } else if (action.tool === "eraser" && action.points) {
       ctx.globalCompositeOperation = "destination-out";
-      ctx.lineWidth = action.width * 3;
+      ctx.lineWidth = absoluteWidth * 3;
       ctx.beginPath();
       action.points.forEach((point, index) => {
+        const abs = toAbsolute(point, canvas);
         if (index === 0) {
-          ctx.moveTo(point.x, point.y);
+          ctx.moveTo(abs.x, abs.y);
         } else {
-          ctx.lineTo(point.x, point.y);
+          ctx.lineTo(abs.x, abs.y);
         }
       });
       ctx.stroke();
       ctx.globalCompositeOperation = "source-over";
     } else if (action.tool === "rectangle" && action.startPoint && action.endPoint) {
-      const width = action.endPoint.x - action.startPoint.x;
-      const height = action.endPoint.y - action.startPoint.y;
-      ctx.strokeRect(action.startPoint.x, action.startPoint.y, width, height);
+      const start = toAbsolute(action.startPoint, canvas);
+      const end = toAbsolute(action.endPoint, canvas);
+      const width = end.x - start.x;
+      const height = end.y - start.y;
+      ctx.strokeRect(start.x, start.y, width, height);
     } else if (action.tool === "circle" && action.startPoint && action.endPoint) {
+      const start = toAbsolute(action.startPoint, canvas);
+      const end = toAbsolute(action.endPoint, canvas);
       const radius = Math.sqrt(
-        Math.pow(action.endPoint.x - action.startPoint.x, 2) +
-        Math.pow(action.endPoint.y - action.startPoint.y, 2)
+        Math.pow(end.x - start.x, 2) +
+        Math.pow(end.y - start.y, 2)
       );
       ctx.beginPath();
-      ctx.arc(action.startPoint.x, action.startPoint.y, radius, 0, 2 * Math.PI);
+      ctx.arc(start.x, start.y, radius, 0, 2 * Math.PI);
       ctx.stroke();
     }
   };
@@ -141,26 +257,34 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
     let clientX: number, clientY: number;
     if ('touches' in e) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
+      clientX = e.touches[0].clientX - rect.left;
+      clientY = e.touches[0].clientY - rect.top;
     } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
+      clientX = e.clientX - rect.left;
+      clientY = e.clientY - rect.top;
     }
 
-    const point = { x: clientX, y: clientY };
+    // Convert to relative coordinates
+    const relativePoint = toRelative(clientX, clientY, canvas);
 
     setIsDrawing(true);
-    setStartPoint(point);
+    setStartPoint(relativePoint);
 
     if (tool === "pencil" || tool === "eraser") {
+      // Store relative line width (relative to canvas width)
+      const relativeWidth = lineWidth / canvas.width;
+      
       const action: AnnotationAction = {
         tool,
         color,
-        width: lineWidth,
-        points: [point],
+        width: relativeWidth,
+        points: [relativePoint],
       };
       setHistory([...history.slice(0, historyStep), action]);
       setHistoryStep(historyStep + 1);
@@ -171,32 +295,41 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
     if (!isDrawing) return;
     e.preventDefault();
 
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
     let clientX: number, clientY: number;
     if ('touches' in e) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
+      clientX = e.touches[0].clientX - rect.left;
+      clientY = e.touches[0].clientY - rect.top;
     } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
+      clientX = e.clientX - rect.left;
+      clientY = e.clientY - rect.top;
     }
 
-    const point = { x: clientX, y: clientY };
+    // Convert to relative coordinates
+    const relativePoint = toRelative(clientX, clientY, canvas);
 
     if (tool === "pencil" || tool === "eraser") {
       const currentAction = history[historyStep - 1];
       if (currentAction && currentAction.points) {
-        currentAction.points.push(point);
+        currentAction.points.push(relativePoint);
         drawAction(currentAction);
         sendAnnotationData(currentAction);
       }
     } else if ((tool === "rectangle" || tool === "circle") && startPoint) {
       redrawCanvas();
+      
+      // Store relative line width
+      const relativeWidth = lineWidth / canvas.width;
+      
       const tempAction: AnnotationAction = {
         tool,
         color,
-        width: lineWidth,
+        width: relativeWidth,
         startPoint,
-        endPoint: point,
+        endPoint: relativePoint,
       };
       drawAction(tempAction);
     }
@@ -207,24 +340,32 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
     setIsDrawing(false);
     e.preventDefault();
 
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
     let clientX: number, clientY: number;
     if ('changedTouches' in e) {
-      clientX = e.changedTouches[0].clientX;
-      clientY = e.changedTouches[0].clientY;
+      clientX = e.changedTouches[0].clientX - rect.left;
+      clientY = e.changedTouches[0].clientY - rect.top;
     } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
+      clientX = e.clientX - rect.left;
+      clientY = e.clientY - rect.top;
     }
 
-    const point = { x: clientX, y: clientY };
+    // Convert to relative coordinates
+    const relativePoint = toRelative(clientX, clientY, canvas);
 
     if ((tool === "rectangle" || tool === "circle") && startPoint) {
+      // Store relative line width
+      const relativeWidth = lineWidth / canvas.width;
+      
       const action: AnnotationAction = {
         tool,
         color,
-        width: lineWidth,
+        width: relativeWidth,
         startPoint,
-        endPoint: point,
+        endPoint: relativePoint,
       };
       setHistory([...history.slice(0, historyStep), action]);
       setHistoryStep(historyStep + 1);
@@ -275,24 +416,43 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
     redrawCanvas();
   }, [historyStep]);
 
-  return (
-    <div className="fixed inset-0 z-50">
-      {/* Annotation Canvas - transparent background to see screen share */}
-      <canvas
-        ref={canvasRef}
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-        onTouchStart={startDrawing}
-        onTouchMove={draw}
-        onTouchEnd={stopDrawing}
-        className="absolute inset-0 cursor-crosshair touch-none"
-        style={{ pointerEvents: 'auto' }}
-      />
+  if (!screenShareElement) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="bg-white rounded-lg p-6 text-center">
+          <p className="text-gray-600 mb-4">Waiting for screen share...</p>
+          <p className="text-sm text-gray-400">Start screen sharing to enable annotations</p>
+          <Button onClick={onClose} className="mt-4">Close</Button>
+        </div>
+      </div>
+    );
+  }
 
-      {/* Toolbar */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 z-60">
+  return (
+    <>
+      {/* Positioned container that matches screen share video */}
+      <div 
+        ref={containerRef}
+        className="fixed z-50"
+        style={{ pointerEvents: 'none' }}
+      >
+        {/* Annotation Canvas - transparent background to see screen share */}
+        <canvas
+          ref={canvasRef}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+          className="w-full h-full cursor-crosshair touch-none"
+          style={{ pointerEvents: 'auto' }}
+        />
+      </div>
+
+      {/* Toolbar - positioned at top center of screen */}
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 z-[60]">
         <div className="flex items-center gap-2 flex-wrap">
           {/* Close Button */}
           <Button
@@ -406,6 +566,6 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
           </Button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
