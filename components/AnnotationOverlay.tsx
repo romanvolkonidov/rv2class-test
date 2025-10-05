@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X } from "lucide-react";
+import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useRoomContext, useDataChannel } from "@livekit/components-react";
 
 type AnnotationTool = "pencil" | "eraser" | "rectangle" | "circle";
@@ -31,7 +31,7 @@ interface VideoMetrics {
   offsetY: number;
 }
 
-export default function AnnotationOverlay({ onClose }: { onClose: () => void }) {
+export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClose?: () => void; viewOnly?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const metricsRef = useRef<VideoMetrics>({
@@ -50,6 +50,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
   const [historyStep, setHistoryStep] = useState(0);
   const [startPoint, setStartPoint] = useState<RelativePoint | null>(null);
   const [screenShareElement, setScreenShareElement] = useState<HTMLVideoElement | null>(null);
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
   const room = useRoomContext();
 
   // Find the screen share video element
@@ -234,7 +235,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
       
       if (data.type === "annotate" && canvasRef.current) {
         const action = data.action;
-        // Add received action to history so it persists
+        // Add received action to history
         setHistory(prev => {
           const newHistory = [...prev.slice(0, historyStep), action];
           return newHistory;
@@ -242,6 +243,10 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
         setHistoryStep(prev => prev + 1);
       } else if (data.type === "clearAnnotations") {
         clearCanvas();
+      } else if (data.type === "syncAnnotations" && viewOnly) {
+        // Receive full annotation history from teacher
+        setHistory(data.history || []);
+        setHistoryStep(data.historyStep || 0);
       }
     } catch (error) {
       console.error("Error processing annotation message:", error);
@@ -325,6 +330,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
   };
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (viewOnly) return; // Don't allow drawing in view-only mode
     e.preventDefault();
     e.stopPropagation();
     
@@ -513,6 +519,11 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
   }, [historyStep]);
 
   if (!screenShareElement) {
+    // In view-only mode, don't show the waiting message
+    if (viewOnly) {
+      return null;
+    }
+    
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
         <div className="bg-white rounded-lg p-6 text-center">
@@ -530,7 +541,7 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
       <div 
         ref={containerRef}
         className="fixed z-50"
-        style={{ pointerEvents: 'none' }}
+        style={{ pointerEvents: viewOnly ? 'none' : 'none' }}
       >
         {/* Annotation Canvas - transparent background to see screen share */}
         <canvas
@@ -542,136 +553,235 @@ export default function AnnotationOverlay({ onClose }: { onClose: () => void }) 
           onTouchStart={startDrawing}
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
-          className="w-full h-full cursor-crosshair touch-none"
-          style={{ pointerEvents: 'auto' }}
+          className="w-full h-full touch-none"
+          style={{ 
+            pointerEvents: viewOnly ? 'none' : 'auto',
+            cursor: viewOnly ? 'default' : 'crosshair'
+          }}
         />
       </div>
 
-      {/* Toolbar - responsive design for mobile and desktop */}
-      <div className="fixed top-2 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 z-[60] max-w-[95vw]">
-        <div className="flex items-center gap-1.5 flex-wrap justify-center">
-          {/* Close Button */}
-          <Button
-            size="icon"
-            variant="destructive"
-            onClick={onClose}
-            title="Close Annotations"
-            className="h-9 w-9 flex-shrink-0"
+      {/* Toolbar - Only show for teachers, not in view-only mode */}
+      {!viewOnly && (
+        <div className="fixed top-3 left-1/2 transform -translate-x-1/2 z-[60] max-w-[95vw]">
+          {/* Main Toolbar */}
+          <div 
+            className={`
+              bg-white/95 backdrop-blur-xl rounded-xl shadow-lg 
+              border-2 border-gray-300 transition-all duration-300 ease-in-out
+              ${toolbarCollapsed ? 'p-1.5' : 'p-2'}
+            `}
           >
-            <X className="h-4 w-4" />
-          </Button>
+            {toolbarCollapsed ? (
+              /* Collapsed View - Just essential buttons */
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setToolbarCollapsed(false)}
+                  title="Expand Toolbar"
+                  className="h-8 w-8 rounded-lg hover:bg-gray-200 border border-gray-400 text-gray-700 transition-colors"
+                >
+                  <ChevronDown className="h-4 w-4 stroke-[2.5]" />
+                </Button>
+                <div className="w-px h-6 bg-gray-400" />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={clearAndBroadcast}
+                  title="Clear All"
+                  className="h-8 w-8 rounded-lg hover:bg-red-100 hover:text-red-700 border border-gray-400 text-gray-700 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4 stroke-[2.5]" />
+                </Button>
+                {onClose && (
+                  <>
+                    <div className="w-px h-6 bg-gray-400" />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={onClose}
+                      title="Close Annotations"
+                      className="h-8 w-8 rounded-lg hover:bg-red-100 hover:text-red-700 border border-gray-400 text-gray-700 transition-colors"
+                    >
+                      <X className="h-4 w-4 stroke-[2.5]" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            ) : (
+              /* Expanded View - Full toolbar */
+              <div className="flex items-center gap-2 flex-wrap justify-center">
+                {/* Collapse Button */}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setToolbarCollapsed(true)}
+                  title="Collapse Toolbar"
+                  className="h-8 w-8 rounded-lg hover:bg-gray-200 border border-gray-400 text-gray-700 transition-colors"
+                >
+                  <ChevronUp className="h-4 w-4 stroke-[2.5]" />
+                </Button>
 
-          {/* Drawing Tools */}
-          <div className="flex gap-1 border-r border-gray-300 pr-1.5 flex-shrink-0">
-            <Button
-              size="icon"
-              variant={tool === "pencil" ? "default" : "ghost"}
-              onClick={() => setTool("pencil")}
-              title="Pencil"
-              className="h-9 w-9"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant={tool === "eraser" ? "default" : "ghost"}
-              onClick={() => setTool("eraser")}
-              title="Eraser"
-              className="h-9 w-9"
-            >
-              <Eraser className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant={tool === "rectangle" ? "default" : "ghost"}
-              onClick={() => setTool("rectangle")}
-              title="Rectangle"
-              className="h-9 w-9"
-            >
-              <Square className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant={tool === "circle" ? "default" : "ghost"}
-              onClick={() => setTool("circle")}
-              title="Circle"
-              className="h-9 w-9"
-            >
-              <Circle className="h-4 w-4" />
-            </Button>
+                <div className="w-px h-8 bg-gray-400" />
+
+                {/* Drawing Tools */}
+                <div className="flex gap-1.5">
+                  <Button
+                    size="icon"
+                    variant={tool === "pencil" ? "default" : "ghost"}
+                    onClick={() => setTool("pencil")}
+                    title="Pencil"
+                    className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                      tool === "pencil" 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
+                        : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                    }`}
+                  >
+                    <Pencil className="h-4 w-4 stroke-[2.5]" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant={tool === "eraser" ? "default" : "ghost"}
+                    onClick={() => setTool("eraser")}
+                    title="Eraser"
+                    className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                      tool === "eraser" 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
+                        : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                    }`}
+                  >
+                    <Eraser className="h-4 w-4 stroke-[2.5]" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant={tool === "rectangle" ? "default" : "ghost"}
+                    onClick={() => setTool("rectangle")}
+                    title="Rectangle"
+                    className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                      tool === "rectangle" 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
+                        : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                    }`}
+                  >
+                    <Square className="h-4 w-4 stroke-[2.5]" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant={tool === "circle" ? "default" : "ghost"}
+                    onClick={() => setTool("circle")}
+                    title="Circle"
+                    className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                      tool === "circle" 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
+                        : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                    }`}
+                  >
+                    <Circle className="h-4 w-4 stroke-[2.5]" />
+                  </Button>
+                </div>
+
+                <div className="w-px h-8 bg-gray-400" />
+
+                {/* Color Picker */}
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="w-8 h-8 rounded-lg cursor-pointer border-2 border-gray-400 hover:border-gray-600 transition-colors"
+                    title="Pick Color"
+                  />
+                  <div className="flex gap-1">
+                    {["#FF0000", "#0000FF", "#00FF00", "#FFFF00", "#FF00FF", "#000000"].map((c) => (
+                      <button
+                        key={c}
+                        className={`w-7 h-7 rounded-md transition-all border-2 ${
+                          color === c ? 'ring-2 ring-blue-600 ring-offset-1 border-gray-600' : 'border-gray-400 hover:border-gray-600'
+                        }`}
+                        style={{ backgroundColor: c }}
+                        onClick={() => setColor(c)}
+                        aria-label={`Color ${c}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="w-px h-8 bg-gray-400" />
+
+                {/* Line Width */}
+                <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg px-2 py-1 border border-gray-300">
+                  <input
+                    type="range"
+                    min="1"
+                    max="20"
+                    value={lineWidth}
+                    onChange={(e) => setLineWidth(Number(e.target.value))}
+                    className="w-20 accent-blue-600"
+                    title="Line Width"
+                  />
+                  <span className="text-xs font-bold text-gray-800 w-6 text-center">{lineWidth}</span>
+                </div>
+
+                <div className="w-px h-8 bg-gray-400" />
+
+                {/* History Controls */}
+                <div className="flex gap-1.5">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={undo}
+                    disabled={historyStep === 0}
+                    title="Undo"
+                    className="h-8 w-8 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed border border-gray-400 text-gray-700 transition-colors"
+                  >
+                    <Undo className="h-4 w-4 stroke-[2.5]" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={redo}
+                    disabled={historyStep === history.length}
+                    title="Redo"
+                    className="h-8 w-8 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed border border-gray-400 text-gray-700 transition-colors"
+                  >
+                    <Redo className="h-4 w-4 stroke-[2.5]" />
+                  </Button>
+                </div>
+
+                <div className="w-px h-8 bg-gray-400" />
+
+                {/* Clear */}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={clearAndBroadcast}
+                  title="Clear All"
+                  className="h-8 w-8 rounded-lg hover:bg-red-100 hover:text-red-700 border border-gray-400 text-gray-700 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4 stroke-[2.5]" />
+                </Button>
+
+                {/* Close Button */}
+                {onClose && (
+                  <>
+                    <div className="w-px h-8 bg-gray-400" />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={onClose}
+                      title="Close Annotations"
+                      className="h-8 w-8 rounded-lg hover:bg-red-100 hover:text-red-700 border border-gray-400 text-gray-700 transition-colors"
+                    >
+                      <X className="h-4 w-4 stroke-[2.5]" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-
-          {/* Color Picker - Compact on mobile */}
-          <div className="flex items-center gap-1.5 border-r border-gray-300 pr-1.5 flex-shrink-0">
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="w-9 h-9 rounded cursor-pointer border-2 border-gray-300"
-              title="Pick Color"
-            />
-            <div className="hidden sm:flex gap-1">
-              {["#FF0000", "#0000FF", "#00FF00", "#FFFF00", "#FF00FF"].map((c) => (
-                <button
-                  key={c}
-                  className="w-6 h-6 rounded border-2 border-gray-300 hover:border-gray-500 flex-shrink-0"
-                  style={{ backgroundColor: c }}
-                  onClick={() => setColor(c)}
-                  aria-label={`Color ${c}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Line Width - Hidden on very small screens */}
-          <div className="hidden sm:flex items-center gap-2 border-r border-gray-300 pr-1.5 flex-shrink-0">
-            <input
-              type="range"
-              min="1"
-              max="20"
-              value={lineWidth}
-              onChange={(e) => setLineWidth(Number(e.target.value))}
-              className="w-20"
-            />
-            <span className="text-xs text-gray-600 w-7">{lineWidth}px</span>
-          </div>
-
-          {/* History Controls */}
-          <div className="flex gap-1 border-r border-gray-300 pr-1.5 flex-shrink-0">
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={undo}
-              disabled={historyStep === 0}
-              title="Undo"
-              className="h-9 w-9"
-            >
-              <Undo className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={redo}
-              disabled={historyStep === history.length}
-              title="Redo"
-              className="h-9 w-9"
-            >
-              <Redo className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Clear */}
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={clearAndBroadcast}
-            title="Clear All Annotations"
-            className="h-9 w-9 flex-shrink-0"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
         </div>
-      </div>
+      )}
     </>
   );
 }

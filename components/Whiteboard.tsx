@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Pencil, Eraser, Square, Circle, Type, Undo, Redo, Trash2, Download } from "lucide-react";
+import { Pencil, Eraser, Square, Circle, Type, Undo, Redo, Trash2, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { useRoomContext, useDataChannel } from "@livekit/components-react";
 
 type DrawingTool = "pencil" | "eraser" | "rectangle" | "circle" | "text";
@@ -31,13 +31,49 @@ export default function Whiteboard() {
   const [history, setHistory] = useState<DrawingAction[]>([]);
   const [historyStep, setHistoryStep] = useState(0);
   const [startPoint, setStartPoint] = useState<Point | null>(null);
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  const [currentDrawingAction, setCurrentDrawingAction] = useState<DrawingAction | null>(null);
   const room = useRoomContext();
+  
+  // Persist history in session storage
+  const SESSION_STORAGE_KEY = 'whiteboard-history';
+  
+  // Load history from session storage on mount
+  useEffect(() => {
+    try {
+      const savedHistory = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (savedHistory) {
+        const parsed = JSON.parse(savedHistory);
+        setHistory(parsed.history || []);
+        setHistoryStep(parsed.historyStep || 0);
+      }
+    } catch (error) {
+      console.error("Error loading whiteboard history:", error);
+    }
+  }, []);
+  
+  // Save history to session storage whenever it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+        history,
+        historyStep
+      }));
+    } catch (error) {
+      console.error("Error saving whiteboard history:", error);
+    }
+  }, [history, historyStep]);
 
   // Send drawing data to other participants
   const sendDrawingData = (action: DrawingAction) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(JSON.stringify({ type: "draw", action }));
-    room.localParticipant.publishData(data, { reliable: true });
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(JSON.stringify({ type: "draw", action }));
+      room.localParticipant.publishData(data, { reliable: true });
+      console.log("Whiteboard: Sent drawing data", action.tool);
+    } catch (error) {
+      console.error("Whiteboard: Error sending drawing data:", error);
+    }
   };
 
   // Receive drawing data from other participants
@@ -48,7 +84,17 @@ export default function Whiteboard() {
       const data = JSON.parse(text);
       
       if (data.type === "draw" && canvasRef.current) {
-        drawAction(data.action);
+        // Add received action to history so it persists
+        const action = data.action;
+        setHistory(prev => {
+          // Check if this action is already in history to avoid duplicates
+          const exists = prev.some(a => JSON.stringify(a) === JSON.stringify(action));
+          if (exists) return prev;
+          
+          const newHistory = [...prev, action];
+          return newHistory;
+        });
+        setHistoryStep(prev => prev + 1);
       } else if (data.type === "clear") {
         clearCanvas();
       }
@@ -64,12 +110,15 @@ export default function Whiteboard() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    console.log("Whiteboard: Canvas initialized");
+
     // Set canvas size
     const resize = () => {
       const container = canvas.parentElement;
       if (container) {
         canvas.width = container.clientWidth;
         canvas.height = container.clientHeight;
+        console.log("Whiteboard: Canvas resized to", canvas.width, "x", canvas.height);
         redrawCanvas();
       }
     };
@@ -148,6 +197,7 @@ export default function Whiteboard() {
     if (!canvas) return;
 
     e.preventDefault();
+    console.log("Whiteboard: Start drawing with tool:", tool);
     const rect = canvas.getBoundingClientRect();
     
     let clientX: number, clientY: number;
@@ -174,8 +224,7 @@ export default function Whiteboard() {
         width: lineWidth,
         points: [point],
       };
-      setHistory([...history.slice(0, historyStep), action]);
-      setHistoryStep(historyStep + 1);
+      setCurrentDrawingAction(action);
     }
   };
 
@@ -202,11 +251,16 @@ export default function Whiteboard() {
     };
 
     if (tool === "pencil" || tool === "eraser") {
-      const currentAction = history[historyStep - 1];
-      if (currentAction && currentAction.points) {
-        currentAction.points.push(point);
-        drawAction(currentAction);
-        sendDrawingData(currentAction);
+      if (currentDrawingAction && currentDrawingAction.points) {
+        // Create a new action object with updated points (immutable update)
+        const updatedAction = {
+          ...currentDrawingAction,
+          points: [...currentDrawingAction.points, point]
+        };
+        
+        setCurrentDrawingAction(updatedAction);
+        drawAction(updatedAction);
+        sendDrawingData(updatedAction);
       }
     } else if ((tool === "rectangle" || tool === "circle") && startPoint) {
       redrawCanvas();
@@ -256,11 +310,12 @@ export default function Whiteboard() {
       setHistory([...history.slice(0, historyStep), action]);
       setHistoryStep(historyStep + 1);
       sendDrawingData(action);
-    } else if (tool === "pencil" || tool === "eraser") {
-      const currentAction = history[historyStep - 1];
-      if (currentAction) {
-        sendDrawingData(currentAction);
-      }
+    } else if ((tool === "pencil" || tool === "eraser") && currentDrawingAction) {
+      // Add the completed drawing action to history
+      setHistory([...history.slice(0, historyStep), currentDrawingAction]);
+      setHistoryStep(historyStep + 1);
+      sendDrawingData(currentDrawingAction);
+      setCurrentDrawingAction(null);
     }
 
     setStartPoint(null);
@@ -291,6 +346,13 @@ export default function Whiteboard() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     setHistory([]);
     setHistoryStep(0);
+    
+    // Clear session storage
+    try {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    } catch (error) {
+      console.error("Error clearing whiteboard history:", error);
+    }
   };
 
   const clearAndBroadcast = () => {
@@ -315,120 +377,212 @@ export default function Whiteboard() {
   }, [historyStep]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-100">
-      {/* Toolbar */}
-      <div className="bg-white border-b border-gray-200 p-3 shadow-sm">
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Drawing Tools */}
-          <div className="flex gap-1 border-r pr-2">
-            <Button
-              size="icon"
-              variant={tool === "pencil" ? "default" : "ghost"}
-              onClick={() => setTool("pencil")}
-              title="Pencil"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant={tool === "eraser" ? "default" : "ghost"}
-              onClick={() => setTool("eraser")}
-              title="Eraser"
-            >
-              <Eraser className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant={tool === "rectangle" ? "default" : "ghost"}
-              onClick={() => setTool("rectangle")}
-              title="Rectangle"
-            >
-              <Square className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant={tool === "circle" ? "default" : "ghost"}
-              onClick={() => setTool("circle")}
-              title="Circle"
-            >
-              <Circle className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Color Picker */}
-          <div className="flex items-center gap-2 border-r pr-2">
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="w-10 h-10 rounded cursor-pointer"
-            />
-            <div className="flex gap-1">
-              {["#000000", "#EF4444", "#3B82F6", "#10B981", "#F59E0B"].map((c) => (
-                <button
-                  key={c}
-                  className="w-6 h-6 rounded border-2 border-gray-300 hover:border-gray-500"
-                  style={{ backgroundColor: c }}
-                  onClick={() => setColor(c)}
-                />
-              ))}
+    <div className="h-full flex flex-col bg-gray-50">
+      {/* Toolbar - Modern Compact Design */}
+      <div className="bg-white/95 backdrop-blur-xl border-b-2 border-gray-300 shadow-sm">
+        <div 
+          className={`
+            max-w-7xl mx-auto transition-all duration-300 ease-in-out
+            ${toolbarCollapsed ? 'p-1.5' : 'p-2'}
+          `}
+        >
+          {toolbarCollapsed ? (
+            /* Collapsed View */
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setToolbarCollapsed(false)}
+                title="Expand Toolbar"
+                className="h-8 w-8 rounded-lg hover:bg-gray-200 border border-gray-400 text-gray-700 transition-colors"
+              >
+                <ChevronDown className="h-4 w-4 stroke-[2.5]" />
+              </Button>
+              <div className="w-px h-6 bg-gray-400" />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={clearAndBroadcast}
+                title="Clear"
+                className="h-8 w-8 rounded-lg hover:bg-red-100 hover:text-red-700 border border-gray-400 text-gray-700 transition-colors"
+              >
+                <Trash2 className="h-4 w-4 stroke-[2.5]" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={downloadCanvas}
+                title="Download"
+                className="h-8 w-8 rounded-lg hover:bg-green-100 hover:text-green-700 border border-gray-400 text-gray-700 transition-colors"
+              >
+                <Download className="h-4 w-4 stroke-[2.5]" />
+              </Button>
             </div>
-          </div>
+          ) : (
+            /* Expanded View */
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Collapse Button */}
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setToolbarCollapsed(true)}
+                title="Collapse Toolbar"
+                className="h-8 w-8 rounded-lg hover:bg-gray-200 border border-gray-400 text-gray-700 transition-colors"
+              >
+                <ChevronUp className="h-4 w-4 stroke-[2.5]" />
+              </Button>
 
-          {/* Line Width */}
-          <div className="flex items-center gap-2 border-r pr-2">
-            <input
-              type="range"
-              min="1"
-              max="20"
-              value={lineWidth}
-              onChange={(e) => setLineWidth(Number(e.target.value))}
-              className="w-24"
-            />
-            <span className="text-sm text-gray-600 w-8">{lineWidth}px</span>
-          </div>
+              <div className="w-px h-8 bg-gray-400" />
 
-          {/* History Controls */}
-          <div className="flex gap-1 border-r pr-2">
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={undo}
-              disabled={historyStep === 0}
-              title="Undo"
-            >
-              <Undo className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={redo}
-              disabled={historyStep === history.length}
-              title="Redo"
-            >
-              <Redo className="h-4 w-4" />
-            </Button>
-          </div>
+              {/* Drawing Tools */}
+              <div className="flex gap-1.5">
+                <Button
+                  size="icon"
+                  variant={tool === "pencil" ? "default" : "ghost"}
+                  onClick={() => setTool("pencil")}
+                  title="Pencil"
+                  className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                    tool === "pencil" 
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
+                      : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                  }`}
+                >
+                  <Pencil className="h-4 w-4 stroke-[2.5]" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant={tool === "eraser" ? "default" : "ghost"}
+                  onClick={() => setTool("eraser")}
+                  title="Eraser"
+                  className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                    tool === "eraser" 
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
+                      : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                  }`}
+                >
+                  <Eraser className="h-4 w-4 stroke-[2.5]" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant={tool === "rectangle" ? "default" : "ghost"}
+                  onClick={() => setTool("rectangle")}
+                  title="Rectangle"
+                  className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                    tool === "rectangle" 
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
+                      : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                  }`}
+                >
+                  <Square className="h-4 w-4 stroke-[2.5]" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant={tool === "circle" ? "default" : "ghost"}
+                  onClick={() => setTool("circle")}
+                  title="Circle"
+                  className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                    tool === "circle" 
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
+                      : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                  }`}
+                >
+                  <Circle className="h-4 w-4 stroke-[2.5]" />
+                </Button>
+              </div>
 
-          {/* Actions */}
-          <div className="flex gap-1">
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={clearAndBroadcast}
-              title="Clear"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={downloadCanvas}
-              title="Download"
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-          </div>
+              <div className="w-px h-8 bg-gray-400" />
+
+              {/* Color Picker */}
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="w-8 h-8 rounded-lg cursor-pointer border-2 border-gray-400 hover:border-gray-600 transition-colors"
+                  title="Pick Color"
+                />
+                <div className="flex gap-1">
+                  {["#000000", "#EF4444", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6"].map((c) => (
+                    <button
+                      key={c}
+                      className={`w-7 h-7 rounded-md transition-all border-2 ${
+                        color === c ? 'ring-2 ring-blue-600 ring-offset-1 border-gray-600' : 'border-gray-400 hover:border-gray-600'
+                      }`}
+                      style={{ backgroundColor: c }}
+                      onClick={() => setColor(c)}
+                      aria-label={`Color ${c}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="w-px h-8 bg-gray-400" />
+
+              {/* Line Width */}
+              <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg px-2 py-1 border border-gray-300">
+                <input
+                  type="range"
+                  min="1"
+                  max="20"
+                  value={lineWidth}
+                  onChange={(e) => setLineWidth(Number(e.target.value))}
+                  className="w-20 accent-blue-600"
+                  title="Line Width"
+                />
+                <span className="text-xs font-bold text-gray-800 w-6 text-center">{lineWidth}</span>
+              </div>
+
+              <div className="w-px h-8 bg-gray-400" />
+
+              {/* History Controls */}
+              <div className="flex gap-1.5">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={undo}
+                  disabled={historyStep === 0}
+                  title="Undo"
+                  className="h-8 w-8 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed border border-gray-400 text-gray-700 transition-colors"
+                >
+                  <Undo className="h-4 w-4 stroke-[2.5]" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={redo}
+                  disabled={historyStep === history.length}
+                  title="Redo"
+                  className="h-8 w-8 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed border border-gray-400 text-gray-700 transition-colors"
+                >
+                  <Redo className="h-4 w-4 stroke-[2.5]" />
+                </Button>
+              </div>
+
+              <div className="w-px h-8 bg-gray-400" />
+
+              {/* Actions */}
+              <div className="flex gap-1.5">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={clearAndBroadcast}
+                  title="Clear"
+                  className="h-8 w-8 rounded-lg hover:bg-red-100 hover:text-red-700 border border-gray-400 text-gray-700 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4 stroke-[2.5]" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={downloadCanvas}
+                  title="Download"
+                  className="h-8 w-8 rounded-lg hover:bg-green-100 hover:text-green-700 border border-gray-400 text-gray-700 transition-colors"
+                >
+                  <Download className="h-4 w-4 stroke-[2.5]" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

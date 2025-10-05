@@ -15,6 +15,32 @@ function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; use
   const [copied, setCopied] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(false);
+  const [hasScreenShare, setHasScreenShare] = useState(false);
+
+  // Monitor for screen share
+  useEffect(() => {
+    const checkScreenShare = () => {
+      const videos = document.querySelectorAll('video');
+      let found = false;
+      for (const video of videos) {
+        const source = video.getAttribute('data-lk-source');
+        if (source === 'screen_share' || source === 'screen_share_audio') {
+          found = true;
+          break;
+        }
+      }
+      setHasScreenShare(found);
+      
+      // If screen share stops, clear annotations
+      if (!found && hasScreenShare) {
+        setShowAnnotations(false);
+      }
+    };
+
+    checkScreenShare();
+    const interval = setInterval(checkScreenShare, 1000);
+    return () => clearInterval(interval);
+  }, [hasScreenShare]);
 
   // Listen for whiteboard state changes from tutor
   useDataChannel((message) => {
@@ -25,6 +51,11 @@ function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; use
       
       if (data.type === "toggleWhiteboard") {
         setShowWhiteboard(data.show);
+      } else if (data.type === "toggleAnnotations") {
+        // Students follow teacher's annotation state
+        if (!isTutor) {
+          setShowAnnotations(data.show);
+        }
       }
     } catch (error) {
       console.error("Error processing whiteboard toggle:", error);
@@ -39,6 +70,18 @@ function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; use
     if (isTutor) {
       const encoder = new TextEncoder();
       const data = encoder.encode(JSON.stringify({ type: "toggleWhiteboard", show: newState }));
+      room.localParticipant.publishData(data, { reliable: true });
+    }
+  };
+
+  const toggleAnnotations = () => {
+    const newState = !showAnnotations;
+    setShowAnnotations(newState);
+    
+    // If tutor, broadcast the state to all participants
+    if (isTutor) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(JSON.stringify({ type: "toggleAnnotations", show: newState }));
       room.localParticipant.publishData(data, { reliable: true });
     }
   };
@@ -79,10 +122,10 @@ function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; use
             </Card>
           )}
           <div className="flex gap-2">
-            {!showWhiteboard && (
+            {!showWhiteboard && isTutor && (
               <Button
                 variant={showAnnotations ? "default" : "secondary"}
-                onClick={() => setShowAnnotations(!showAnnotations)}
+                onClick={toggleAnnotations}
               >
                 <Edit3 className="mr-2 h-4 w-4" />
                 {showAnnotations ? "Hide Annotations" : "Annotate"}
@@ -108,7 +151,13 @@ function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; use
           <>
             <VideoConference />
             <RoomAudioRenderer />
-            {showAnnotations && <AnnotationOverlay onClose={() => setShowAnnotations(false)} />}
+            {/* Show annotations for everyone when active - tutor gets close button, students don't */}
+            {showAnnotations && (
+              <AnnotationOverlay 
+                onClose={isTutor ? () => toggleAnnotations() : undefined} 
+                viewOnly={false} 
+              />
+            )}
           </>
         )}
       </div>
