@@ -8,8 +8,8 @@ A professional English tutoring platform with real-time video, screen sharing wi
 - 🖥️ **Screen Sharing** - Share your screen with audio, choose specific windows/tabs
 - 🎨 **Collaborative Whiteboard** - Real-time drawing and annotation tools
 - ✏️ **Annotation Tools** - Draw on shared screens with pencil, shapes, and colors
-- 👨‍🏫 **Tutor Mode** - Create sessions and manage students
-- 👨‍🎓 **Student Mode** - Easy join with 6-digit codes
+- 👨‍🏫 **Tutor Mode** - Roman and Violet have dedicated classrooms
+- 👨‍🎓 **Student Mode** - Join via `/roman` or `/violet` links, no codes required
 - 🎨 **Beautiful UI** - Apple-inspired design with smooth animations
 
 ## Tech Stack
@@ -38,17 +38,16 @@ A professional English tutoring platform with real-time video, screen sharing wi
 
 ## Usage
 
-### As a Tutor:
-1. Enter your name
-2. Click "Create Session"
-3. Share the 6-digit code with your student
-4. Use the "Share Screen" button to share your screen
-5. Toggle to "Show Whiteboard" for collaborative drawing
+### As a Tutor (Roman or Violet):
+1. Visit [https://online.rv2class.com](https://online.rv2class.com)
+2. Choose "Roman" or "Violet" to jump straight into the classroom
+3. Share the matching student link (`/roman` or `/violet`) with your learner
+4. Use "Share Screen" or switch to the whiteboard as needed during class
 
 ### As a Student:
-1. Enter your name
-2. Enter the 6-digit session code from your tutor
-3. Click "Join Session"
+1. Open the dedicated link from your tutor: `/roman` or `/violet`
+2. Enter your name—no session code required
+3. Click "Join" to enter the live session
 
 ## Environment Variables
 

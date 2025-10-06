@@ -1,27 +1,43 @@
-import { collection, addDoc, getDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
+
+const TUTORS = {
+  roman: {
+    tutorName: 'Roman',
+    roomName: 'roman-room',
+    sharePath: '/roman',
+  },
+  violet: {
+    tutorName: 'Violet',
+    roomName: 'violet-room',
+    sharePath: '/violet',
+  },
+} as const;
 
 export async function POST(req: NextRequest) {
   try {
     const { tutorName } = await req.json();
 
-    // Generate a random 6-digit session code
-    const sessionCode = Math.floor(100000 + Math.random() * 900000).toString();
+    if (!tutorName) {
+      return NextResponse.json(
+        { error: 'Tutor name is required' },
+        { status: 400 }
+      );
+    }
 
-    // Create session in Firestore
-    const sessionRef = await addDoc(collection(db, 'sessions'), {
-      code: sessionCode,
-      roomName: `session-${sessionCode}`,
-      tutorName,
-      createdAt: serverTimestamp(),
-      active: true,
-    });
+  const key = (tutorName as string).trim().toLowerCase() as keyof typeof TUTORS;
+    const config = TUTORS[key];
+
+    if (!config) {
+      return NextResponse.json(
+        { error: 'Tutor not recognized' },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({
-      sessionId: sessionRef.id,
-      sessionCode,
-      roomName: `session-${sessionCode}`,
+      tutorName: config.tutorName,
+      roomName: config.roomName,
+      sharePath: config.sharePath,
     });
   } catch (error) {
     console.error('Error creating session:', error);
@@ -36,17 +52,22 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const code = searchParams.get('code');
+    const slug = searchParams.get('tutor');
 
-    if (!code) {
+  const key = (slug || code)?.trim().toLowerCase() as keyof typeof TUTORS | undefined;
+    const config = key ? TUTORS[key] : undefined;
+
+    if (!config) {
       return NextResponse.json(
-        { error: 'Session code required' },
-        { status: 400 }
+        { error: 'Tutor not found', found: false },
+        { status: 404 }
       );
     }
 
-    // In a real app, you'd query by code. For simplicity, we'll use the code as room name
     return NextResponse.json({
-      roomName: `session-${code}`,
+      tutorName: config.tutorName,
+      roomName: config.roomName,
+      sharePath: config.sharePath,
       found: true,
     });
   } catch (error) {

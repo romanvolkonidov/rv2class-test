@@ -1,65 +1,22 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Video, Users, MonitorPlay } from "lucide-react";
+import { Video, Users } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
-  const [tutorName, setTutorName] = useState("");
-  const [sessionCode, setSessionCode] = useState("");
-  const [studentName, setStudentName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const origin = typeof window === "undefined" ? "https://online.rv2class.com" : window.location.origin;
+  const tutors = [
+    { name: "Roman", room: "roman-room", studentPath: "/roman" },
+    { name: "Violet", room: "violet-room", studentPath: "/violet" },
+  ];
 
-  const createSession = async () => {
-    if (!tutorName.trim()) {
-      alert("Please enter your name");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tutorName }),
-      });
-
-      const data = await res.json();
-      router.push(`/room?room=${data.roomName}&name=${tutorName}&isTutor=true&code=${data.sessionCode}`);
-    } catch (error) {
-      console.error("Error creating session:", error);
-      alert("Failed to create session");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const joinSession = async () => {
-    if (!studentName.trim() || !sessionCode.trim()) {
-      alert("Please enter your name and session code");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/session?code=${sessionCode}`);
-      const data = await res.json();
-
-      if (data.found) {
-        router.push(`/room?room=${data.roomName}&name=${studentName}&isTutor=false`);
-      } else {
-        alert("Session not found");
-      }
-    } catch (error) {
-      console.error("Error joining session:", error);
-      alert("Failed to join session");
-    } finally {
-      setLoading(false);
-    }
+  const startSession = (roomName: string, tutorName: string) => {
+    router.push(
+      `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(tutorName)}&isTutor=true`
+    );
   };
 
   return (
@@ -75,87 +32,59 @@ export default function Home() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Tutor Card */}
           <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Video className="h-6 w-6 text-blue-600" />
-                Start as Tutor
+                Start a Session
               </CardTitle>
               <CardDescription>
-                Create a new tutoring session and share the code with your student
+                Choose your tutor identity to jump straight into the classroom.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Your Name</label>
-                <Input
-                  placeholder="Enter your name"
-                  value={tutorName}
-                  onChange={(e) => setTutorName(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && createSession()}
-                />
-              </div>
-              <Button
-                onClick={createSession}
-                disabled={loading}
-                className="w-full"
-                size="lg"
-              >
-                Create Session
-              </Button>
-              <div className="space-y-2 pt-4 border-t">
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <MonitorPlay className="h-4 w-4" />
-                  Screen sharing with audio
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <Users className="h-4 w-4" />
-                  Collaborative whiteboard
-                </div>
-              </div>
+            <CardContent className="space-y-3">
+              {tutors.map((tutor) => (
+                <Button
+                  key={tutor.name}
+                  className="w-full justify-between"
+                  size="lg"
+                  onClick={() => startSession(tutor.room, tutor.name)}
+                >
+                  <span>{tutor.name}</span>
+                  <span className="text-sm text-blue-100">Room: {tutor.room.replace(/-/g, " ")}</span>
+                </Button>
+              ))}
             </CardContent>
           </Card>
 
-          {/* Student Card */}
           <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-6 w-6 text-green-600" />
-                Join as Student
+                Student Access
               </CardTitle>
               <CardDescription>
-                Enter the session code provided by your tutor
+                Share one of the dedicated links below with your student. They only need their name.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Your Name</label>
-                <Input
-                  placeholder="Enter your name"
-                  value={studentName}
-                  onChange={(e) => setStudentName(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Session Code</label>
-                <Input
-                  placeholder="Enter 6-digit code"
-                  value={sessionCode}
-                  onChange={(e) => setSessionCode(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && joinSession()}
-                  maxLength={6}
-                />
-              </div>
-              <Button
-                onClick={joinSession}
-                disabled={loading}
-                className="w-full"
-                variant="secondary"
-                size="lg"
-              >
-                Join Session
-              </Button>
+            <CardContent className="space-y-3 text-sm">
+              {tutors.map((tutor) => (
+                <div
+                  key={tutor.name}
+                  className="flex items-center justify-between rounded-lg border border-green-200/60 dark:border-green-800/60 bg-green-50/60 dark:bg-green-900/30 p-3"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{tutor.name}’s Classroom</p>
+                    <p className="text-gray-600 dark:text-gray-400">Link: {origin}{tutor.studentPath}</p>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    onClick={() => router.push(tutor.studentPath)}
+                  >
+                    Open link
+                  </Button>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>

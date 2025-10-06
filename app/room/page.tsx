@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { LiveKitRoom, VideoConference, RoomAudioRenderer, useRoomContext, useDataChannel } from "@livekit/components-react";
 import "@livekit/components-styles";
@@ -16,6 +16,52 @@ function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; use
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(false);
   const [hasScreenShare, setHasScreenShare] = useState(false);
+
+  // Debug: Log room participants
+  useEffect(() => {
+    if (!room) return;
+    
+    const logParticipants = () => {
+      // Only log if the room is actually connected
+      if (!room.name || !room.localParticipant?.identity) {
+        console.log('⏳ Room not yet connected...');
+        return;
+      }
+      const participants = Array.from(room.remoteParticipants.values());
+      console.log(`👥 Room participants (${participants.length + 1} total):`, {
+        local: room.localParticipant.identity,
+        remote: participants.map(p => p.identity),
+        roomName: room.name,
+      });
+    };
+
+    // Wait for the room to be fully connected
+    room.on('connected', () => {
+      console.log('🎉 Room connected!');
+      logParticipants();
+    });
+    
+    room.on('participantConnected', (participant) => {
+      console.log('✅ Participant connected:', participant.identity);
+      logParticipants();
+    });
+    
+    room.on('participantDisconnected', (participant) => {
+      console.log('❌ Participant disconnected:', participant.identity);
+      logParticipants();
+    });
+
+    // Check if already connected
+    if (room.state === 'connected') {
+      logParticipants();
+    }
+
+    return () => {
+      room.off('connected', logParticipants);
+      room.off('participantConnected', logParticipants);
+      room.off('participantDisconnected', logParticipants);
+    };
+  }, [room]);
 
   // Monitor for screen share
   useEffect(() => {
@@ -177,6 +223,8 @@ function RoomPage() {
   useEffect(() => {
     if (!roomName || !userName) return;
 
+    console.log("🔵 Connecting to room:", { roomName, userName, isTutor });
+
     (async () => {
       try {
         const resp = await fetch("/api/livekit-token", {
@@ -185,9 +233,10 @@ function RoomPage() {
           body: JSON.stringify({ roomName, participantName: userName, isTutor }),
         });
         const data = await resp.json();
+        console.log("✅ Got token for room:", roomName);
         setToken(data.token);
       } catch (e) {
-        console.error("Error fetching token:", e);
+        console.error("❌ Error fetching token:", e);
       }
     })();
   }, [roomName, userName, isTutor]);
@@ -205,8 +254,8 @@ function RoomPage() {
 
   return (
     <LiveKitRoom
-      video={true}
-      audio={true}
+      video={isTutor}
+      audio={isTutor}
       token={token}
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
       data-lk-theme="default"
