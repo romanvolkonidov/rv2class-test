@@ -173,31 +173,9 @@ function RoomPage() {
   const sessionCode = searchParams?.get("code") || "";
 
   const [token, setToken] = useState("");
-  const [permissionsGranted, setPermissionsGranted] = useState(false);
-  const [permissionsError, setPermissionsError] = useState("");
-
-  // Request media permissions first
-  useEffect(() => {
-    (async () => {
-      try {
-        console.log("Requesting camera and microphone access...");
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: true, 
-          audio: true 
-        });
-        console.log("Media permissions granted");
-        // Stop the tracks immediately - we just needed to verify permissions
-        stream.getTracks().forEach(track => track.stop());
-        setPermissionsGranted(true);
-      } catch (error) {
-        console.error("Media permission error:", error);
-        setPermissionsError(error instanceof Error ? error.message : "Camera/microphone access denied");
-      }
-    })();
-  }, []);
 
   useEffect(() => {
-    if (!roomName || !userName || !permissionsGranted) return;
+    if (!roomName || !userName) return;
 
     (async () => {
       try {
@@ -212,7 +190,7 @@ function RoomPage() {
         console.error("Error fetching token:", e);
       }
     })();
-  }, [roomName, userName, isTutor, permissionsGranted]);
+  }, [roomName, userName, isTutor]);
 
   if (token === "") {
     return (
@@ -233,6 +211,10 @@ function RoomPage() {
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
       data-lk-theme="default"
       className="h-full"
+      connect={true}
+      connectOptions={{
+        autoSubscribe: true,
+      }}
     >
       <RoomContent isTutor={isTutor} userName={userName} sessionCode={sessionCode} />
     </LiveKitRoom>
