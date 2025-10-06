@@ -173,9 +173,31 @@ function RoomPage() {
   const sessionCode = searchParams?.get("code") || "";
 
   const [token, setToken] = useState("");
+  const [permissionsGranted, setPermissionsGranted] = useState(false);
+  const [permissionsError, setPermissionsError] = useState("");
+
+  // Request media permissions first
+  useEffect(() => {
+    (async () => {
+      try {
+        console.log("Requesting camera and microphone access...");
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: true, 
+          audio: true 
+        });
+        console.log("Media permissions granted");
+        // Stop the tracks immediately - we just needed to verify permissions
+        stream.getTracks().forEach(track => track.stop());
+        setPermissionsGranted(true);
+      } catch (error) {
+        console.error("Media permission error:", error);
+        setPermissionsError(error instanceof Error ? error.message : "Camera/microphone access denied");
+      }
+    })();
+  }, []);
 
   useEffect(() => {
-    if (!roomName || !userName) return;
+    if (!roomName || !userName || !permissionsGranted) return;
 
     (async () => {
       try {
@@ -190,7 +212,7 @@ function RoomPage() {
         console.error("Error fetching token:", e);
       }
     })();
-  }, [roomName, userName, isTutor]);
+  }, [roomName, userName, isTutor, permissionsGranted]);
 
   if (token === "") {
     return (
