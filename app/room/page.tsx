@@ -9,8 +9,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Copy, Check, Edit3 } from "lucide-react";
 import Whiteboard from "@/components/Whiteboard";
 import AnnotationOverlay from "@/components/AnnotationOverlay";
+import JoinRequestsPanel from "@/components/JoinRequestsPanel";
 
-function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; userName: string; sessionCode: string }) {
+function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: boolean; userName: string; sessionCode: string; roomName: string }) {
   const room = useRoomContext();
   const [copied, setCopied] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
@@ -140,6 +141,9 @@ function RoomContent({ isTutor, userName, sessionCode }: { isTutor: boolean; use
 
   return (
     <div className="h-screen flex flex-col bg-gray-900">
+      {/* Join Requests Panel - Only visible to tutors */}
+      {isTutor && <JoinRequestsPanel roomName={roomName} />}
+
       {/* Header */}
       <div className="bg-gray-800 border-b border-gray-700 p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -265,7 +269,7 @@ function RoomPage() {
         autoSubscribe: true,
       }}
     >
-      <RoomContent isTutor={isTutor} userName={userName} sessionCode={sessionCode} />
+      <RoomContent isTutor={isTutor} userName={userName} sessionCode={sessionCode} roomName={roomName} />
     </LiveKitRoom>
   );
 }
