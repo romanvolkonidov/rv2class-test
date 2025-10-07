@@ -86,8 +86,8 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   };
 
   const handleHomeworks = () => {
-    // Placeholder for future implementation
-    alert("Homeworks feature coming soon!");
+    // Navigate to homework page
+    router.push(`/student/${student.id}/homework`);
   };
 
   const activeSubjects = student.subjects 
@@ -180,7 +180,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 <BookOpen className="mr-2 h-5 w-5" />
                 <div className="flex flex-col items-start">
                   <span className="font-bold text-base">Homeworks</span>
-                  <span className="text-xs opacity-70">Coming soon</span>
+                  <span className="text-xs opacity-70">View assignments</span>
                 </div>
               </Button>
             </div>

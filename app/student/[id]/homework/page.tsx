@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import StudentWelcome from "./student-welcome";
+import StudentHomework from "./student-homework";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
-export default async function StudentPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function HomeworkPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   // Fetch student data from Firestore
@@ -14,10 +14,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
     notFound();
   }
 
-  const studentData = { 
-    id: studentSnap.id, 
-    ...studentSnap.data() 
-  } as any; // Type assertion to handle dynamic Firestore data
+  const studentData = studentSnap.data();
 
-  return <StudentWelcome student={studentData} />;
+  return <StudentHomework studentId={id} studentName={studentData.name || "Student"} />;
 }

@@ -7,7 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cleanup:empty-homework": "tsx scripts/cleanup-empty-homework.ts"
   },
   "keywords": [],
   "author": "",
@@ -36,6 +37,7 @@
     "@types/react-dom": "^19.2.0",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.20.6"
   }
 }

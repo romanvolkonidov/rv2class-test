@@ -129,54 +129,95 @@ export default function CustomVideoConference() {
   );
 
   return (
-    <div className="w-full h-full flex flex-col bg-transparent p-4">
-      {/* Screen share view (if active) */}
+    <div className="w-full h-full flex bg-transparent p-4 gap-4">
+      {/* Main content area */}
+      <div className={cn(
+        "flex-1 flex",
+        screenShareTrack ? "flex-col" : "flex-col"
+      )}>
+        {/* Screen share view (if active) */}
+        {screenShareTrack ? (
+          <div className="flex-1">
+            <ParticipantView
+              participant={screenShareTrack.participant}
+              trackRef={screenShareTrack}
+            />
+          </div>
+        ) : (
+          /* Participants grid when no screen share */
+          <div
+            className={cn(
+              "grid gap-4 flex-1",
+              remoteParticipants.length === 0 && "grid-cols-1",
+              remoteParticipants.length === 1 && "grid-cols-2",
+              remoteParticipants.length === 2 && "grid-cols-3",
+              remoteParticipants.length >= 3 && "grid-cols-4"
+            )}
+          >
+            {/* Local participant */}
+            {localParticipant && (
+              <ParticipantView
+                key={localParticipant.identity}
+                participant={localParticipant}
+                trackRef={tracks.find(
+                  (t) => t.participant === localParticipant && t.source === Track.Source.Camera
+                )}
+                isLocal
+              />
+            )}
+
+            {/* Remote participants */}
+            {remoteParticipants.map((participant) => {
+              const trackRef = tracks.find(
+                (t) => t.participant === participant && t.source === Track.Source.Camera
+              );
+              return (
+                <ParticipantView
+                  key={participant.identity}
+                  participant={participant}
+                  trackRef={trackRef}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Sidebar for participants when screen sharing */}
       {screenShareTrack && (
-        <div className="flex-1 mb-4">
-          <ParticipantView
-            participant={screenShareTrack.participant}
-            trackRef={screenShareTrack}
-          />
+        <div className="w-80 flex flex-col gap-3 overflow-y-auto">
+          <div className="text-sm font-medium text-white/70 px-2">Participants</div>
+          
+          {/* Local participant */}
+          {localParticipant && (
+            <div className="h-56 flex-shrink-0">
+              <ParticipantView
+                key={localParticipant.identity}
+                participant={localParticipant}
+                trackRef={tracks.find(
+                  (t) => t.participant === localParticipant && t.source === Track.Source.Camera
+                )}
+                isLocal
+              />
+            </div>
+          )}
+
+          {/* Remote participants */}
+          {remoteParticipants.map((participant) => {
+            const trackRef = tracks.find(
+              (t) => t.participant === participant && t.source === Track.Source.Camera
+            );
+            return (
+              <div key={participant.identity} className="h-56 flex-shrink-0">
+                <ParticipantView
+                  participant={participant}
+                  trackRef={trackRef}
+                />
+              </div>
+            );
+          })}
         </div>
       )}
-
-      {/* Participants grid */}
-      <div
-        className={cn(
-          "grid gap-4",
-          screenShareTrack ? "h-48" : "flex-1",
-          remoteParticipants.length === 0 && "grid-cols-1",
-          remoteParticipants.length === 1 && !screenShareTrack && "grid-cols-2",
-          remoteParticipants.length === 2 && "grid-cols-3",
-          remoteParticipants.length >= 3 && "grid-cols-4"
-        )}
-      >
-        {/* Local participant */}
-        {localParticipant && (
-          <ParticipantView
-            key={localParticipant.identity}
-            participant={localParticipant}
-            trackRef={tracks.find(
-              (t) => t.participant === localParticipant && t.source === Track.Source.Camera
-            )}
-            isLocal
-          />
-        )}
-
-        {/* Remote participants */}
-        {remoteParticipants.map((participant) => {
-          const trackRef = tracks.find(
-            (t) => t.participant === participant && t.source === Track.Source.Camera
-          );
-          return (
-            <ParticipantView
-              key={participant.identity}
-              participant={participant}
-              trackRef={trackRef}
-            />
-          );
-        })}
-      </div>
     </div>
   );
 }

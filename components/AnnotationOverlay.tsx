@@ -2,10 +2,10 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, ChevronUp, Type } from "lucide-react";
 import { useRoomContext, useDataChannel } from "@livekit/components-react";
 
-type AnnotationTool = "pencil" | "eraser" | "rectangle" | "circle";
+type AnnotationTool = "pencil" | "eraser" | "rectangle" | "circle" | "text";
 
 // Use relative coordinates (0-1 range) instead of absolute pixels
 interface RelativePoint {
@@ -20,6 +20,8 @@ interface AnnotationAction {
   points?: RelativePoint[];
   startPoint?: RelativePoint;
   endPoint?: RelativePoint;
+  text?: string; // For text annotations
+  fontSize?: number; // Relative font size (0-1 range)
 }
 
 interface VideoMetrics {
@@ -51,6 +53,10 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
   const [startPoint, setStartPoint] = useState<RelativePoint | null>(null);
   const [screenShareElement, setScreenShareElement] = useState<HTMLVideoElement | null>(null);
   const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  const [textInput, setTextInput] = useState("");
+  const [textInputPosition, setTextInputPosition] = useState<RelativePoint | null>(null);
+  const [isTextInputVisible, setIsTextInputVisible] = useState(false);
+  const [fontSize, setFontSize] = useState(24);
   const room = useRoomContext();
 
   // Find the screen share video element
@@ -310,6 +316,20 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
       ctx.beginPath();
       ctx.arc(start.x, start.y, radius, 0, 2 * Math.PI);
       ctx.stroke();
+    } else if (action.tool === "text" && action.text && action.startPoint) {
+      const pos = toAbsolute(action.startPoint);
+      const absoluteFontSize = action.fontSize ? action.fontSize * effectiveWidth : 24;
+      
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = action.color;
+      ctx.font = `${absoluteFontSize}px Arial, sans-serif`;
+      ctx.textBaseline = "top";
+      
+      // Support multi-line text
+      const lines = action.text.split('\n');
+      lines.forEach((line, index) => {
+        ctx.fillText(line, pos.x, pos.y + (index * absoluteFontSize * 1.2));
+      });
     }
   };
 
@@ -354,6 +374,14 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
 
     // Convert to relative coordinates (0-1 range)
     const relativePoint = toRelative(canvasX, canvasY);
+
+    // Handle text tool specially
+    if (tool === "text") {
+      setTextInputPosition(relativePoint);
+      setIsTextInputVisible(true);
+      setTextInput("");
+      return;
+    }
 
     setIsDrawing(true);
     setStartPoint(relativePoint);
@@ -493,6 +521,41 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
     }
   };
 
+  const handleTextSubmit = () => {
+    if (!textInput.trim() || !textInputPosition) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const metrics = metricsRef.current;
+    const effectiveWidth = metrics.contentWidth || metrics.cssWidth || canvas.width;
+    const relativeFontSize = effectiveWidth ? fontSize / effectiveWidth : 0;
+
+    const action: AnnotationAction = {
+      tool: "text",
+      color,
+      width: 0,
+      text: textInput,
+      startPoint: textInputPosition,
+      fontSize: relativeFontSize,
+    };
+
+    setHistory([...history.slice(0, historyStep), action]);
+    setHistoryStep(historyStep + 1);
+    sendAnnotationData(action);
+
+    // Reset text input
+    setTextInput("");
+    setTextInputPosition(null);
+    setIsTextInputVisible(false);
+  };
+
+  const handleTextCancel = () => {
+    setTextInput("");
+    setTextInputPosition(null);
+    setIsTextInputVisible(false);
+  };
+
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -556,10 +619,73 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
           className="w-full h-full touch-none"
           style={{ 
             pointerEvents: viewOnly ? 'none' : 'auto',
-            cursor: viewOnly ? 'default' : 'crosshair'
+            cursor: viewOnly ? 'default' : tool === 'text' ? 'text' : 'crosshair'
           }}
         />
       </div>
+
+      {/* Text Input Modal */}
+      {isTextInputVisible && textInputPosition && !viewOnly && (
+        <div 
+          className="fixed z-[65] bg-white/95 backdrop-blur-xl rounded-lg shadow-2xl border-2 border-blue-500 p-4"
+          style={{
+            left: `${toAbsolute(textInputPosition).x + (metricsRef.current?.offsetX || 0)}px`,
+            top: `${toAbsolute(textInputPosition).y + (metricsRef.current?.offsetY || 0)}px`,
+            transform: 'translate(10px, 10px)'
+          }}
+        >
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-semibold text-gray-700">Text:</label>
+              <input
+                type="number"
+                min="12"
+                max="72"
+                value={fontSize}
+                onChange={(e) => setFontSize(Number(e.target.value))}
+                className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
+                title="Font Size"
+              />
+              <span className="text-xs text-gray-500">px</span>
+            </div>
+            <textarea
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder="Type your text..."
+              className="w-64 h-20 px-3 py-2 border-2 border-gray-300 rounded-lg resize-none focus:outline-none focus:border-blue-500"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                  handleTextSubmit();
+                } else if (e.key === 'Escape') {
+                  handleTextCancel();
+                }
+              }}
+            />
+            <div className="flex gap-2 justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleTextCancel}
+                className="text-gray-700 border-gray-400 hover:bg-gray-100"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleTextSubmit}
+                disabled={!textInput.trim()}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Add Text
+              </Button>
+            </div>
+            <div className="text-xs text-gray-500 text-center">
+              Ctrl+Enter to submit • Esc to cancel
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toolbar - Only show for teachers, not in view-only mode */}
       {!viewOnly && (
@@ -679,6 +805,19 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                   >
                     <Circle className="h-4 w-4 stroke-[2.5]" />
                   </Button>
+                  <Button
+                    size="icon"
+                    variant={tool === "text" ? "default" : "ghost"}
+                    onClick={() => setTool("text")}
+                    title="Text"
+                    className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                      tool === "text" 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
+                        : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                    }`}
+                  >
+                    <Type className="h-4 w-4 stroke-[2.5]" />
+                  </Button>
                 </div>
 
                 <div className="w-px h-8 bg-gray-400" />
@@ -709,19 +848,35 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
 
                 <div className="w-px h-8 bg-gray-400" />
 
-                {/* Line Width */}
-                <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg px-2 py-1 border border-gray-300">
-                  <input
-                    type="range"
-                    min="1"
-                    max="20"
-                    value={lineWidth}
-                    onChange={(e) => setLineWidth(Number(e.target.value))}
-                    className="w-20 accent-blue-600"
-                    title="Line Width"
-                  />
-                  <span className="text-xs font-bold text-gray-800 w-6 text-center">{lineWidth}</span>
-                </div>
+                {/* Line Width or Font Size based on tool */}
+                {tool === "text" ? (
+                  <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg px-2 py-1 border border-gray-300">
+                    <span className="text-xs font-semibold text-gray-700">Size:</span>
+                    <input
+                      type="range"
+                      min="12"
+                      max="72"
+                      value={fontSize}
+                      onChange={(e) => setFontSize(Number(e.target.value))}
+                      className="w-20 accent-blue-600"
+                      title="Font Size"
+                    />
+                    <span className="text-xs font-bold text-gray-800 w-8 text-center">{fontSize}px</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg px-2 py-1 border border-gray-300">
+                    <input
+                      type="range"
+                      min="1"
+                      max="20"
+                      value={lineWidth}
+                      onChange={(e) => setLineWidth(Number(e.target.value))}
+                      className="w-20 accent-blue-600"
+                      title="Line Width"
+                    />
+                    <span className="text-xs font-bold text-gray-800 w-6 text-center">{lineWidth}</span>
+                  </div>
+                )}
 
                 <div className="w-px h-8 bg-gray-400" />
 
