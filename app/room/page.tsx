@@ -21,7 +21,9 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   const [copied, setCopied] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(false);
+  const [annotationsClosing, setAnnotationsClosing] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [chatClosing, setChatClosing] = useState(false);
   const [hasScreenShare, setHasScreenShare] = useState(false);
 
   // Debug: Log room participants
@@ -293,7 +295,19 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
 
   const toggleAnnotations = () => {
     const newState = !showAnnotations;
-    setShowAnnotations(newState);
+    
+    if (showAnnotations) {
+      // Trigger closing animation
+      setAnnotationsClosing(true);
+      // Wait for animation to complete before hiding
+      setTimeout(() => {
+        setShowAnnotations(false);
+        setAnnotationsClosing(false);
+      }, 300);
+    } else {
+      // Open immediately
+      setShowAnnotations(true);
+    }
     
     // If tutor, broadcast the state to all participants
     if (isTutor) {
@@ -304,7 +318,18 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   };
 
   const toggleChat = () => {
-    setShowChat(!showChat);
+    if (showChat) {
+      // Trigger closing animation
+      setChatClosing(true);
+      // Wait for animation to complete before hiding
+      setTimeout(() => {
+        setShowChat(false);
+        setChatClosing(false);
+      }, 300);
+    } else {
+      // Open immediately
+      setShowChat(true);
+    }
   };
 
   const copyCode = () => {
@@ -385,17 +410,23 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               onToggleChat={toggleChat}
             />
             {/* Show annotations for everyone when active - tutor gets close button, students don't */}
-            {showAnnotations && (
+            {(showAnnotations || annotationsClosing) && (
               <AnnotationOverlay 
                 onClose={isTutor ? () => toggleAnnotations() : undefined} 
-                viewOnly={false} 
+                viewOnly={false}
+                isClosing={annotationsClosing}
               />
             )}
           </>
         )}
 
         {/* Chat Panel - Available in all modes */}
-        {showChat && <ChatPanel onClose={toggleChat} />}
+        {(showChat || chatClosing) && (
+          <ChatPanel 
+            onClose={toggleChat}
+            isClosing={chatClosing}
+          />
+        )}
         
         {/* Audio Diagnostics - Press Ctrl+Shift+A to show */}
         <AudioDiagnostics />

@@ -6,15 +6,18 @@ import { Button } from "@/components/ui/button";
 import { X, Send, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function ChatPanel({ onClose }: { onClose?: () => void }) {
+export default function ChatPanel({ onClose, isClosing: externalIsClosing = false }: { onClose?: () => void; isClosing?: boolean }) {
   const room = useRoomContext();
   const { chatMessages, send } = useChat();
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isClosing, setIsClosing] = useState(false);
+  const [internalIsClosing, setInternalIsClosing] = useState(false);
 
   const localParticipantName = room.localParticipant?.identity || "You";
+  
+  // Use external or internal closing state
+  const isClosing = externalIsClosing || internalIsClosing;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -27,7 +30,7 @@ export default function ChatPanel({ onClose }: { onClose?: () => void }) {
   }, []);
 
   const handleClose = () => {
-    setIsClosing(true);
+    setInternalIsClosing(true);
     // Wait for animation to complete before actually closing
     setTimeout(() => {
       onClose?.();

@@ -34,7 +34,7 @@ interface VideoMetrics {
   offsetY: number;
 }
 
-export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClose?: () => void; viewOnly?: boolean }) {
+export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing: externalIsClosing = false }: { onClose?: () => void; viewOnly?: boolean; isClosing?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const metricsRef = useRef<VideoMetrics>({
@@ -58,11 +58,19 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
   const [textInputPosition, setTextInputPosition] = useState<RelativePoint | null>(null);
   const [isTextInputVisible, setIsTextInputVisible] = useState(false);
   const [fontSize, setFontSize] = useState(24);
-  const [isClosing, setIsClosing] = useState(false);
+  const [internalIsClosing, setInternalIsClosing] = useState(false);
   const room = useRoomContext();
+  
+  // Use external or internal closing state
+  const isClosing = externalIsClosing || internalIsClosing;
 
   // Find the screen share video element
   useEffect(() => {
+    // Don't search for video element if we're closing
+    if (isClosing) {
+      return;
+    }
+
     const findScreenShareVideo = () => {
       // Look for video elements with screen_share track
       const videos = document.querySelectorAll('video');
@@ -107,7 +115,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
       
       return () => clearInterval(interval);
     }
-  }, []);
+  }, [isClosing]);
 
   // Update canvas size and position to match screen share video
   useEffect(() => {
@@ -565,13 +573,8 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
     setIsTextInputVisible(false);
   };
 
-  const handleClose = () => {
-    setIsClosing(true);
-    // Wait for animation to complete before actually closing
-    setTimeout(() => {
-      onClose?.();
-    }, 300); // Match animation duration
-  };
+  // Remove the old handleClose function - X button will now use onClose directly
+  // This ensures X button and annotation toggle button work exactly the same way
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -598,21 +601,9 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
     redrawCanvas();
   }, [historyStep, history]);
 
-  if (!screenShareElement) {
-    // In view-only mode, don't show the waiting message
-    if (viewOnly) {
-      return null;
-    }
-    
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="bg-white rounded-lg p-6 text-center">
-          <p className="text-gray-600 mb-4">Waiting for screen share...</p>
-          <p className="text-sm text-gray-400">Start screen sharing to enable annotations</p>
-          <Button onClick={onClose} className="mt-4">Close</Button>
-        </div>
-      </div>
-    );
+  // Don't render anything if screen share element is not found yet (unless we're closing with animation)
+  if (!screenShareElement && !isClosing) {
+    return null;
   }
 
   return (
@@ -754,7 +745,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={handleClose}
+                      onClick={onClose}
                       title="Close Annotations"
                       className="h-8 w-8 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors"
                     >
@@ -952,7 +943,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={handleClose}
+                      onClick={onClose}
                       title="Close Annotations"
                       className="h-8 w-8 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors"
                     >

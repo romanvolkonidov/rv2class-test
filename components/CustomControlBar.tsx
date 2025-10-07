@@ -463,7 +463,9 @@ instead of "Chrome Tab" for best quality!`);
   return (
     <div 
       className={cn(
-        "fixed bottom-4 left-1/2 -translate-x-1/2 z-20 transition-all duration-300",
+        "fixed bottom-4 left-1/2 -translate-x-1/2 transition-all duration-300",
+        // Increase z-index when annotations are active to stay above canvas (z-50) and toolbar (z-60)
+        showAnnotations ? "z-[61]" : "z-20",
         // Mobile: full width with padding, Desktop: auto width
         "w-full max-w-[95vw] md:max-w-none md:w-auto px-2 md:px-0",
         isControlBarVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16 pointer-events-none"
