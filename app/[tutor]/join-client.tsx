@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,7 @@ export default function JoinTutorRoom({
   tutor: { name: string; room: string; accent: string };
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [studentName, setStudentName] = useState("");
   const [error, setError] = useState("");
   const [origin, setOrigin] = useState("https://online.rv2class.com");
@@ -30,8 +31,13 @@ export default function JoinTutorRoom({
   useEffect(() => {
     if (typeof window !== "undefined") {
       setOrigin(window.location.origin);
+      // Pre-fill student name from URL parameter
+      const nameParam = searchParams.get("name");
+      if (nameParam) {
+        setStudentName(decodeURIComponent(nameParam));
+      }
     }
-  }, []);
+  }, [searchParams]);
 
   // Listen for approval
   useEffect(() => {

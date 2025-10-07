@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Video, Users } from "lucide-react";
+import { Video, Users, UserCheck } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
@@ -31,7 +31,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-3 gap-6">
           <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -74,7 +74,7 @@ export default function Home() {
                   className="flex items-center justify-between rounded-lg border border-green-200/60 dark:border-green-800/60 bg-green-50/60 dark:bg-green-900/30 p-3"
                 >
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{tutor.name}’s Classroom</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{tutor.name}'s Classroom</p>
                     <p className="text-gray-600 dark:text-gray-400">Link: {origin}{tutor.studentPath}</p>
                   </div>
                   <Button
@@ -87,6 +87,32 @@ export default function Home() {
               ))}
             </CardContent>
           </Card>
+
+          <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserCheck className="h-6 w-6 text-purple-600" />
+                Registered Students
+              </CardTitle>
+              <CardDescription>
+                View all students with personalized join links based on their assigned teacher.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                <p>Each student gets a unique link with their name pre-filled, automatically connecting them to their assigned teacher.</p>
+              </div>
+              <Button
+                className="w-full"
+                size="lg"
+                variant="outline"
+                onClick={() => router.push("/students")}
+              >
+                <UserCheck className="mr-2 h-5 w-5" />
+                View All Students
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
@@ -96,3 +122,4 @@ export default function Home() {
     </main>
   );
 }
+
