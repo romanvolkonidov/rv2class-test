@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, memo } from "react";
+import { useEffect, useRef, memo, useState } from "react";
 import {
   useTracks,
   useParticipants,
@@ -8,6 +8,103 @@ import {
 } from "@livekit/components-react";
 import { Track, Participant, RemoteParticipant } from "livekit-client";
 import { cn } from "@/lib/utils";
+
+// Draggable Thumbnail Component with touch support
+function DraggableThumbnail({ 
+  children, 
+  participantKey 
+}: { 
+  children: React.ReactNode;
+  participantKey: string;
+}) {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const elementRef = useRef<HTMLDivElement>(null);
+
+  // Mouse drag handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Only left click
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y,
+    });
+  };
+
+  // Touch drag handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    const touch = e.touches[0];
+    setIsDragging(true);
+    setDragStart({
+      x: touch.clientX - position.x,
+      y: touch.clientY - position.y,
+    });
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const newPosition = {
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y,
+      };
+      setPosition(newPosition);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const newPosition = {
+        x: touch.clientX - dragStart.x,
+        y: touch.clientY - dragStart.y,
+      };
+      setPosition(newPosition);
+    };
+
+    const handleEnd = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleEnd);
+    document.addEventListener('touchcancel', handleEnd);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleEnd);
+      document.removeEventListener('touchcancel', handleEnd);
+    };
+  }, [isDragging, dragStart]);
+
+  return (
+    <div
+      ref={elementRef}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
+      className={cn(
+        "w-32 h-24 md:w-48 md:h-36 flex-shrink-0 cursor-move touch-manipulation select-none",
+        isDragging ? "opacity-90 scale-110 z-50 shadow-2xl" : "hover:scale-105",
+        "transition-all duration-200"
+      )}
+      style={{
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        position: 'relative',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 interface ParticipantViewProps {
   participant: Participant;
@@ -192,18 +289,15 @@ export default function CustomVideoConference() {
 
           {/* Floating draggable thumbnails at top with staggered animation */}
           <div 
-            className="absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 z-10 flex gap-2 md:gap-3 pointer-events-none animate-slide-in-top"
+            className="absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 z-10 flex gap-2 md:gap-3 pointer-events-auto animate-slide-in-top"
             style={{
               animation: 'slideInTop 0.5s ease-out 0.2s both'
             }}
           >
-            <div className="flex gap-2 md:gap-3 pointer-events-auto overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2">
+            <div className="flex gap-2 md:gap-3 flex-wrap">
               {/* Local participant thumbnail */}
               {localParticipant && (
-                <div 
-                  className="w-32 h-24 md:w-48 md:h-36 flex-shrink-0 cursor-move hover:scale-105 transition-transform touch-manipulation snap-start" 
-                  draggable
-                >
+                <DraggableThumbnail participantKey={`local-${localParticipant.identity}`}>
                   <ParticipantView
                     key={localParticipant.identity}
                     participant={localParticipant}
@@ -212,7 +306,7 @@ export default function CustomVideoConference() {
                     )}
                     isLocal
                   />
-                </div>
+                </DraggableThumbnail>
               )}
 
               {/* Remote participants thumbnails */}
@@ -221,16 +315,15 @@ export default function CustomVideoConference() {
                   (t) => t.participant === participant && t.source === Track.Source.Camera
                 );
                 return (
-                  <div 
-                    key={participant.identity} 
-                    className="w-32 h-24 md:w-48 md:h-36 flex-shrink-0 cursor-move hover:scale-105 transition-transform touch-manipulation snap-start" 
-                    draggable
+                  <DraggableThumbnail 
+                    key={participant.identity}
+                    participantKey={participant.identity}
                   >
                     <ParticipantView
                       participant={participant}
                       trackRef={trackRef}
                     />
-                  </div>
+                  </DraggableThumbnail>
                 );
               })}
             </div>
