@@ -11,16 +11,20 @@ interface CustomControlBarProps {
   isTutor?: boolean;
   showWhiteboard?: boolean;
   showAnnotations?: boolean;
+  showChat?: boolean;
   onToggleWhiteboard?: () => void;
   onToggleAnnotations?: () => void;
+  onToggleChat?: () => void;
 }
 
 export default function CustomControlBar({ 
   isTutor = false,
   showWhiteboard = false,
   showAnnotations = false,
+  showChat = false,
   onToggleWhiteboard,
-  onToggleAnnotations
+  onToggleAnnotations,
+  onToggleChat,
 }: CustomControlBarProps) {
   const { localParticipant } = useLocalParticipant();
   const room = useRoomContext();
@@ -269,6 +273,19 @@ export default function CustomControlBar({
         >
           <Monitor className="w-5 h-5" />
         </GlassButton>
+
+        <div className="w-px h-10 bg-white/20 mx-2" />
+
+        {/* Chat Button - Available to everyone */}
+        {onToggleChat && (
+          <GlassButton
+            onClick={onToggleChat}
+            active={showChat}
+            title={showChat ? "Close Chat" : "Open Chat"}
+          >
+            <MessageSquare className="w-5 h-5" />
+          </GlassButton>
+        )}
 
         {/* Tutor-only controls */}
         {isTutor && (

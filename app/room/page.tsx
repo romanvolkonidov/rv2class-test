@@ -12,12 +12,14 @@ import JoinRequestsPanel from "@/components/JoinRequestsPanel";
 import CustomVideoConference from "@/components/CustomVideoConference";
 import CompactParticipantView from "@/components/CompactParticipantView";
 import CustomControlBar from "@/components/CustomControlBar";
+import ChatPanel from "@/components/ChatPanel";
 
 function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: boolean; userName: string; sessionCode: string; roomName: string }) {
   const room = useRoomContext();
   const [copied, setCopied] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [hasScreenShare, setHasScreenShare] = useState(false);
 
   // Debug: Log room participants
@@ -135,6 +137,10 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     }
   };
 
+  const toggleChat = () => {
+    setShowChat(!showChat);
+  };
+
   const copyCode = () => {
     navigator.clipboard.writeText(sessionCode);
     setCopied(true);
@@ -194,8 +200,10 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               isTutor={isTutor}
               showWhiteboard={showWhiteboard}
               showAnnotations={showAnnotations}
+              showChat={showChat}
               onToggleWhiteboard={toggleWhiteboard}
               onToggleAnnotations={toggleAnnotations}
+              onToggleChat={toggleChat}
             />
           </>
         ) : (
@@ -205,8 +213,10 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               isTutor={isTutor}
               showWhiteboard={showWhiteboard}
               showAnnotations={showAnnotations}
+              showChat={showChat}
               onToggleWhiteboard={toggleWhiteboard}
               onToggleAnnotations={toggleAnnotations}
+              onToggleChat={toggleChat}
             />
             {/* Show annotations for everyone when active - tutor gets close button, students don't */}
             {showAnnotations && (
@@ -217,6 +227,9 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
             )}
           </>
         )}
+
+        {/* Chat Panel - Available in all modes */}
+        {showChat && <ChatPanel onClose={toggleChat} />}
       </div>
     </div>
   );

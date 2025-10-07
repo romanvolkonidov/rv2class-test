@@ -22,9 +22,32 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const [videoPermission, setVideoPermission] = useState<"granted" | "denied" | "prompt" | "checking">("checking");
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+  const [shouldPulseMic, setShouldPulseMic] = useState(false);
+  const [shouldPulseCamera, setShouldPulseCamera] = useState(false);
+  const [hasShownWelcomePopup, setHasShownWelcomePopup] = useState(false);
 
   const teacherName = student.teacher || "Roman";
   const teacherPath = `/${teacherName.toLowerCase()}`;
+
+  // Show welcome popup on first load
+  useEffect(() => {
+    const hasSeenPopup = sessionStorage.getItem(`welcome-popup-${student.id}`);
+    if (!hasSeenPopup) {
+      setTimeout(() => {
+        alert("🎓 Добро пожаловать на урок!\n\n" +
+              "Для подключения к уроку вам нужно разрешить доступ:\n" +
+              "📹 К камере\n" +
+              "🎤 К микрофону\n\n" +
+              "Когда браузер спросит разрешение - нажмите 'Разрешить'.\n\n" +
+              "Если случайно нажали 'Блокировать' - не волнуйтесь!\n" +
+              "Нажмите на оранжевую кнопку для инструкций по включению.");
+        sessionStorage.setItem(`welcome-popup-${student.id}`, 'true');
+        setHasShownWelcomePopup(true);
+      }, 500);
+    } else {
+      setHasShownWelcomePopup(true);
+    }
+  }, [student.id]);
 
   // Check initial permissions
   useEffect(() => {
@@ -73,6 +96,16 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     } catch (error) {
       console.error("Microphone permission denied:", error);
       setMicPermission("denied");
+      
+      // Show helpful alert in Russian
+      setTimeout(() => {
+        alert("🎤 Доступ к микрофону заблокирован!\n\n" +
+              "Чтобы включить:\n" +
+              "1. Нажмите на иконку 🔒 замка в адресной строке браузера\n" +
+              "2. Найдите 'Микрофон' в списке разрешений\n" +
+              "3. Выберите 'Разрешить'\n" +
+              "4. Обновите страницу (F5) и попробуйте снова");
+      }, 500);
     }
   };
 
@@ -85,6 +118,16 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     } catch (error) {
       console.error("Camera permission denied:", error);
       setVideoPermission("denied");
+      
+      // Show helpful alert in Russian
+      setTimeout(() => {
+        alert("📹 Доступ к камере заблокирован!\n\n" +
+              "Чтобы включить:\n" +
+              "1. Нажмите на иконку 🔒 замка в адресной строке браузера\n" +
+              "2. Найдите 'Камера' в списке разрешений\n" +
+              "3. Выберите 'Разрешить'\n" +
+              "4. Обновите страницу (F5) и попробуйте снова");
+      }, 500);
     }
   };
   
@@ -121,7 +164,17 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     if (micPermission !== "granted" || videoPermission !== "granted") {
       // Scroll to top to show permission toggles
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      alert("⚠️ Please enable both Microphone and Camera permissions above before joining the class!");
+      
+      // Pulse the buttons that need attention
+      if (micPermission !== "granted") {
+        setShouldPulseMic(true);
+        setTimeout(() => setShouldPulseMic(false), 2000);
+      }
+      if (videoPermission !== "granted") {
+        setShouldPulseCamera(true);
+        setTimeout(() => setShouldPulseCamera(false), 2000);
+      }
+      
       return;
     }
 
@@ -180,7 +233,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></div>
                 <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Check Permissions Before Joining
+                  Проверьте разрешения перед подключением
                 </span>
               </div>
               
@@ -191,41 +244,42 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                   onClick={requestMicPermission}
                   disabled={micPermission === "granted" || micPermission === "checking"}
                   className={`flex items-center gap-2 transition-all ${
+                    shouldPulseMic ? 'animate-pulse ring-4 ring-blue-400' : ''
+                  } ${
                     micPermission === "granted"
-                      ? "bg-green-600 hover:bg-green-600 text-white"
+                      ? "bg-green-600 hover:bg-green-600 text-white cursor-default"
                       : micPermission === "denied"
-                      ? "bg-red-600 hover:bg-red-700 text-white"
+                      ? "bg-orange-600 hover:bg-orange-700 text-white cursor-pointer"
                       : "bg-blue-600 hover:bg-blue-700 text-white"
                   }`}
                   title={
                     micPermission === "granted"
-                      ? "Microphone access granted"
+                      ? "Доступ к микрофону разрешён ✓"
                       : micPermission === "denied"
-                      ? "Microphone access denied - check browser settings"
-                      : "Click to enable microphone"
+                      ? "Нажмите для инструкций по включению микрофона"
+                      : "Нажмите чтобы разрешить микрофон"
                   }
                 >
                   {micPermission === "granted" ? (
                     <>
                       <Mic className="h-4 w-4" />
                       <CheckCircle className="h-4 w-4" />
-                      <span className="font-medium">Mic On</span>
+                      <span className="font-medium">Микрофон вкл</span>
                     </>
                   ) : micPermission === "denied" ? (
                     <>
                       <MicOff className="h-4 w-4" />
-                      <XCircle className="h-4 w-4" />
-                      <span className="font-medium">Mic Blocked</span>
+                      <span className="font-medium">Включить микрофон</span>
                     </>
                   ) : micPermission === "checking" ? (
                     <>
                       <Mic className="h-4 w-4 animate-pulse" />
-                      <span className="font-medium">Checking...</span>
+                      <span className="font-medium">Проверяем...</span>
                     </>
                   ) : (
                     <>
                       <Mic className="h-4 w-4" />
-                      <span className="font-medium">Enable Mic</span>
+                      <span className="font-medium">Разрешить микрофон</span>
                     </>
                   )}
                 </Button>
@@ -236,63 +290,47 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                   onClick={requestVideoPermission}
                   disabled={videoPermission === "granted" || videoPermission === "checking"}
                   className={`flex items-center gap-2 transition-all ${
+                    shouldPulseCamera ? 'animate-pulse ring-4 ring-blue-400' : ''
+                  } ${
                     videoPermission === "granted"
-                      ? "bg-green-600 hover:bg-green-600 text-white"
+                      ? "bg-green-600 hover:bg-green-600 text-white cursor-default"
                       : videoPermission === "denied"
-                      ? "bg-red-600 hover:bg-red-700 text-white"
+                      ? "bg-orange-600 hover:bg-orange-700 text-white cursor-pointer"
                       : "bg-blue-600 hover:bg-blue-700 text-white"
                   }`}
                   title={
                     videoPermission === "granted"
-                      ? "Camera access granted"
+                      ? "Доступ к камере разрешён ✓"
                       : videoPermission === "denied"
-                      ? "Camera access denied - check browser settings"
-                      : "Click to enable camera"
+                      ? "Нажмите для инструкций по включению камеры"
+                      : "Нажмите чтобы разрешить камеру"
                   }
                 >
                   {videoPermission === "granted" ? (
                     <>
                       <Video className="h-4 w-4" />
                       <CheckCircle className="h-4 w-4" />
-                      <span className="font-medium">Camera On</span>
+                      <span className="font-medium">Камера вкл</span>
                     </>
                   ) : videoPermission === "denied" ? (
                     <>
                       <VideoOff className="h-4 w-4" />
-                      <XCircle className="h-4 w-4" />
-                      <span className="font-medium">Camera Blocked</span>
+                      <span className="font-medium">Включить камеру</span>
                     </>
                   ) : videoPermission === "checking" ? (
                     <>
                       <Video className="h-4 w-4 animate-pulse" />
-                      <span className="font-medium">Checking...</span>
+                      <span className="font-medium">Проверяем...</span>
                     </>
                   ) : (
                     <>
                       <Video className="h-4 w-4" />
-                      <span className="font-medium">Enable Camera</span>
+                      <span className="font-medium">Разрешить камеру</span>
                     </>
                   )}
                 </Button>
               </div>
             </div>
-            
-            {/* Help text */}
-            {(micPermission === "denied" || videoPermission === "denied") && (
-              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-xs text-red-600 dark:text-red-400 font-medium">
-                  ⚠️ Permission denied. Click the 🔒 lock icon in your browser's address bar to allow access.
-                </p>
-              </div>
-            )}
-            {(micPermission === "granted" && videoPermission === "granted") && (
-              <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-700">
-                <p className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3" />
-                  All set! You're ready to join the class.
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
@@ -305,10 +343,10 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               <UserCircle className="h-12 w-12" />
               <div>
                 <CardTitle className="text-3xl font-bold">
-                  Welcome, {student.name}! 👋
+                  Добро пожаловать, {student.name}! 👋
                 </CardTitle>
                 <CardDescription className="text-blue-100 text-lg mt-1">
-                  Your personal learning space
+                  Твоё личное учебное пространство
                 </CardDescription>
               </div>
             </div>
@@ -319,7 +357,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <GraduationCap className={`h-5 w-5 ${colors.accent}`} />
-                  <span className="font-semibold text-gray-700 dark:text-gray-300">Your Teacher:</span>
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">Твой учитель:</span>
                   <span className={`font-bold text-lg ${colors.accent}`}>
                     {teacherName}
                   </span>
@@ -328,7 +366,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 {activeSubjects.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <BookOpen className={`h-5 w-5 ${colors.accent}`} />
-                    <span className="font-semibold text-gray-700 dark:text-gray-300">Your Subjects:</span>
+                    <span className="font-semibold text-gray-700 dark:text-gray-300">Твои предметы:</span>
                     {activeSubjects.map((subject) => (
                       <span
                         key={subject}
@@ -350,51 +388,22 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
             <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
               <Sparkles className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
               <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                Ready to learn something amazing today? Your teacher <strong>{teacherName}</strong> is 
-                excited to see you in class!
+                Готов узнать что-то удивительное сегодня? Твой учитель <strong>{teacherName}</strong> с нетерпением ждёт встречи с тобой на уроке!
               </p>
             </div>
-
-            {/* Warning Banner if permissions not granted */}
-            {(micPermission !== "granted" || videoPermission !== "granted") && (
-              <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-lg border-2 border-red-300 dark:border-red-700 animate-pulse">
-                <XCircle className="h-6 w-6 text-red-600 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-red-700 dark:text-red-300 mb-1">
-                    ⚠️ Action Required: Enable Permissions First!
-                  </p>
-                  <p className="text-xs text-red-600 dark:text-red-400 leading-relaxed">
-                    Please click the <strong>"Enable Mic"</strong> and <strong>"Enable Camera"</strong> buttons 
-                    at the top of this page before joining the class. Your teacher needs to see and hear you!
-                  </p>
-                </div>
-              </div>
-            )}
 
             {/* Action Buttons */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Button
                 size="lg"
-                className={`w-full h-auto py-4 transition-all shadow-lg ${
-                  micPermission === "granted" && videoPermission === "granted"
-                    ? `bg-gradient-to-r ${colors.gradient} hover:opacity-90`
-                    : 'bg-gray-400 hover:bg-gray-500 cursor-not-allowed'
-                }`}
+                className={`w-full h-auto py-4 bg-gradient-to-r ${colors.gradient} hover:opacity-90 transition-all shadow-lg`}
                 onClick={handleJoinClass}
-                disabled={isJoining || micPermission !== "granted" || videoPermission !== "granted"}
+                disabled={isJoining}
               >
                 <Video className="mr-2 h-5 w-5" />
                 <div className="flex flex-col items-start">
-                  <span className="font-bold text-base">
-                    {micPermission === "granted" && videoPermission === "granted" 
-                      ? "Join Class" 
-                      : "🔒 Enable Permissions First"}
-                  </span>
-                  <span className="text-xs opacity-90">
-                    {micPermission === "granted" && videoPermission === "granted"
-                      ? `Connect with ${teacherName}`
-                      : "Check permissions above"}
-                  </span>
+                  <span className="font-bold text-base">Войти на урок</span>
+                  <span className="text-xs opacity-90">Подключиться к {teacherName}</span>
                 </div>
               </Button>
 
@@ -406,8 +415,8 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               >
                 <BookOpen className="mr-2 h-5 w-5" />
                 <div className="flex flex-col items-start">
-                  <span className="font-bold text-base">Homeworks</span>
-                  <span className="text-xs opacity-70">View assignments</span>
+                  <span className="font-bold text-base">Домашние задания</span>
+                  <span className="text-xs opacity-70">Посмотреть задания</span>
                 </div>
               </Button>
             </div>
@@ -419,10 +428,10 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
           <CardContent className="pt-6">
             <div className="text-center space-y-2">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                📌 Bookmark this page for quick access to your classes
+                📌 Добавьте эту страницу в закладки для быстрого доступа к урокам
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-500">
-                Student ID: <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{student.id}</code>
+                ID ученика: <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{student.id}</code>
               </p>
             </div>
           </CardContent>
