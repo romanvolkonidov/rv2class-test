@@ -12,6 +12,7 @@ export default function ChatPanel({ onClose }: { onClose?: () => void }) {
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isClosing, setIsClosing] = useState(false);
 
   const localParticipantName = room.localParticipant?.identity || "You";
 
@@ -24,6 +25,14 @@ export default function ChatPanel({ onClose }: { onClose?: () => void }) {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    // Wait for animation to complete before actually closing
+    setTimeout(() => {
+      onClose?.();
+    }, 300); // Match animation duration
+  };
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -52,13 +61,14 @@ export default function ChatPanel({ onClose }: { onClose?: () => void }) {
   };
 
   return (
-    <div className="fixed right-2 md:right-4 bottom-20 md:bottom-24 z-50 w-[calc(100vw-16px)] max-w-sm md:w-96 animate-slide-up">
+    <div 
+      className={cn(
+        "fixed right-2 md:right-4 bottom-20 md:bottom-24 z-50 w-[calc(100vw-16px)] max-w-sm md:w-96 transition-all duration-300",
+        isClosing ? "animate-slide-down-out" : "animate-slide-up"
+      )}
+    >
       {/* Glass morphism card */}
-      <div className="backdrop-blur-xl bg-black/20 shadow-2xl border border-white/15 rounded-xl overflow-hidden touch-manipulation"
-        style={{
-          animation: 'slideUp 0.3s ease-out'
-        }}
-      >
+      <div className="backdrop-blur-xl bg-black/20 shadow-2xl border border-white/15 rounded-xl overflow-hidden touch-manipulation">
         {/* Header with glass effect */}
         <div className="bg-gradient-to-r from-blue-500/30 to-indigo-600/30 backdrop-blur-sm text-white border-b border-white/10 py-3 px-4">
           <div className="flex items-center justify-between">
@@ -70,7 +80,7 @@ export default function ChatPanel({ onClose }: { onClose?: () => void }) {
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={onClose}
+                onClick={handleClose}
                 className="h-8 w-8 rounded-lg hover:bg-white/20 text-white"
               >
                 <X className="h-4 w-4" />
@@ -166,6 +176,25 @@ export default function ChatPanel({ onClose }: { onClose?: () => void }) {
             opacity: 1;
             transform: translateY(0);
           }
+        }
+        
+        @keyframes slideDownOut {
+          from {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+        }
+        
+        .animate-slide-up {
+          animation: slideUp 0.3s ease-out;
+        }
+        
+        .animate-slide-down-out {
+          animation: slideDownOut 0.3s ease-out;
         }
       `}</style>
     </div>

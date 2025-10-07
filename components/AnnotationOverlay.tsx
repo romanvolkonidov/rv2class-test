@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, ChevronUp, Type } from "lucide-react";
 import { useRoomContext, useDataChannel } from "@livekit/components-react";
+import { cn } from "@/lib/utils";
 
 type AnnotationTool = "pencil" | "eraser" | "rectangle" | "circle" | "text";
 
@@ -57,6 +58,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
   const [textInputPosition, setTextInputPosition] = useState<RelativePoint | null>(null);
   const [isTextInputVisible, setIsTextInputVisible] = useState(false);
   const [fontSize, setFontSize] = useState(24);
+  const [isClosing, setIsClosing] = useState(false);
   const room = useRoomContext();
 
   // Find the screen share video element
@@ -563,6 +565,14 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
     setIsTextInputVisible(false);
   };
 
+  const handleClose = () => {
+    setIsClosing(true);
+    // Wait for animation to complete before actually closing
+    setTimeout(() => {
+      onClose?.();
+    }, 300); // Match animation duration
+  };
+
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -703,10 +713,10 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
       {/* Toolbar - Only show for teachers, not in view-only mode */}
       {!viewOnly && (
         <div 
-          className="fixed top-3 left-1/2 transform -translate-x-1/2 z-[60] max-w-[95vw]"
-          style={{
-            animation: 'slideDown 0.3s ease-out'
-          }}
+          className={cn(
+            "fixed top-3 left-1/2 transform -translate-x-1/2 z-[60] max-w-[95vw] transition-all duration-300",
+            isClosing ? "animate-slide-up-out" : "animate-slide-down"
+          )}
         >
           {/* Main Toolbar with glass morphism */}
           <div 
@@ -744,7 +754,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={onClose}
+                      onClick={handleClose}
                       title="Close Annotations"
                       className="h-8 w-8 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors"
                     >
@@ -942,7 +952,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={onClose}
+                      onClick={handleClose}
                       title="Close Annotations"
                       className="h-8 w-8 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors"
                     >
@@ -967,6 +977,25 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
             opacity: 1;
             transform: translate(-50%, 0);
           }
+        }
+        
+        @keyframes slideUpOut {
+          from {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+          to {
+            opacity: 0;
+            transform: translate(-50%, -10px);
+          }
+        }
+        
+        .animate-slide-down {
+          animation: slideDown 0.3s ease-out;
+        }
+        
+        .animate-slide-up-out {
+          animation: slideUpOut 0.3s ease-out;
         }
       `}</style>
     </>

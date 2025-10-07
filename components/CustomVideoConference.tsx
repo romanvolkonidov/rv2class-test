@@ -172,12 +172,15 @@ export default function CustomVideoConference() {
 
   return (
     <div className="w-full h-full relative bg-transparent">
-      {/* Screen share view (if active) - FULL SCREEN */}
+      {/* Screen share view (if active) - FULL SCREEN with smooth fade-in */}
       {screenShareTrack ? (
         <>
           {/* Full screen share - uses entire viewport, control bar auto-hides */}
           <div 
-            className="absolute inset-0 bg-black flex items-center justify-center"
+            className="absolute inset-0 bg-black flex items-center justify-center animate-fade-in"
+            style={{
+              animation: 'fadeIn 0.4s ease-out'
+            }}
           >
             <div className="w-full h-full">
               <ParticipantView
@@ -187,8 +190,13 @@ export default function CustomVideoConference() {
             </div>
           </div>
 
-          {/* Floating draggable thumbnails at top */}
-          <div className="absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 z-10 flex gap-2 md:gap-3 pointer-events-none">
+          {/* Floating draggable thumbnails at top with staggered animation */}
+          <div 
+            className="absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 z-10 flex gap-2 md:gap-3 pointer-events-none animate-slide-in-top"
+            style={{
+              animation: 'slideInTop 0.5s ease-out 0.2s both'
+            }}
+          >
             <div className="flex gap-2 md:gap-3 pointer-events-auto overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2">
               {/* Local participant thumbnail */}
               {localParticipant && (
@@ -270,6 +278,29 @@ export default function CustomVideoConference() {
           </div>
         </div>
       )}
+      
+      {/* Animation styles */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        @keyframes slideInTop {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
