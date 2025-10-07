@@ -227,22 +227,22 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     switch (teacher?.toLowerCase()) {
       case "roman":
         return {
-          gradient: "from-blue-500 to-indigo-600",
-          accent: "text-blue-600",
+          gradient: "from-blue-500/90 via-blue-600/90 to-cyan-600/90",
+          accent: "text-blue-500",
           bg: "bg-blue-50 dark:bg-blue-900/20",
           border: "border-blue-200 dark:border-blue-800",
         };
       case "violet":
         return {
-          gradient: "from-purple-500 to-pink-600",
-          accent: "text-purple-600",
+          gradient: "from-purple-500/90 via-violet-600/90 to-fuchsia-600/90",
+          accent: "text-purple-500",
           bg: "bg-purple-50 dark:bg-purple-900/20",
           border: "border-purple-200 dark:border-purple-800",
         };
       default:
         return {
-          gradient: "from-blue-500 to-indigo-600",
-          accent: "text-blue-600",
+          gradient: "from-blue-500/90 via-blue-600/90 to-cyan-600/90",
+          accent: "text-blue-500",
           bg: "bg-blue-50 dark:bg-blue-900/20",
           border: "border-blue-200 dark:border-blue-800",
         };
@@ -382,21 +382,21 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background elements */}
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background elements - Apple-style subtle orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-400/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-indigo-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Permission Toggles - Fixed at top with glass effect */}
-      <div className="w-full max-w-2xl mb-4 relative z-10">
-        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-4">
+      {/* Permission Toggles - Fixed at top with refined glass effect */}
+      <div className="w-full max-w-2xl mb-6 relative z-10">
+        <div className="backdrop-blur-2xl bg-white/60 border border-gray-200/50 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] p-5">
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shadow-lg shadow-blue-400/50"></div>
-              <span className="text-sm font-semibold text-white">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-lg shadow-blue-500/50"></div>
+              <span className="text-sm font-medium text-gray-700">
                 Проверьте разрешения перед подключением
               </span>
             </div>
@@ -407,14 +407,14 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 size="sm"
                 onClick={requestMicPermission}
                 disabled={micPermission === "granted" || micPermission === "checking"}
-                className={`flex items-center gap-2 transition-all backdrop-blur-md border border-white/30 ${
-                  shouldPulseMic ? 'animate-pulse ring-4 ring-blue-400/50' : ''
+                className={`flex items-center gap-2 transition-all duration-300 backdrop-blur-xl border ${
+                  shouldPulseMic ? 'animate-pulse ring-4 ring-blue-400/40' : ''
                 } ${
                   micPermission === "granted"
-                    ? "bg-green-500/80 hover:bg-green-500/90 text-white cursor-default shadow-lg shadow-green-500/30"
+                    ? "bg-green-500 hover:bg-green-600 border-green-600 text-white cursor-default shadow-lg shadow-green-500/30"
                     : micPermission === "denied"
-                    ? "bg-orange-500/80 hover:bg-orange-500/90 text-white cursor-pointer shadow-lg shadow-orange-500/30"
-                    : "bg-blue-500/80 hover:bg-blue-500/90 text-white shadow-lg shadow-blue-500/30"
+                    ? "bg-orange-500/90 hover:bg-orange-500 border-orange-500 text-white cursor-pointer shadow-lg shadow-orange-500/20"
+                    : "bg-blue-500/90 hover:bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/20"
                 }`}
                 title={
                   micPermission === "granted"
@@ -427,8 +427,8 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 {micPermission === "granted" ? (
                   <>
                     <Mic className="h-4 w-4" />
-                    <CheckCircle className="h-4 w-4" />
-                    <span className="font-medium">Микрофон вкл</span>
+                    <CheckCircle className="h-4 w-4 text-green-300" />
+                    <span className="font-semibold">Микрофон ✓</span>
                   </>
                 ) : micPermission === "denied" ? (
                   <>
@@ -453,14 +453,14 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 size="sm"
                 onClick={requestVideoPermission}
                 disabled={videoPermission === "granted" || videoPermission === "checking"}
-                className={`flex items-center gap-2 transition-all backdrop-blur-md border border-white/30 ${
-                  shouldPulseCamera ? 'animate-pulse ring-4 ring-blue-400/50' : ''
+                className={`flex items-center gap-2 transition-all duration-300 backdrop-blur-xl border ${
+                  shouldPulseCamera ? 'animate-pulse ring-4 ring-blue-400/40' : ''
                 } ${
                   videoPermission === "granted"
-                    ? "bg-green-500/80 hover:bg-green-500/90 text-white cursor-default shadow-lg shadow-green-500/30"
+                    ? "bg-green-500 hover:bg-green-600 border-green-600 text-white cursor-default shadow-lg shadow-green-500/30"
                     : videoPermission === "denied"
-                    ? "bg-orange-500/80 hover:bg-orange-500/90 text-white cursor-pointer shadow-lg shadow-orange-500/30"
-                    : "bg-blue-500/80 hover:bg-blue-500/90 text-white shadow-lg shadow-blue-500/30"
+                    ? "bg-orange-500/90 hover:bg-orange-500 border-orange-500 text-white cursor-pointer shadow-lg shadow-orange-500/20"
+                    : "bg-blue-500/90 hover:bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/20"
                 }`}
                 title={
                   videoPermission === "granted"
@@ -473,8 +473,8 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 {videoPermission === "granted" ? (
                   <>
                     <Video className="h-4 w-4" />
-                    <CheckCircle className="h-4 w-4" />
-                    <span className="font-medium">Камера вкл</span>
+                    <CheckCircle className="h-4 w-4 text-green-300" />
+                    <span className="font-semibold">Камера ✓</span>
                   </>
                 ) : videoPermission === "denied" ? (
                   <>
@@ -500,7 +500,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                   size="sm"
                   onClick={handleInstallApp}
                   variant="outline"
-                  className="flex items-center gap-2 backdrop-blur-md bg-white/10 border border-white/30 hover:bg-white/20 text-white shadow-lg"
+                  className="flex items-center gap-2 backdrop-blur-xl bg-white/60 border border-gray-300/50 hover:bg-white/80 text-gray-700 shadow-lg transition-all duration-300"
                   title={isSafari ? "Инструкции по добавлению на главный экран" : "Установить app"}
                 >
                   <Download className="h-4 w-4" />
@@ -516,44 +516,50 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       </div>
 
       <div className="max-w-2xl w-full space-y-6 relative z-10">
-        {/* Welcome Card */}
-        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
-          <div className={`bg-gradient-to-r ${colors.gradient} p-6`}>
-            <div className="flex items-center gap-3">
-              <UserCircle className="h-12 w-12 text-white" />
+        {/* Welcome Card - Apple-style refined glass */}
+        <div className="backdrop-blur-2xl bg-white/60 border border-gray-200/50 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] overflow-hidden">
+          <div className={`bg-gradient-to-r ${colors.gradient} p-8`}>
+            <div className="flex items-center gap-4">
+              <div className="backdrop-blur-xl bg-white/20 p-3 rounded-2xl border border-white/30">
+                <UserCircle className="h-10 w-10 text-white" />
+              </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">
+                <h1 className="text-3xl font-semibold text-white tracking-tight">
                   Добро пожаловать, {student.name}! 👋
                 </h1>
-                <p className="text-white/90 text-lg mt-1">
+                <p className="text-white/90 text-base mt-1">
                   Твоё личное учебное пространство
                 </p>
               </div>
             </div>
           </div>
-          <div className="p-6 space-y-6">
+          <div className="p-8 space-y-6">
             {/* Student Info */}
-            <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5 text-blue-300" />
-                  <span className="font-semibold text-white/90">Твой учитель:</span>
-                  <span className="font-bold text-lg text-white">
+            <div className="backdrop-blur-xl bg-white/40 border border-gray-200/50 rounded-2xl p-5">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="backdrop-blur-xl bg-blue-500/15 p-2 rounded-xl border border-blue-400/30">
+                    <GraduationCap className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <span className="font-medium text-gray-600">Твой учитель:</span>
+                  <span className="font-semibold text-lg text-gray-900">
                     {teacherName}
                   </span>
                 </div>
                 
                 {activeSubjects.length > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <BookOpen className="h-5 w-5 text-blue-300" />
-                    <span className="font-semibold text-white/90">Твои предметы:</span>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="backdrop-blur-xl bg-blue-500/15 p-2 rounded-xl border border-blue-400/30">
+                      <BookOpen className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <span className="font-medium text-gray-600">Твои предметы:</span>
                     {activeSubjects.map((subject) => (
                       <span
                         key={subject}
-                        className={`px-3 py-1 rounded-full text-sm font-medium backdrop-blur-md border ${
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-xl border ${
                           subject === "English"
-                            ? "bg-green-500/30 text-green-100 border-green-400/30"
-                            : "bg-blue-500/30 text-blue-100 border-blue-400/30"
+                            ? "bg-green-500/20 text-green-700 border-green-400/30"
+                            : "bg-blue-500/20 text-blue-700 border-blue-400/30"
                         }`}
                       >
                         {subject}
@@ -564,31 +570,39 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Action Buttons - Apple-style spacing and refinement */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <Button
                 size="lg"
-                className={`w-full h-auto py-4 bg-gradient-to-r ${colors.gradient} hover:opacity-90 transition-all shadow-lg border border-white/30 backdrop-blur-md`}
+                className={`w-full h-auto py-5 bg-gradient-to-r ${colors.gradient} hover:scale-105 hover:shadow-2xl active:scale-100 transition-all duration-300 shadow-xl border border-white/20 backdrop-blur-xl font-medium group`}
                 onClick={handleJoinClass}
                 disabled={isJoining}
               >
-                <Video className="mr-2 h-5 w-5" />
-                <div className="flex flex-col items-start">
-                  <span className="font-bold text-base">Войти на урок</span>
-                  <span className="text-xs opacity-90">Подключиться к {teacherName}</span>
+                <div className="flex items-center gap-3">
+                  <div className="backdrop-blur-xl bg-white/10 p-2 rounded-xl group-hover:bg-white/20 transition-all duration-300">
+                    <Video className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold text-base">Войти на урок</span>
+                    <span className="text-xs opacity-80">Подключиться к {teacherName}</span>
+                  </div>
                 </div>
               </Button>
 
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full h-auto py-4 backdrop-blur-md bg-white/10 border border-white/30 hover:bg-white/20 text-white"
+                className="w-full h-auto py-5 backdrop-blur-xl bg-white/40 border border-gray-200/50 hover:bg-white/60 text-gray-700 transition-all duration-300 shadow-xl font-medium"
                 onClick={handleHomeworks}
               >
-                <BookOpen className="mr-2 h-5 w-5" />
-                <div className="flex flex-col items-start">
-                  <span className="font-bold text-base">Домашние задания</span>
-                  <span className="text-xs opacity-70">Посмотреть задания</span>
+                <div className="flex items-center gap-3">
+                  <div className="backdrop-blur-xl bg-blue-500/15 p-2 rounded-xl border border-blue-400/30">
+                    <BookOpen className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold text-base">Домашние задания</span>
+                    <span className="text-xs opacity-70">Посмотреть задания</span>
+                  </div>
                 </div>
               </Button>
             </div>
