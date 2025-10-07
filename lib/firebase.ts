@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, collection, getDocs, getDoc, query, where, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
+import { getFirestore, collection, getDocs, getDoc, query, where, addDoc, updateDoc, doc, serverTimestamp, deleteField } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004",
@@ -25,6 +25,7 @@ export interface Student {
   subjects?: { English?: boolean; IT?: boolean };
   price?: number;
   currency?: string;
+  tag?: "red" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "gray";
 }
 
 // Topic interface
@@ -109,6 +110,26 @@ export const fetchStudents = async (): Promise<Student[]> => {
   } catch (error) {
     console.error("Error fetching students:", error);
     return [];
+  }
+};
+
+// Update student tag
+export const updateStudentTag = async (studentId: string, tag: string | null): Promise<boolean> => {
+  try {
+    const studentRef = doc(db, "students", studentId);
+    if (tag === null) {
+      await updateDoc(studentRef, {
+        tag: deleteField()
+      });
+    } else {
+      await updateDoc(studentRef, {
+        tag: tag
+      });
+    }
+    return true;
+  } catch (error) {
+    console.error("Error updating student tag:", error);
+    return false;
   }
 };
 

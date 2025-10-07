@@ -1,15 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchStudents, Student } from "@/lib/firebase";
+import { fetchStudents, Student, updateStudentTag } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Loader2, Link as LinkIcon, UserCheck, ExternalLink, Copy, Check } from "lucide-react";
+import { Users, Loader2, Link as LinkIcon, UserCheck, ExternalLink, Copy, Check, Tag } from "lucide-react";
+
+const TAG_COLORS = {
+  red: { bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-800 dark:text-red-300", dot: "bg-red-500" },
+  orange: { bg: "bg-orange-100 dark:bg-orange-900/30", text: "text-orange-800 dark:text-orange-300", dot: "bg-orange-500" },
+  yellow: { bg: "bg-yellow-100 dark:bg-yellow-900/30", text: "text-yellow-800 dark:text-yellow-300", dot: "bg-yellow-500" },
+  green: { bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-800 dark:text-green-300", dot: "bg-green-500" },
+  blue: { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-800 dark:text-blue-300", dot: "bg-blue-500" },
+  purple: { bg: "bg-purple-100 dark:bg-purple-900/30", text: "text-purple-800 dark:text-purple-300", dot: "bg-purple-500" },
+  pink: { bg: "bg-pink-100 dark:bg-pink-900/30", text: "text-pink-800 dark:text-pink-300", dot: "bg-pink-500" },
+  gray: { bg: "bg-gray-100 dark:bg-gray-900/30", text: "text-gray-800 dark:text-gray-300", dot: "bg-gray-500" },
+};
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [updatingTag, setUpdatingTag] = useState<string | null>(null);
   const origin = typeof window === "undefined" ? "https://online.rv2class.com" : window.location.origin;
 
   useEffect(() => {
@@ -33,6 +45,11 @@ export default function StudentsPage() {
     return `${origin}/student/${student.id}`;
   };
 
+  const generateTagLink = (tagColor: string) => {
+    // Link to tag-based student selector
+    return `${origin}/student/tag/${tagColor}`;
+  };
+
   const copyToClipboard = async (text: string, studentId: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -40,6 +57,21 @@ export default function StudentsPage() {
       setTimeout(() => setCopiedId(null), 2000);
     } catch (error) {
       console.error("Failed to copy:", error);
+    }
+  };
+
+  const handleTagChange = async (studentId: string, newTag: string | null) => {
+    setUpdatingTag(studentId);
+    try {
+      const success = await updateStudentTag(studentId, newTag);
+      if (success) {
+        // Reload students to reflect changes
+        await loadStudents();
+      }
+    } catch (error) {
+      console.error("Failed to update tag:", error);
+    } finally {
+      setUpdatingTag(null);
     }
   };
 
@@ -59,6 +91,15 @@ export default function StudentsPage() {
     Violet: students.filter((s) => s.teacher?.toLowerCase() === "violet"),
     Unassigned: students.filter((s) => !s.teacher || s.teacher === "unassigned"),
   };
+
+  // Group students by tag color
+  const studentsByTag = Object.keys(TAG_COLORS).reduce((acc, color) => {
+    const taggedStudents = students.filter((s) => s.tag === color);
+    if (taggedStudents.length > 0) {
+      acc[color] = taggedStudents;
+    }
+    return acc;
+  }, {} as Record<string, Student[]>);
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
@@ -88,6 +129,64 @@ export default function StudentsPage() {
           </Card>
         ) : (
           <div className="space-y-6">
+            {/* Tag-based Groups */}
+            {Object.keys(studentsByTag).length > 0 && (
+              <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-2 border-blue-300 dark:border-blue-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Tag className="h-6 w-6 text-blue-600" />
+                    Group Links (Tag-based)
+                  </CardTitle>
+                  <CardDescription>
+                    Shareable links for students grouped by color tags
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {Object.entries(studentsByTag).map(([color, tagStudents]) => {
+                      const tagLink = generateTagLink(color);
+                      const colorScheme = TAG_COLORS[color as keyof typeof TAG_COLORS];
+                      const isCopied = copiedId === `tag-${color}`;
+                      
+                      return (
+                        <div key={color} className="space-y-2">
+                          <div className={`p-3 rounded-lg border-2 ${colorScheme.bg} border-gray-300 dark:border-gray-600`}>
+                            <div className="flex items-center justify-center gap-2 mb-2">
+                              <div className={`w-3 h-3 rounded-full ${colorScheme.dot}`}></div>
+                              <span className={`font-semibold capitalize ${colorScheme.text}`}>
+                                {color}
+                              </span>
+                            </div>
+                            <p className="text-xs text-center text-gray-600 dark:text-gray-400">
+                              {tagStudents.length} {tagStudents.length === 1 ? "student" : "students"}
+                            </p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyToClipboard(tagLink, `tag-${color}`)}
+                              className="flex-1 text-xs"
+                            >
+                              {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => window.open(tagLink, "_blank")}
+                              className="flex-1 text-xs"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Individual Students by Teacher */}
             {Object.entries(studentsByTeacher).map(([teacher, studentList]) => {
               if (studentList.length === 0) return null;
               
@@ -118,6 +217,14 @@ export default function StudentsPage() {
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
                                   {student.name}
                                 </h3>
+                                {student.tag && (
+                                  <div className="flex items-center gap-1">
+                                    <div className={`w-2 h-2 rounded-full ${TAG_COLORS[student.tag].dot}`}></div>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TAG_COLORS[student.tag].bg} ${TAG_COLORS[student.tag].text}`}>
+                                      {student.tag}
+                                    </span>
+                                  </div>
+                                )}
                                 {student.teacher && (
                                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${getTeacherBadgeColor(student.teacher)}`}>
                                     {student.teacher}
@@ -145,6 +252,37 @@ export default function StudentsPage() {
                                   )}
                                 </div>
                               )}
+                              {/* Tag Selector */}
+                              <div className="mt-2">
+                                <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">
+                                  Color Tag:
+                                </label>
+                                <div className="flex gap-1 flex-wrap">
+                                  {Object.entries(TAG_COLORS).map(([color, colorScheme]) => (
+                                    <button
+                                      key={color}
+                                      onClick={() => handleTagChange(student.id, student.tag === color ? null : color)}
+                                      disabled={updatingTag === student.id}
+                                      className={`w-6 h-6 rounded-full border-2 transition-all ${colorScheme.dot} ${
+                                        student.tag === color 
+                                          ? 'border-gray-900 dark:border-white scale-110 ring-2 ring-offset-1 ring-gray-900 dark:ring-white' 
+                                          : 'border-gray-300 dark:border-gray-600 hover:scale-110'
+                                      } ${updatingTag === student.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                      title={color}
+                                    />
+                                  ))}
+                                  {student.tag && (
+                                    <button
+                                      onClick={() => handleTagChange(student.id, null)}
+                                      disabled={updatingTag === student.id}
+                                      className="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-xs text-gray-600 dark:text-gray-400 transition-all"
+                                      title="Remove tag"
+                                    >
+                                      ×
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                             <div className="flex gap-2">
                               <Button
