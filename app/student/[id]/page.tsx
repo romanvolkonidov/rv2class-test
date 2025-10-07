@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import StudentWelcome from "./student-welcome";
+import StudentWelcome from "./student-welcome.js";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
