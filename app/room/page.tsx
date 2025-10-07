@@ -14,6 +14,7 @@ import CustomVideoConference from "@/components/CustomVideoConference";
 import CompactParticipantView from "@/components/CompactParticipantView";
 import CustomControlBar from "@/components/CustomControlBar";
 import ChatPanel from "@/components/ChatPanel";
+import AudioDiagnostics from "@/components/AudioDiagnostics";
 
 function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: boolean; userName: string; sessionCode: string; roomName: string }) {
   const room = useRoomContext();
@@ -65,12 +66,61 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
         source: publication.source,
         muted: track.isMuted,
       });
+      
+      // Special attention to audio tracks
+      if (track.kind === 'audio') {
+        console.log('🔊 AUDIO TRACK RECEIVED from:', participant.identity);
+        console.log('   - Track SID:', publication.trackSid);
+        console.log('   - Is muted:', track.isMuted);
+        console.log('   - Source:', publication.source);
+        
+        // Show visual notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+          position: fixed;
+          bottom: 80px;
+          left: 20px;
+          background: rgba(34, 197, 94, 0.95);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 8px;
+          z-index: 10000;
+          font-size: 14px;
+          font-weight: 500;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        notification.textContent = `🔊 Audio connected: ${participant.identity}`;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => notification.remove(), 3000);
+      }
     });
     
     room.on('trackUnsubscribed', (track, publication, participant) => {
       console.log('🔇 Track unsubscribed:', {
         participant: participant.identity,
         kind: track.kind,
+        source: publication.source,
+      });
+      
+      if (track.kind === 'audio') {
+        console.log('🔇 AUDIO TRACK LOST from:', participant.identity);
+      }
+    });
+    
+    // Debug track publications
+    room.on('trackPublished', (publication, participant) => {
+      console.log('📢 Track published:', {
+        participant: participant.identity,
+        kind: publication.kind,
+        source: publication.source,
+      });
+    });
+    
+    room.on('trackUnpublished', (publication, participant) => {
+      console.log('📢 Track unpublished:', {
+        participant: participant.identity,
+        kind: publication.kind,
         source: publication.source,
       });
     });
@@ -346,6 +396,9 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
 
         {/* Chat Panel - Available in all modes */}
         {showChat && <ChatPanel onClose={toggleChat} />}
+        
+        {/* Audio Diagnostics - Press Ctrl+Shift+A to show */}
+        <AudioDiagnostics />
       </div>
     </div>
   );
@@ -394,8 +447,8 @@ function RoomPage() {
 
   return (
     <LiveKitRoom
-      video={true} // Enable video for everyone
-      audio={true} // Enable audio for everyone - critical for students to hear teacher
+      video={true} // Enable video for everyone to ensure proper WebRTC setup
+      audio={true} // Enable audio for everyone - ensures proper audio receiving
       token={token}
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
       className="h-full"
@@ -423,6 +476,19 @@ function RoomPage() {
         videoCaptureDefaults: {
           resolution: VideoPresets.h720.resolution,
         },
+      }}
+      // Audio troubleshooting handlers
+      onError={(error) => {
+        console.error('❌ LiveKit Room Error:', error);
+        if (error.message.includes('audio') || error.message.includes('microphone')) {
+          alert('⚠️ Audio error detected. Please check microphone permissions and try refreshing.');
+        }
+      }}
+      onConnected={() => {
+        console.log('✅ Successfully connected to room - audio should work');
+      }}
+      onDisconnected={() => {
+        console.log('❌ Disconnected from room');
       }}
     >
       <RoomContent isTutor={isTutor} userName={userName} sessionCode={sessionCode} roomName={roomName} />
