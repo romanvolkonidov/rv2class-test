@@ -247,6 +247,13 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
           return newHistory;
         });
         setHistoryStep(prev => prev + 1);
+        
+        // Immediately draw the received action for real-time feedback
+        setTimeout(() => {
+          if (canvasRef.current) {
+            drawAction(action);
+          }
+        }, 0);
       } else if (data.type === "clearAnnotations") {
         clearCanvas();
       } else if (data.type === "syncAnnotations" && viewOnly) {
@@ -579,7 +586,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
 
   useEffect(() => {
     redrawCanvas();
-  }, [historyStep]);
+  }, [historyStep, history]);
 
   if (!screenShareElement) {
     // In view-only mode, don't show the waiting message
@@ -624,35 +631,28 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
         />
       </div>
 
-      {/* Text Input Modal */}
+      {/* Text Input Overlay - Direct on-screen typing */}
       {isTextInputVisible && textInputPosition && !viewOnly && (
         <div 
-          className="fixed z-[65] bg-white/95 backdrop-blur-xl rounded-lg shadow-2xl border-2 border-blue-500 p-4"
+          className="fixed z-[65]"
           style={{
-            left: `${toAbsolute(textInputPosition).x + (metricsRef.current?.offsetX || 0)}px`,
-            top: `${toAbsolute(textInputPosition).y + (metricsRef.current?.offsetY || 0)}px`,
-            transform: 'translate(10px, 10px)'
+            left: `${toAbsolute(textInputPosition).x}px`,
+            top: `${toAbsolute(textInputPosition).y}px`,
           }}
         >
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-semibold text-gray-700">Text:</label>
-              <input
-                type="number"
-                min="12"
-                max="72"
-                value={fontSize}
-                onChange={(e) => setFontSize(Number(e.target.value))}
-                className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
-                title="Font Size"
-              />
-              <span className="text-xs text-gray-500">px</span>
-            </div>
+          <div className="relative">
+            {/* Transparent input that appears directly on screen */}
             <textarea
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Type your text..."
-              className="w-64 h-20 px-3 py-2 border-2 border-gray-300 rounded-lg resize-none focus:outline-none focus:border-blue-500"
+              placeholder="Type here..."
+              className="bg-white/10 backdrop-blur-sm border-2 border-blue-400 text-white placeholder-white/60 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none shadow-lg"
+              style={{
+                fontSize: `${fontSize}px`,
+                fontFamily: 'Arial, sans-serif',
+                minWidth: '200px',
+                minHeight: '40px',
+              }}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && e.ctrlKey) {
@@ -662,12 +662,23 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                 }
               }}
             />
-            <div className="flex gap-2 justify-end">
+            
+            {/* Small control buttons below the input */}
+            <div className="absolute top-full left-0 mt-2 flex items-center gap-2 bg-black/30 backdrop-blur-xl rounded-lg p-2 border border-white/15">
+              <input
+                type="number"
+                min="12"
+                max="72"
+                value={fontSize}
+                onChange={(e) => setFontSize(Number(e.target.value))}
+                className="w-14 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                title="Font Size"
+              />
               <Button
                 size="sm"
-                variant="outline"
+                variant="ghost"
                 onClick={handleTextCancel}
-                className="text-gray-700 border-gray-400 hover:bg-gray-100"
+                className="h-7 px-2 text-white hover:bg-white/10 border border-white/20"
               >
                 Cancel
               </Button>
@@ -675,13 +686,15 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                 size="sm"
                 onClick={handleTextSubmit}
                 disabled={!textInput.trim()}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="h-7 px-3 bg-blue-500/80 hover:bg-blue-600/80 text-white disabled:opacity-50 border border-blue-400/30"
               >
-                Add Text
+                Add
               </Button>
             </div>
-            <div className="text-xs text-gray-500 text-center">
-              Ctrl+Enter to submit • Esc to cancel
+            
+            {/* Helper text */}
+            <div className="absolute top-full left-0 mt-16 text-xs text-white/80 bg-black/50 backdrop-blur-sm px-2 py-1 rounded whitespace-nowrap">
+              Ctrl+Enter to add • Esc to cancel
             </div>
           </div>
         </div>
@@ -689,12 +702,17 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
 
       {/* Toolbar - Only show for teachers, not in view-only mode */}
       {!viewOnly && (
-        <div className="fixed top-3 left-1/2 transform -translate-x-1/2 z-[60] max-w-[95vw]">
-          {/* Main Toolbar */}
+        <div 
+          className="fixed top-3 left-1/2 transform -translate-x-1/2 z-[60] max-w-[95vw]"
+          style={{
+            animation: 'slideDown 0.3s ease-out'
+          }}
+        >
+          {/* Main Toolbar with glass morphism */}
           <div 
             className={`
-              bg-white/95 backdrop-blur-xl rounded-xl shadow-lg 
-              border-2 border-gray-300 transition-all duration-300 ease-in-out
+              backdrop-blur-xl bg-black/20 border border-white/15 rounded-xl shadow-2xl
+              transition-all duration-300 ease-in-out
               ${toolbarCollapsed ? 'p-1.5' : 'p-2'}
             `}
           >
@@ -706,29 +724,29 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                   variant="ghost"
                   onClick={() => setToolbarCollapsed(false)}
                   title="Expand Toolbar"
-                  className="h-8 w-8 rounded-lg hover:bg-gray-200 border border-gray-400 text-gray-700 transition-colors"
+                  className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors"
                 >
                   <ChevronDown className="h-4 w-4 stroke-[2.5]" />
                 </Button>
-                <div className="w-px h-6 bg-gray-400" />
+                <div className="w-px h-6 bg-white/20" />
                 <Button
                   size="icon"
                   variant="ghost"
                   onClick={clearAndBroadcast}
                   title="Clear All"
-                  className="h-8 w-8 rounded-lg hover:bg-red-100 hover:text-red-700 border border-gray-400 text-gray-700 transition-colors"
+                  className="h-8 w-8 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors"
                 >
                   <Trash2 className="h-4 w-4 stroke-[2.5]" />
                 </Button>
                 {onClose && (
                   <>
-                    <div className="w-px h-6 bg-gray-400" />
+                    <div className="w-px h-6 bg-white/20" />
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={onClose}
                       title="Close Annotations"
-                      className="h-8 w-8 rounded-lg hover:bg-red-100 hover:text-red-700 border border-gray-400 text-gray-700 transition-colors"
+                      className="h-8 w-8 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors"
                     >
                       <X className="h-4 w-4 stroke-[2.5]" />
                     </Button>
@@ -744,12 +762,12 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                   variant="ghost"
                   onClick={() => setToolbarCollapsed(true)}
                   title="Collapse Toolbar"
-                  className="h-8 w-8 rounded-lg hover:bg-gray-200 border border-gray-400 text-gray-700 transition-colors"
+                  className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors"
                 >
                   <ChevronUp className="h-4 w-4 stroke-[2.5]" />
                 </Button>
 
-                <div className="w-px h-8 bg-gray-400" />
+                <div className="w-px h-8 bg-white/20" />
 
                 {/* Drawing Tools */}
                 <div className="flex gap-1.5">
@@ -758,10 +776,10 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                     variant={tool === "pencil" ? "default" : "ghost"}
                     onClick={() => setTool("pencil")}
                     title="Pencil"
-                    className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                    className={`h-8 w-8 rounded-lg transition-all border ${
                       tool === "pencil" 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
-                        : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
                     <Pencil className="h-4 w-4 stroke-[2.5]" />
@@ -771,10 +789,10 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                     variant={tool === "eraser" ? "default" : "ghost"}
                     onClick={() => setTool("eraser")}
                     title="Eraser"
-                    className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                    className={`h-8 w-8 rounded-lg transition-all border ${
                       tool === "eraser" 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
-                        : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
                     <Eraser className="h-4 w-4 stroke-[2.5]" />
@@ -784,10 +802,10 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                     variant={tool === "rectangle" ? "default" : "ghost"}
                     onClick={() => setTool("rectangle")}
                     title="Rectangle"
-                    className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                    className={`h-8 w-8 rounded-lg transition-all border ${
                       tool === "rectangle" 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
-                        : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
                     <Square className="h-4 w-4 stroke-[2.5]" />
@@ -797,10 +815,10 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                     variant={tool === "circle" ? "default" : "ghost"}
                     onClick={() => setTool("circle")}
                     title="Circle"
-                    className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                    className={`h-8 w-8 rounded-lg transition-all border ${
                       tool === "circle" 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
-                        : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
                     <Circle className="h-4 w-4 stroke-[2.5]" />
@@ -810,17 +828,17 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                     variant={tool === "text" ? "default" : "ghost"}
                     onClick={() => setTool("text")}
                     title="Text"
-                    className={`h-8 w-8 rounded-lg transition-all border-2 ${
+                    className={`h-8 w-8 rounded-lg transition-all border ${
                       tool === "text" 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700 shadow-md' 
-                        : 'hover:bg-gray-200 border-gray-400 text-gray-700'
+                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
                     <Type className="h-4 w-4 stroke-[2.5]" />
                   </Button>
                 </div>
 
-                <div className="w-px h-8 bg-gray-400" />
+                <div className="w-px h-8 bg-white/20" />
 
                 {/* Color Picker */}
                 <div className="flex items-center gap-1.5">
@@ -828,15 +846,15 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                     type="color"
                     value={color}
                     onChange={(e) => setColor(e.target.value)}
-                    className="w-8 h-8 rounded-lg cursor-pointer border-2 border-gray-400 hover:border-gray-600 transition-colors"
+                    className="w-8 h-8 rounded-lg cursor-pointer border border-white/20 hover:border-white/40 transition-colors bg-white/10"
                     title="Pick Color"
                   />
                   <div className="flex gap-1">
-                    {["#FF0000", "#0000FF", "#00FF00", "#FFFF00", "#FF00FF", "#000000"].map((c) => (
+                    {["#FF0000", "#0000FF", "#00FF00", "#FFFF00", "#FF00FF", "#FFFFFF"].map((c) => (
                       <button
                         key={c}
-                        className={`w-7 h-7 rounded-md transition-all border-2 ${
-                          color === c ? 'ring-2 ring-blue-600 ring-offset-1 border-gray-600' : 'border-gray-400 hover:border-gray-600'
+                        className={`w-7 h-7 rounded-md transition-all border ${
+                          color === c ? 'ring-2 ring-blue-400 ring-offset-1 ring-offset-black/20 border-white/40' : 'border-white/20 hover:border-white/40'
                         }`}
                         style={{ backgroundColor: c }}
                         onClick={() => setColor(c)}
@@ -846,39 +864,39 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                   </div>
                 </div>
 
-                <div className="w-px h-8 bg-gray-400" />
+                <div className="w-px h-8 bg-white/20" />
 
                 {/* Line Width or Font Size based on tool */}
                 {tool === "text" ? (
-                  <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg px-2 py-1 border border-gray-300">
-                    <span className="text-xs font-semibold text-gray-700">Size:</span>
+                  <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/20">
+                    <span className="text-xs font-semibold text-white">Size:</span>
                     <input
                       type="range"
                       min="12"
                       max="72"
                       value={fontSize}
                       onChange={(e) => setFontSize(Number(e.target.value))}
-                      className="w-20 accent-blue-600"
+                      className="w-20 accent-blue-400"
                       title="Font Size"
                     />
-                    <span className="text-xs font-bold text-gray-800 w-8 text-center">{fontSize}px</span>
+                    <span className="text-xs font-bold text-white w-8 text-center">{fontSize}px</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg px-2 py-1 border border-gray-300">
+                  <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/20">
                     <input
                       type="range"
                       min="1"
                       max="20"
                       value={lineWidth}
                       onChange={(e) => setLineWidth(Number(e.target.value))}
-                      className="w-20 accent-blue-600"
+                      className="w-20 accent-blue-400"
                       title="Line Width"
                     />
-                    <span className="text-xs font-bold text-gray-800 w-6 text-center">{lineWidth}</span>
+                    <span className="text-xs font-bold text-white w-6 text-center">{lineWidth}</span>
                   </div>
                 )}
 
-                <div className="w-px h-8 bg-gray-400" />
+                <div className="w-px h-8 bg-white/20" />
 
                 {/* History Controls */}
                 <div className="flex gap-1.5">
@@ -888,7 +906,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                     onClick={undo}
                     disabled={historyStep === 0}
                     title="Undo"
-                    className="h-8 w-8 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed border border-gray-400 text-gray-700 transition-colors"
+                    className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed border border-white/20 text-white transition-colors"
                   >
                     <Undo className="h-4 w-4 stroke-[2.5]" />
                   </Button>
@@ -898,13 +916,13 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                     onClick={redo}
                     disabled={historyStep === history.length}
                     title="Redo"
-                    className="h-8 w-8 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed border border-gray-400 text-gray-700 transition-colors"
+                    className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed border border-white/20 text-white transition-colors"
                   >
                     <Redo className="h-4 w-4 stroke-[2.5]" />
                   </Button>
                 </div>
 
-                <div className="w-px h-8 bg-gray-400" />
+                <div className="w-px h-8 bg-white/20" />
 
                 {/* Clear */}
                 <Button
@@ -912,7 +930,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                   variant="ghost"
                   onClick={clearAndBroadcast}
                   title="Clear All"
-                  className="h-8 w-8 rounded-lg hover:bg-red-100 hover:text-red-700 border border-gray-400 text-gray-700 transition-colors"
+                  className="h-8 w-8 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors"
                 >
                   <Trash2 className="h-4 w-4 stroke-[2.5]" />
                 </Button>
@@ -920,13 +938,13 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
                 {/* Close Button */}
                 {onClose && (
                   <>
-                    <div className="w-px h-8 bg-gray-400" />
+                    <div className="w-px h-8 bg-white/20" />
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={onClose}
                       title="Close Annotations"
-                      className="h-8 w-8 rounded-lg hover:bg-red-100 hover:text-red-700 border border-gray-400 text-gray-700 transition-colors"
+                      className="h-8 w-8 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors"
                     >
                       <X className="h-4 w-4 stroke-[2.5]" />
                     </Button>
@@ -937,6 +955,20 @@ export default function AnnotationOverlay({ onClose, viewOnly = false }: { onClo
           </div>
         </div>
       )}
+      
+      {/* Add animation styles */}
+      <style jsx>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -10px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+      `}</style>
     </>
   );
 }
