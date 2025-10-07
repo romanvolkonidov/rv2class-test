@@ -382,173 +382,178 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col items-center justify-center p-4">
-      {/* Permission Toggles - Fixed at top */}
-      <div className="w-full max-w-2xl mb-4">
-        <Card className="backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 shadow-lg border-2 border-blue-200 dark:border-blue-800">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></div>
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Проверьте разрешения перед подключением
-                </span>
-              </div>
-              
-              <div className="flex gap-3 items-center flex-wrap">
-                {/* Microphone Toggle */}
-                <Button
-                  size="sm"
-                  onClick={requestMicPermission}
-                  disabled={micPermission === "granted" || micPermission === "checking"}
-                  className={`flex items-center gap-2 transition-all ${
-                    shouldPulseMic ? 'animate-pulse ring-4 ring-blue-400' : ''
-                  } ${
-                    micPermission === "granted"
-                      ? "bg-green-600 hover:bg-green-600 text-white cursor-default"
-                      : micPermission === "denied"
-                      ? "bg-orange-600 hover:bg-orange-700 text-white cursor-pointer"
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
-                  }`}
-                  title={
-                    micPermission === "granted"
-                      ? "Доступ к микрофону разрешён ✓"
-                      : micPermission === "denied"
-                      ? "Нажмите для инструкций по включению микрофона"
-                      : "Нажмите чтобы разрешить микрофон"
-                  }
-                >
-                  {micPermission === "granted" ? (
-                    <>
-                      <Mic className="h-4 w-4" />
-                      <CheckCircle className="h-4 w-4" />
-                      <span className="font-medium">Микрофон вкл</span>
-                    </>
-                  ) : micPermission === "denied" ? (
-                    <>
-                      <MicOff className="h-4 w-4" />
-                      <span className="font-medium">Включить микрофон</span>
-                    </>
-                  ) : micPermission === "checking" ? (
-                    <>
-                      <Mic className="h-4 w-4 animate-pulse" />
-                      <span className="font-medium">Проверяем...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Mic className="h-4 w-4" />
-                      <span className="font-medium">Разрешить микрофон</span>
-                    </>
-                  )}
-                </Button>
-
-                {/* Video Toggle */}
-                <Button
-                  size="sm"
-                  onClick={requestVideoPermission}
-                  disabled={videoPermission === "granted" || videoPermission === "checking"}
-                  className={`flex items-center gap-2 transition-all ${
-                    shouldPulseCamera ? 'animate-pulse ring-4 ring-blue-400' : ''
-                  } ${
-                    videoPermission === "granted"
-                      ? "bg-green-600 hover:bg-green-600 text-white cursor-default"
-                      : videoPermission === "denied"
-                      ? "bg-orange-600 hover:bg-orange-700 text-white cursor-pointer"
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
-                  }`}
-                  title={
-                    videoPermission === "granted"
-                      ? "Доступ к камере разрешён ✓"
-                      : videoPermission === "denied"
-                      ? "Нажмите для инструкций по включению камеры"
-                      : "Нажмите чтобы разрешить камеру"
-                  }
-                >
-                  {videoPermission === "granted" ? (
-                    <>
-                      <Video className="h-4 w-4" />
-                      <CheckCircle className="h-4 w-4" />
-                      <span className="font-medium">Камера вкл</span>
-                    </>
-                  ) : videoPermission === "denied" ? (
-                    <>
-                      <VideoOff className="h-4 w-4" />
-                      <span className="font-medium">Включить камеру</span>
-                    </>
-                  ) : videoPermission === "checking" ? (
-                    <>
-                      <Video className="h-4 w-4 animate-pulse" />
-                      <span className="font-medium">Проверяем...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Video className="h-4 w-4" />
-                      <span className="font-medium">Разрешить камеру</span>
-                    </>
-                  )}
-                </Button>
-                
-                {/* PWA Install Button - shows on Safari or when install prompt available */}
-                {showInstallButton && (
-                  <Button
-                    size="sm"
-                    onClick={handleInstallApp}
-                    variant="outline"
-                    className="flex items-center gap-2 border-2 border-blue-300 hover:bg-blue-50 dark:border-blue-700 dark:hover:bg-blue-900/20"
-                    title={isSafari ? "Инструкции по добавлению на главный экран" : "Установить app"}
-                  >
-                    <Download className="h-4 w-4" />
-                    <span className="font-medium hidden sm:inline">
-                      {isSafari ? "Добавить app" : "Установить app"}
-                    </span>
-                    <span className="font-medium sm:hidden">🏠</span>
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <main className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      <div className="max-w-2xl w-full space-y-6">
+      {/* Permission Toggles - Fixed at top with glass effect */}
+      <div className="w-full max-w-2xl mb-4 relative z-10">
+        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shadow-lg shadow-blue-400/50"></div>
+              <span className="text-sm font-semibold text-white">
+                Проверьте разрешения перед подключением
+              </span>
+            </div>
+            
+            <div className="flex gap-3 items-center flex-wrap">
+              {/* Microphone Toggle */}
+              <Button
+                size="sm"
+                onClick={requestMicPermission}
+                disabled={micPermission === "granted" || micPermission === "checking"}
+                className={`flex items-center gap-2 transition-all backdrop-blur-md border border-white/30 ${
+                  shouldPulseMic ? 'animate-pulse ring-4 ring-blue-400/50' : ''
+                } ${
+                  micPermission === "granted"
+                    ? "bg-green-500/80 hover:bg-green-500/90 text-white cursor-default shadow-lg shadow-green-500/30"
+                    : micPermission === "denied"
+                    ? "bg-orange-500/80 hover:bg-orange-500/90 text-white cursor-pointer shadow-lg shadow-orange-500/30"
+                    : "bg-blue-500/80 hover:bg-blue-500/90 text-white shadow-lg shadow-blue-500/30"
+                }`}
+                title={
+                  micPermission === "granted"
+                    ? "Доступ к микрофону разрешён ✓"
+                    : micPermission === "denied"
+                    ? "Нажмите для инструкций по включению микрофона"
+                    : "Нажмите чтобы разрешить микрофон"
+                }
+              >
+                {micPermission === "granted" ? (
+                  <>
+                    <Mic className="h-4 w-4" />
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="font-medium">Микрофон вкл</span>
+                  </>
+                ) : micPermission === "denied" ? (
+                  <>
+                    <MicOff className="h-4 w-4" />
+                    <span className="font-medium">Включить микрофон</span>
+                  </>
+                ) : micPermission === "checking" ? (
+                  <>
+                    <Mic className="h-4 w-4 animate-pulse" />
+                    <span className="font-medium">Проверяем...</span>
+                  </>
+                ) : (
+                  <>
+                    <Mic className="h-4 w-4" />
+                    <span className="font-medium">Разрешить микрофон</span>
+                  </>
+                )}
+              </Button>
+
+              {/* Video Toggle */}
+              <Button
+                size="sm"
+                onClick={requestVideoPermission}
+                disabled={videoPermission === "granted" || videoPermission === "checking"}
+                className={`flex items-center gap-2 transition-all backdrop-blur-md border border-white/30 ${
+                  shouldPulseCamera ? 'animate-pulse ring-4 ring-blue-400/50' : ''
+                } ${
+                  videoPermission === "granted"
+                    ? "bg-green-500/80 hover:bg-green-500/90 text-white cursor-default shadow-lg shadow-green-500/30"
+                    : videoPermission === "denied"
+                    ? "bg-orange-500/80 hover:bg-orange-500/90 text-white cursor-pointer shadow-lg shadow-orange-500/30"
+                    : "bg-blue-500/80 hover:bg-blue-500/90 text-white shadow-lg shadow-blue-500/30"
+                }`}
+                title={
+                  videoPermission === "granted"
+                    ? "Доступ к камере разрешён ✓"
+                    : videoPermission === "denied"
+                    ? "Нажмите для инструкций по включению камеры"
+                    : "Нажмите чтобы разрешить камеру"
+                }
+              >
+                {videoPermission === "granted" ? (
+                  <>
+                    <Video className="h-4 w-4" />
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="font-medium">Камера вкл</span>
+                  </>
+                ) : videoPermission === "denied" ? (
+                  <>
+                    <VideoOff className="h-4 w-4" />
+                    <span className="font-medium">Включить камеру</span>
+                  </>
+                ) : videoPermission === "checking" ? (
+                  <>
+                    <Video className="h-4 w-4 animate-pulse" />
+                    <span className="font-medium">Проверяем...</span>
+                  </>
+                ) : (
+                  <>
+                    <Video className="h-4 w-4" />
+                    <span className="font-medium">Разрешить камеру</span>
+                  </>
+                )}
+              </Button>
+              
+              {/* PWA Install Button - shows on Safari or when install prompt available */}
+              {showInstallButton && (
+                <Button
+                  size="sm"
+                  onClick={handleInstallApp}
+                  variant="outline"
+                  className="flex items-center gap-2 backdrop-blur-md bg-white/10 border border-white/30 hover:bg-white/20 text-white shadow-lg"
+                  title={isSafari ? "Инструкции по добавлению на главный экран" : "Установить app"}
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="font-medium hidden sm:inline">
+                    {isSafari ? "Добавить app" : "Установить app"}
+                  </span>
+                  <span className="font-medium sm:hidden">🏠</span>
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-2xl w-full space-y-6 relative z-10">
         {/* Welcome Card */}
-        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 shadow-xl border-2">
-          <CardHeader className={`bg-gradient-to-r ${colors.gradient} text-white rounded-t-lg`}>
+        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
+          <div className={`bg-gradient-to-r ${colors.gradient} p-6`}>
             <div className="flex items-center gap-3">
-              <UserCircle className="h-12 w-12" />
+              <UserCircle className="h-12 w-12 text-white" />
               <div>
-                <CardTitle className="text-3xl font-bold">
+                <h1 className="text-3xl font-bold text-white">
                   Добро пожаловать, {student.name}! 👋
-                </CardTitle>
-                <CardDescription className="text-blue-100 text-lg mt-1">
+                </h1>
+                <p className="text-white/90 text-lg mt-1">
                   Твоё личное учебное пространство
-                </CardDescription>
+                </p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-6">
+          </div>
+          <div className="p-6 space-y-6">
             {/* Student Info */}
-            <div className={`rounded-lg p-4 ${colors.bg} ${colors.border} border-2`}>
+            <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <GraduationCap className={`h-5 w-5 ${colors.accent}`} />
-                  <span className="font-semibold text-gray-700 dark:text-gray-300">Твой учитель:</span>
-                  <span className={`font-bold text-lg ${colors.accent}`}>
+                  <GraduationCap className="h-5 w-5 text-blue-300" />
+                  <span className="font-semibold text-white/90">Твой учитель:</span>
+                  <span className="font-bold text-lg text-white">
                     {teacherName}
                   </span>
                 </div>
                 
                 {activeSubjects.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
-                    <BookOpen className={`h-5 w-5 ${colors.accent}`} />
-                    <span className="font-semibold text-gray-700 dark:text-gray-300">Твои предметы:</span>
+                    <BookOpen className="h-5 w-5 text-blue-300" />
+                    <span className="font-semibold text-white/90">Твои предметы:</span>
                     {activeSubjects.map((subject) => (
                       <span
                         key={subject}
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        className={`px-3 py-1 rounded-full text-sm font-medium backdrop-blur-md border ${
                           subject === "English"
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                            : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                            ? "bg-green-500/30 text-green-100 border-green-400/30"
+                            : "bg-blue-500/30 text-blue-100 border-blue-400/30"
                         }`}
                       >
                         {subject}
@@ -563,7 +568,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Button
                 size="lg"
-                className={`w-full h-auto py-4 bg-gradient-to-r ${colors.gradient} hover:opacity-90 transition-all shadow-lg`}
+                className={`w-full h-auto py-4 bg-gradient-to-r ${colors.gradient} hover:opacity-90 transition-all shadow-lg border border-white/30 backdrop-blur-md`}
                 onClick={handleJoinClass}
                 disabled={isJoining}
               >
@@ -577,7 +582,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full h-auto py-4 border-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                className="w-full h-auto py-4 backdrop-blur-md bg-white/10 border border-white/30 hover:bg-white/20 text-white"
                 onClick={handleHomeworks}
               >
                 <BookOpen className="mr-2 h-5 w-5" />
@@ -587,8 +592,8 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 </div>
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </main>
   );
