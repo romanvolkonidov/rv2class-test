@@ -250,6 +250,20 @@ export default function CustomControlBar({
             console.log('✅ Set contentHint="detail" for ultra-sharp text');
           }
 
+          // CRITICAL: Apply additional constraints for maximum quality
+          try {
+            await videoTrack.applyConstraints({
+              width: { ideal: 3840, max: 3840 },
+              height: { ideal: 2160, max: 2160 },
+              frameRate: { ideal: 60, max: 60 },
+              // Advanced constraints for quality
+              aspectRatio: { ideal: 16/9 },
+            });
+            console.log('✅ Applied maximum quality constraints to video track');
+          } catch (constraintError) {
+            console.warn('⚠️ Could not apply all constraints (browser may have limits):', constraintError);
+          }
+
           const settings = videoTrack.getSettings();
           console.log(`✅ Captured screen at: ${settings.width}x${settings.height} @ ${settings.frameRate}fps`);
           console.log('📐 Full track settings:', settings);
@@ -268,18 +282,34 @@ export default function CustomControlBar({
           });
 
           try {
-            await localParticipant.publishTrack(videoTrack, {
+            // ULTRA settings - optimized for maximum quality like Microsoft Teams
+            const publishOptions: any = {
               name: 'screen_share',
               source: Track.Source.ScreenShare,
-              // These settings prevent quality pulsing/drops
-              simulcast: false,           // CRITICAL: No quality layers
-              videoCodec: 'vp9',          // Best quality codec
-              // CRITICAL: Force high bitrate, no adaptive reduction
+              // CRITICAL: No quality layers - prevents downscaling
+              simulcast: false,
+              // VP9 provides better quality at lower bitrates than VP8
+              videoCodec: 'vp9',
+              // CRITICAL: Force VERY HIGH bitrate for maximum quality
               videoEncoding: {
-                maxBitrate: 10_000_000,   // 10 Mbps constant
-                maxFramerate: 60,          // 60fps
+                maxBitrate: 15_000_000,   // 15 Mbps - Microsoft Teams level bitrate
+                maxFramerate: 60,         // 60fps for smooth scrolling
+                // CRITICAL: Set priority to 'high' for bandwidth allocation
+                priority: 'high',
               },
-            });
+              // Additional options to maximize quality
+              dtx: false,                 // Don't use discontinuous transmission
+              red: false,                 // Don't use redundancy (saves bandwidth for quality)
+              // Stream name for debugging
+              stream: 'ultra_quality_screenshare',
+            };
+            
+            // Add scalability mode to prevent quality layers (WebRTC standard)
+            if (publishOptions.videoEncoding) {
+              publishOptions.videoEncoding.scalabilityMode = 'L1T1'; // Single layer, no temporal scalability
+            }
+            
+            await localParticipant.publishTrack(videoTrack, publishOptions);
             console.log('✅ Screen share track successfully published!');
           } catch (publishError) {
             console.error('❌ Failed to publish screen share track:', publishError);
@@ -291,12 +321,14 @@ export default function CustomControlBar({
           console.log('✅ Screen share published with ULTRA settings:');
           console.log('   • Resolution:', `${settings.width}x${settings.height}`);
           console.log('   • Frame Rate:', `${settings.frameRate}fps`);
-          console.log('   • Bitrate: 10 Mbps (gaming-level quality)');
-          console.log('   • Codec: VP9 (superior compression)');
+          console.log('   • Bitrate: 15 Mbps (Microsoft Teams level quality)');
+          console.log('   • Codec: VP9 (superior compression & quality)');
           console.log('   • Content Hint: DETAIL (optimized for text)');
           console.log('   • Simulcast: DISABLED (no quality drops)');
           console.log('   • Adaptive: DISABLED (constant quality)');
-          
+          console.log('   • Priority: HIGH (maximum bandwidth allocation)');
+          console.log('   • Scalability: L1T1 (single layer, no degradation)');
+          console.log('   • Display Surface:', displaySurface);          
           // CRITICAL: Immediately update state after publishing
           setIsScreenSharing(true);
           setHasScreenShare(true);

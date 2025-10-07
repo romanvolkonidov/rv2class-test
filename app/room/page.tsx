@@ -494,9 +494,9 @@ function RoomPage() {
           autoGainControl: true,
         },
         publishDefaults: {
-          // Screen share optimized for text clarity - matches Zoom/Teams quality
+          // Screen share optimized for ULTRA quality - Microsoft Teams level
           screenShareEncoding: {
-            maxBitrate: 10_000_000, // 10 Mbps for ultra-sharp text (gaming-level quality)
+            maxBitrate: 15_000_000, // 15 Mbps for ultra-sharp text (Microsoft Teams level)
             maxFramerate: 60, // Up to 60fps for ultra-smooth screen sharing
           },
           // Prefer VP9 codec for better quality/compression ratio
