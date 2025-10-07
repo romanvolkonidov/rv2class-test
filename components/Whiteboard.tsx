@@ -1,22 +1,34 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Excalidraw, MainMenu, WelcomeScreen } from "@excalidraw/excalidraw";
+import { useState, useCallback, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useRoomContext, useDataChannel } from "@livekit/components-react";
+
+// Dynamically import Excalidraw to avoid SSR issues
+const Excalidraw = dynamic(
+  async () => (await import("@excalidraw/excalidraw")).Excalidraw,
+  { ssr: false }
+);
 
 export default function Whiteboard() {
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const room = useRoomContext();
   const [lastUpdateTime, setLastUpdateTime] = useState(0);
   const [isReceivingUpdate, setIsReceivingUpdate] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Ensure component is mounted on client-side
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Send Excalidraw state to other participants (throttled)
   const sendExcalidrawData = useCallback((elements: readonly any[], appState: any) => {
     if (!room?.localParticipant || isReceivingUpdate) return;
     
     const now = Date.now();
-    // Throttle updates to every 100ms
-    if (now - lastUpdateTime < 100) return;
+    // Throttle updates to every 50ms for smoother experience
+    if (now - lastUpdateTime < 50) return;
     
     try {
       const encoder = new TextEncoder();
@@ -66,6 +78,18 @@ export default function Whiteboard() {
     }
   }, [sendExcalidrawData, isReceivingUpdate]);
 
+  // Show loading state while mounting
+  if (!isMounted) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading whiteboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full">
       <Excalidraw
@@ -76,21 +100,7 @@ export default function Whiteboard() {
             viewBackgroundColor: "#ffffff",
           },
         }}
-      >
-        <MainMenu>
-          <MainMenu.DefaultItems.ClearCanvas />
-          <MainMenu.DefaultItems.SaveAsImage />
-          <MainMenu.DefaultItems.Export />
-          <MainMenu.DefaultItems.LoadScene />
-          <MainMenu.DefaultItems.SaveToActiveFile />
-          <MainMenu.DefaultItems.ChangeCanvasBackground />
-        </MainMenu>
-        <WelcomeScreen>
-          <WelcomeScreen.Hints.MenuHint />
-          <WelcomeScreen.Hints.ToolbarHint />
-          <WelcomeScreen.Hints.HelpHint />
-        </WelcomeScreen>
-      </Excalidraw>
+      />
     </div>
   );
 }
