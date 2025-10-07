@@ -27,25 +27,39 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
     
     // Only handle VIDEO tracks - RoomAudioRenderer handles all audio
     if (track.kind === Track.Kind.Video && videoEl) {
+      console.log('🎥 Attaching video track:', {
+        source: trackRef.source,
+        participant: participant.identity,
+        trackSid: track.sid,
+      });
+      
       track.attach(videoEl);
+      
+      // Force video to play - critical for screen share
+      videoEl.play().catch(err => {
+        console.warn('⚠️ Video autoplay failed:', err);
+      });
     }
 
     return () => {
       if (track.kind === Track.Kind.Video && videoEl) {
+        console.log('🔌 Detaching video track:', track.sid);
         track.detach(videoEl);
       }
     };
-  }, [trackRef?.publication?.track, isLocal]);
+  }, [trackRef?.publication?.track, isLocal, participant.identity, trackRef?.source]);
 
   const isSpeaking = participant.isSpeaking;
   const isCameraEnabled = participant.isCameraEnabled;
+  const isScreenShare = trackRef?.source === Track.Source.ScreenShare;
 
   return (
     <div
       className={cn(
         "relative rounded-xl overflow-hidden transition-all duration-200",
         "bg-black/20 backdrop-blur-md border",
-        isSpeaking ? "border-blue-400 ring-2 ring-blue-400/50" : "border-white/10"
+        isSpeaking ? "border-blue-400 ring-2 ring-blue-400/50" : "border-white/10",
+        isScreenShare && "bg-black" // Solid black background for screen share
       )}
     >
       {/* Video */}
@@ -55,16 +69,18 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
         playsInline
         muted={isLocal}
         className={cn(
-          "w-full h-full object-cover",
-          !isCameraEnabled && "hidden",
-          isLocal && "scale-x-[-1]"
+          "w-full h-full",
+          isScreenShare ? "object-contain" : "object-cover", // contain for screen share, cover for camera
+          !isCameraEnabled && !isScreenShare && "hidden",
+          isLocal && !isScreenShare && "scale-x-[-1]" // Don't mirror screen share
         )}
+        style={isScreenShare ? { backgroundColor: '#000' } : undefined}
       />
       
       {/* Audio is handled by RoomAudioRenderer - no manual audio elements needed */}
 
-      {/* Placeholder when camera is off */}
-      {!isCameraEnabled && (
+      {/* Placeholder when camera is off (but not for screen share) */}
+      {!isCameraEnabled && !isScreenShare && (
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
           <div className="text-center">
             <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mx-auto mb-2 border border-white/20">
@@ -76,12 +92,14 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
         </div>
       )}
 
-      {/* Name overlay - Glass effect */}
-      <div className="absolute bottom-2 left-2 px-3 py-1 rounded-lg bg-black/30 backdrop-blur-md border border-white/20">
-        <p className="text-sm font-medium text-white">
-          {participant.identity} {isLocal && "(You)"}
-        </p>
-      </div>
+      {/* Name overlay - Glass effect (hide for screen share to maximize space) */}
+      {!isScreenShare && (
+        <div className="absolute bottom-2 left-2 px-3 py-1 rounded-lg bg-black/30 backdrop-blur-md border border-white/20">
+          <p className="text-sm font-medium text-white">
+            {participant.identity} {isLocal && "(You)"}
+          </p>
+        </div>
+      )}
 
       {/* Microphone muted indicator */}
       {!participant.isMicrophoneEnabled && (

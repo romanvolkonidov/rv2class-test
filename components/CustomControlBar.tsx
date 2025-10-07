@@ -144,113 +144,30 @@ export default function CustomControlBar({
       await localParticipant.setScreenShareEnabled(false);
     } else {
       try {
-        // Show user-friendly reminder
-        const reminderDiv = document.createElement('div');
-        reminderDiv.style.cssText = `
-          position: fixed;
-          top: 20px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(0, 0, 0, 0.9);
-          color: white;
-          padding: 16px 24px;
-          border-radius: 12px;
-          z-index: 10000;
-          font-size: 14px;
-          font-weight: 500;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          backdrop-filter: blur(10px);
-        `;
-        reminderDiv.innerHTML = '🔊 <strong>Don\'t forget:</strong> Check "Share audio" or "Share tab audio" in the popup!';
-        document.body.appendChild(reminderDiv);
+        console.log('🖥️ Starting screen share with simplified approach...');
         
-        setTimeout(() => {
-          reminderDiv.style.transition = 'opacity 0.5s';
-          reminderDiv.style.opacity = '0';
-          setTimeout(() => reminderDiv.remove(), 500);
-        }, 8000);
-        
-        console.log('🖥️ Requesting ULTRA quality screen share (up to 4K @ 60fps with VP9)...');
-        
-        // STEP 1: Request maximum resolution from browser using native getDisplayMedia
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: {
-            width: { ideal: 3840, max: 3840 },      // 4K width
-            height: { ideal: 2160, max: 2160 },     // 4K height
-            frameRate: { ideal: 30, max: 60 },      // Up to 60fps
-            cursor: "always" as any,
-            displaySurface: "monitor" as any,
-          },
-          audio: {
-            echoCancellation: false,
-            noiseSuppression: false,
-            autoGainControl: false,
-            sampleRate: 48000,
-          } as any,
-          selfBrowserSurface: "exclude" as any,
-          surfaceSwitching: "include" as any,
-          systemAudio: "include" as any,
-        } as any);
-        
-        // STEP 2: Get the video track and set contentHint for text optimization
-        const videoTrack = stream.getVideoTracks()[0];
-        if (videoTrack && 'contentHint' in videoTrack) {
-          (videoTrack as any).contentHint = "detail"; // Optimize for text/detail
-        }
-        
-        // Log actual resolution obtained
-        const settings = videoTrack.getSettings();
-        console.log(`✅ Captured screen at: ${settings.width}x${settings.height} @ ${settings.frameRate}fps`);
-        
-        // STEP 3: Publish with LiveKit using maximum quality settings
-        // The room options specify VP9 codec and 10 Mbps bitrate
-        await localParticipant.publishTrack(videoTrack, {
-          name: 'screen',
-          source: Track.Source.ScreenShare,
-          // These are inherited from room publishDefaults
+        // Use absolute minimal constraints - let browser handle everything
+        // This is the most compatible approach across all browsers
+        await localParticipant.setScreenShareEnabled(true, {
+          audio: true,
+          // No resolution constraints - browser will use optimal settings
+          // No video presets - avoid any potential conflicts
         });
         
-        // Publish audio track if available
-        const audioTrack = stream.getAudioTracks()[0];
-        if (audioTrack) {
-          await localParticipant.publishTrack(audioTrack, {
-            name: 'screen-audio',
-            source: Track.Source.ScreenShareAudio,
-          });
-          console.log('✅ Screen audio published');
-        }
-        
-        console.log('✅ Screen share published with ULTRA settings:');
-        console.log(`   • Resolution: ${settings.width}x${settings.height}`);
-        console.log(`   • Frame Rate: ${settings.frameRate}fps`);
-        console.log('   • Bitrate: 10 Mbps (gaming-level quality)');
-        console.log('   • Codec: VP9 (superior compression)');
-        console.log('   • Content Hint: DETAIL (optimized for text)');
-        
-        // Handle stream ending (user stops sharing)
-        videoTrack.addEventListener('ended', async () => {
-          console.log('🛑 Screen share stopped by user');
-          await localParticipant.unpublishTrack(videoTrack);
-          if (audioTrack) {
-            await localParticipant.unpublishTrack(audioTrack);
-          }
-        });
+        console.log('✅ Screen share enabled successfully');
+        console.log('📊 Quality settings from room config will apply automatically');
         
       } catch (error) {
-        console.warn('⚠️ Ultra quality screen share failed, trying fallback:', error);
+        console.error('❌ Screen share failed:', error);
         
-        // Fallback: Use LiveKit's built-in method
+        // Absolute last resort: no options at all
         try {
-          await localParticipant.setScreenShareEnabled(true, {
-            audio: true,
-            selfBrowserSurface: "exclude",
-            surfaceSwitching: "include",
-            systemAudio: "include",
-          });
-          console.log('✅ Screen share enabled with standard LiveKit method');
-        } catch (fallbackError) {
-          console.warn('⚠️ Standard screen share failed:', fallbackError);
+          console.log('⚠️ Trying screen share with zero constraints...');
           await localParticipant.setScreenShareEnabled(true);
+          console.log('✅ Screen share enabled with zero constraints');
+        } catch (fallbackError) {
+          console.error('❌ All screen share attempts failed:', fallbackError);
+          alert('Screen sharing failed. Please try:\n1. Refresh the page\n2. Check browser permissions\n3. Try a different browser (Chrome works best)');
         }
       }
     }
