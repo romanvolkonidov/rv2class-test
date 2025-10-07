@@ -17,31 +17,22 @@ interface ParticipantViewProps {
 
 const ParticipantView = memo(function ParticipantView({ participant, trackRef, isLocal }: ParticipantViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     const videoEl = videoRef.current;
-    const audioEl = audioRef.current;
     
     if (!trackRef?.publication?.track) return;
 
     const track = trackRef.publication.track;
     
+    // Only handle VIDEO tracks - RoomAudioRenderer handles all audio
     if (track.kind === Track.Kind.Video && videoEl) {
       track.attach(videoEl);
-    } else if (track.kind === Track.Kind.Audio && audioEl && !isLocal) {
-      // CRITICAL: Only attach audio for remote participants to prevent echo
-      track.attach(audioEl);
-      // Ensure audio element is not muted for remote participants
-      audioEl.muted = false;
-      audioEl.volume = 1.0;
     }
 
     return () => {
       if (track.kind === Track.Kind.Video && videoEl) {
         track.detach(videoEl);
-      } else if (track.kind === Track.Kind.Audio && audioEl && !isLocal) {
-        track.detach(audioEl);
       }
     };
   }, [trackRef?.publication?.track, isLocal]);
@@ -70,8 +61,7 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
         )}
       />
       
-      {/* Audio */}
-      {!isLocal && <audio ref={audioRef} autoPlay />}
+      {/* Audio is handled by RoomAudioRenderer - no manual audio elements needed */}
 
       {/* Placeholder when camera is off */}
       {!isCameraEnabled && (

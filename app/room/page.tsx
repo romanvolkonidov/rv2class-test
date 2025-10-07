@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { LiveKitRoom, RoomAudioRenderer, useRoomContext, useDataChannel } from "@livekit/components-react";
+import { VideoPresets, VideoCodec } from "livekit-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Copy, Check, X } from "lucide-react";
@@ -54,6 +55,24 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     room.on('participantDisconnected', (participant) => {
       console.log('❌ Participant disconnected:', participant.identity);
       logParticipants();
+    });
+    
+    // Debug audio tracks
+    room.on('trackSubscribed', (track, publication, participant) => {
+      console.log('🎵 Track subscribed:', {
+        participant: participant.identity,
+        kind: track.kind,
+        source: publication.source,
+        muted: track.isMuted,
+      });
+    });
+    
+    room.on('trackUnsubscribed', (track, publication, participant) => {
+      console.log('🔇 Track unsubscribed:', {
+        participant: participant.identity,
+        kind: track.kind,
+        source: publication.source,
+      });
     });
 
     // Check if already connected
@@ -375,8 +394,8 @@ function RoomPage() {
 
   return (
     <LiveKitRoom
-      video={isTutor}
-      audio={isTutor}
+      video={true} // Enable video for everyone
+      audio={true} // Enable audio for everyone - critical for students to hear teacher
       token={token}
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
       className="h-full"
@@ -391,17 +410,18 @@ function RoomPage() {
           autoGainControl: true,
         },
         publishDefaults: {
+          // Screen share optimized for text clarity - matches Zoom/Teams quality
           screenShareEncoding: {
-            maxBitrate: 15_000_000, // 15 Mbps for Zoom/Teams quality - crystal clear text
+            maxBitrate: 10_000_000, // 10 Mbps for ultra-sharp text (gaming-level quality)
             maxFramerate: 30,
           },
+          // Prefer VP9 codec for better quality/compression ratio
+          videoCodec: 'vp9' as VideoCodec,
+          // Backup codec if VP9 not available
+          backupCodec: { codec: 'vp8' },
         },
         videoCaptureDefaults: {
-          resolution: {
-            width: 1280,
-            height: 720,
-            frameRate: 30,
-          },
+          resolution: VideoPresets.h720.resolution,
         },
       }}
     >
