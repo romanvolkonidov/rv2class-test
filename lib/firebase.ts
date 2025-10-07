@@ -1,6 +1,25 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, collection, getDocs, getDoc, query, where, addDoc, updateDoc, doc, serverTimestamp, deleteField } from "firebase/firestore";
+import { getFirestore, collection, getDocs, getDoc, query, where, addDoc, updateDoc, doc, serverTimestamp, deleteField, Timestamp } from "firebase/firestore";
+
+// Helper to convert Firebase Timestamps to plain objects
+const serializeTimestamp = (value: any): any => {
+  if (value instanceof Timestamp) {
+    return { seconds: value.seconds, nanoseconds: value.nanoseconds };
+  }
+  if (value && typeof value === 'object' && value.toDate && typeof value.toDate === 'function') {
+    return { seconds: Math.floor(value.toDate().getTime() / 1000), nanoseconds: 0 };
+  }
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, serializeTimestamp(v)])
+    );
+  }
+  if (Array.isArray(value)) {
+    return value.map(serializeTimestamp);
+  }
+  return value;
+};
 
 const firebaseConfig = {
   apiKey: "AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004",
@@ -161,7 +180,7 @@ export const fetchStudentHomework = async (studentId: string): Promise<HomeworkA
     const querySnapshot = await getDocs(q);
     
     const assignments = querySnapshot.docs.map(doc => {
-      const data = doc.data();
+      const data = serializeTimestamp(doc.data());
       return {
         id: doc.id,
         ...data
@@ -184,7 +203,7 @@ export const fetchHomeworkReports = async (studentId: string): Promise<HomeworkR
     
     const reports = querySnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...serializeTimestamp(doc.data())
     })) as HomeworkReport[];
     
     return reports;
@@ -201,7 +220,7 @@ export const fetchAllHomework = async (): Promise<HomeworkAssignment[]> => {
     const querySnapshot = await getDocs(assignmentsRef);
     
     const assignments = querySnapshot.docs.map(doc => {
-      const data = doc.data();
+      const data = serializeTimestamp(doc.data());
       return {
         id: doc.id,
         ...data

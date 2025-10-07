@@ -68,6 +68,103 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     };
   }, [room]);
 
+  // Connection state monitoring and automatic recovery
+  useEffect(() => {
+    if (!room) return;
+
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 3;
+
+    const handleConnectionStateChange = (state: string) => {
+      console.log('🔌 Connection state changed:', state);
+
+      if (state === 'reconnecting') {
+        console.log('🔄 Connection lost, attempting to reconnect...');
+        reconnectAttempts++;
+        
+        if (reconnectAttempts <= maxReconnectAttempts) {
+          // Show user-friendly message
+          const notification = document.createElement('div');
+          notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 165, 0, 0.95);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          `;
+          notification.textContent = `🔄 Переподключение... (попытка ${reconnectAttempts}/${maxReconnectAttempts})`;
+          document.body.appendChild(notification);
+          
+          setTimeout(() => notification.remove(), 5000);
+        }
+      } else if (state === 'connected') {
+        console.log('✅ Connection restored!');
+        reconnectAttempts = 0;
+        
+        // Show success message
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(34, 197, 94, 0.95);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 8px;
+          z-index: 10000;
+          font-size: 14px;
+          font-weight: 500;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        notification.textContent = '✅ Соединение восстановлено!';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => notification.remove(), 3000);
+      } else if (state === 'disconnected') {
+        console.log('❌ Connection failed');
+        
+        if (reconnectAttempts >= maxReconnectAttempts) {
+          // Show error message
+          const notification = document.createElement('div');
+          notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(239, 68, 68, 0.95);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          `;
+          notification.textContent = '❌ Не удалось восстановить соединение. Обновите страницу.';
+          document.body.appendChild(notification);
+        }
+      }
+    };
+
+    room.on('connectionStateChanged', handleConnectionStateChange);
+    room.on('reconnecting', () => handleConnectionStateChange('reconnecting'));
+    room.on('reconnected', () => handleConnectionStateChange('connected'));
+
+    return () => {
+      room.off('connectionStateChanged', handleConnectionStateChange);
+      room.off('reconnecting', () => handleConnectionStateChange('reconnecting'));
+      room.off('reconnected', () => handleConnectionStateChange('connected'));
+    };
+  }, [room]);
+
   // Monitor for screen share
   useEffect(() => {
     const checkScreenShare = () => {
@@ -288,9 +385,14 @@ function RoomPage() {
         autoSubscribe: true,
       }}
       options={{
+        audioCaptureDefaults: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
         publishDefaults: {
           screenShareEncoding: {
-            maxBitrate: 3_000_000, // 3 Mbps for sharp screen share
+            maxBitrate: 15_000_000, // 15 Mbps for Zoom/Teams quality - crystal clear text
             maxFramerate: 30,
           },
         },

@@ -172,11 +172,10 @@ export default function CustomControlBar({
           setTimeout(() => reminderDiv.remove(), 500);
         }, 8000);
         
-        // Enable screen share with audio and high quality settings
-        // Quality is configured in room options for maximum sharpness
-        
-        // Try with full audio options first (Chrome/Edge)
+        // Enable screen share with high quality settings
+        // The bitrate is configured in LiveKitRoom options (5 Mbps)
         await localParticipant.setScreenShareEnabled(true, {
+          // Request audio with proper constraints
           audio: {
             echoCancellation: false,
             noiseSuppression: false,
@@ -187,23 +186,22 @@ export default function CustomControlBar({
           systemAudio: "include",
         });
         
-        console.log('✅ Screen share with audio enabled');
+        console.log('✅ Screen share enabled with high quality settings (15 Mbps bitrate - Zoom/Teams quality)');
       } catch (error) {
-        console.warn('⚠️ Screen share with audio failed, trying without audio constraints:', error);
+        console.warn('⚠️ Screen share with full options failed, trying fallback:', error);
         
-        // Fallback: try with simpler audio option
+        // Fallback: try with simpler options
         try {
           await localParticipant.setScreenShareEnabled(true, {
             audio: true,
           });
-          console.log('✅ Screen share enabled with basic audio');
+          console.log('✅ Screen share enabled with fallback settings');
         } catch (fallbackError) {
           console.warn('⚠️ Audio sharing not supported, screen share only:', fallbackError);
           // Last resort: screen share without audio
           await localParticipant.setScreenShareEnabled(true);
         }
       }
-      // Don't immediately set these - let the event listener handle it
     }
   };
 

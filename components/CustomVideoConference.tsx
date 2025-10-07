@@ -30,7 +30,11 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
     if (track.kind === Track.Kind.Video && videoEl) {
       track.attach(videoEl);
     } else if (track.kind === Track.Kind.Audio && audioEl && !isLocal) {
+      // CRITICAL: Only attach audio for remote participants to prevent echo
       track.attach(audioEl);
+      // Ensure audio element is not muted for remote participants
+      audioEl.muted = false;
+      audioEl.volume = 1.0;
     }
 
     return () => {

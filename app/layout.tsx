@@ -9,13 +9,13 @@ export const metadata: Metadata = {
   title: "RV2Class - Video Tutoring Platform",
   description: "Professional English tutoring with real-time video, screen sharing, and collaborative whiteboard",
   manifest: "/manifest.json",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
   themeColor: "#3b82f6",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "RV2Class",
-  },
 };
 
 export default function RootLayout({

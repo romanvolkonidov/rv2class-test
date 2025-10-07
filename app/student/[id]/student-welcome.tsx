@@ -124,7 +124,15 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const requestMicPermission = async () => {
     try {
       setMicPermission("checking");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Request with proper echo cancellation and audio processing
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+        }
+      });
       setMicStream(stream);
       setMicPermission("granted");
     } catch (error) {
@@ -146,7 +154,13 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const requestVideoPermission = async () => {
     try {
       setVideoPermission("checking");
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 },
+        }
+      });
       setVideoStream(stream);
       setVideoPermission("granted");
     } catch (error) {
@@ -214,6 +228,24 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
 
     setIsJoining(true);
     setIsWaitingForTeacher(true);
+    
+    // CRITICAL: Stop all preview streams before joining to prevent echo
+    // The room will request fresh streams with proper settings
+    console.log("🛑 Stopping preview streams to prevent echo...");
+    if (micStream) {
+      micStream.getTracks().forEach(track => {
+        track.stop();
+        console.log("🎤 Stopped microphone preview track");
+      });
+      setMicStream(null);
+    }
+    if (videoStream) {
+      videoStream.getTracks().forEach(track => {
+        track.stop();
+        console.log("📹 Stopped camera preview track");
+      });
+      setVideoStream(null);
+    }
     
     // Get the room name based on the teacher
     const roomName = teacherName.toLowerCase() === "roman" ? "roman-room" : "violet-room";
