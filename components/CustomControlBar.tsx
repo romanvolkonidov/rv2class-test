@@ -219,11 +219,11 @@ export default function CustomControlBar({
             
             {!showWhiteboard && onToggleAnnotations && (
               <>
-                {console.log('🔴 Rendering annotate button with:', { hasScreenShare, showAnnotations, success: hasScreenShare && !showAnnotations })}
+                {console.log('🔴 Rendering annotate button with:', { hasScreenShare, showAnnotations, success: hasScreenShare })}
                 <GlassButton
                   onClick={onToggleAnnotations}
                   active={showAnnotations}
-                  success={hasScreenShare && !showAnnotations}
+                  success={hasScreenShare}
                   title={showAnnotations ? "Hide Annotations" : "Annotate Screen"}
                 >
                   <Pencil className="w-5 h-5" />
