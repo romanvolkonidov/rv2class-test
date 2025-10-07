@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle, XCircle } from "lucide-react";
+import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle, XCircle, Download } from "lucide-react";
 import { useState, useEffect } from "react";
+import WaitingRoom from "@/components/WaitingRoom";
 
 interface StudentData {
   id: string;
@@ -25,6 +26,10 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const [shouldPulseMic, setShouldPulseMic] = useState(false);
   const [shouldPulseCamera, setShouldPulseCamera] = useState(false);
   const [hasShownWelcomePopup, setHasShownWelcomePopup] = useState(false);
+  const [isWaitingForTeacher, setIsWaitingForTeacher] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallButton, setShowInstallButton] = useState(false);
+  const [isSafari, setIsSafari] = useState(false);
 
   const teacherName = student.teacher || "Roman";
   const teacherPath = `/${teacherName.toLowerCase()}`;
@@ -35,12 +40,10 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     if (!hasSeenPopup) {
       setTimeout(() => {
         alert("🎓 Добро пожаловать на урок!\n\n" +
-              "Для подключения к уроку вам нужно разрешить доступ:\n" +
+              "Для подключения к уроку нужно разрешить доступ:\n" +
               "📹 К камере\n" +
               "🎤 К микрофону\n\n" +
-              "Когда браузер спросит разрешение - нажмите 'Разрешить'.\n\n" +
-              "Если случайно нажали 'Блокировать' - не волнуйтесь!\n" +
-              "Нажмите на оранжевую кнопку для инструкций по включению.");
+              "Когда браузер спросит разрешение - нажмите 'Разрешить'.");
         sessionStorage.setItem(`welcome-popup-${student.id}`, 'true');
         setHasShownWelcomePopup(true);
       }, 500);
@@ -52,6 +55,37 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   // Check initial permissions
   useEffect(() => {
     checkPermissions();
+  }, []);
+
+  // Detect Safari and listen for PWA install prompt
+  useEffect(() => {
+    // Detect Safari
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isSafariBrowser = /safari/.test(userAgent) && !/chrome|chromium|edg/.test(userAgent);
+    setIsSafari(isSafariBrowser);
+
+    // Listen for install prompt (Chrome, Edge, Firefox)
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallButton(false);
+    } else {
+      // Show button for Safari or if install prompt is available
+      if (isSafariBrowser) {
+        setShowInstallButton(true);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
   // Cleanup streams on unmount
@@ -179,6 +213,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     }
 
     setIsJoining(true);
+    setIsWaitingForTeacher(true);
     
     // Get the room name based on the teacher
     const roomName = teacherName.toLowerCase() === "roman" ? "roman-room" : "violet-room";
@@ -197,18 +232,22 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       const data = await response.json();
 
       if (response.ok) {
-        // Wait for teacher approval by polling or redirect directly
-        // For now, redirect to the room directly (bypass approval)
-        const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&isTutor=false`;
-        router.push(roomUrl);
+        // Show waiting room for a moment before redirecting
+        // In production, you would poll for teacher approval here
+        setTimeout(() => {
+          const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&isTutor=false`;
+          router.push(roomUrl);
+        }, 2000);
       } else {
-        alert("Failed to join class. Please try again.");
+        alert("Не удалось подключиться к уроку. Попробуйте снова.");
         setIsJoining(false);
+        setIsWaitingForTeacher(false);
       }
     } catch (error) {
       console.error("Error joining class:", error);
-      alert("Failed to join class. Please try again.");
+      alert("Не удалось подключиться к уроку. Попробуйте снова.");
       setIsJoining(false);
+      setIsWaitingForTeacher(false);
     }
   };
 
@@ -217,11 +256,56 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     router.push(`/student/${student.id}/homework`);
   };
 
+  const handleInstallApp = async () => {
+    // For Safari, always show instructions
+    if (isSafari) {
+      const userAgent = navigator.userAgent.toLowerCase();
+      let instructions = "";
+      
+      if (/iphone|ipad|ipod/.test(userAgent)) {
+        instructions = "1. Нажмите кнопку 'Поделиться' (Share) ⬆️\n" +
+                      "2. Прокрутите вниз и выберите 'На экран «Домой»'\n" +
+                      "3. Нажмите 'Добавить'";
+      } else {
+        // macOS Safari
+        instructions = "1. Нажмите 'Файл' в меню\n" +
+                      "2. Выберите 'Добавить в Dock'\n" +
+                      "Или добавьте страницу в закладки для быстрого доступа";
+      }
+      
+      alert("🏠 Добавить app на главный экран\n\n" + instructions);
+      return;
+    }
+
+    // For Chrome, Edge, Firefox - trigger native install
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+        setShowInstallButton(false);
+      }
+      
+      setDeferredPrompt(null);
+    }
+  };
+
   const activeSubjects = student.subjects 
     ? Object.entries(student.subjects)
         .filter(([_, isActive]) => isActive)
         .map(([subject]) => subject)
     : [];
+
+  // Show waiting room if waiting for teacher
+  if (isWaitingForTeacher) {
+    return (
+      <WaitingRoom 
+        studentName={student.name}
+        teacherName={teacherName}
+      />
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col items-center justify-center p-4">
@@ -237,7 +321,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 </span>
               </div>
               
-              <div className="flex gap-3">
+              <div className="flex gap-3 items-center flex-wrap">
                 {/* Microphone Toggle */}
                 <Button
                   size="sm"
@@ -329,6 +413,23 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                     </>
                   )}
                 </Button>
+                
+                {/* PWA Install Button - shows on Safari or when install prompt available */}
+                {showInstallButton && (
+                  <Button
+                    size="sm"
+                    onClick={handleInstallApp}
+                    variant="outline"
+                    className="flex items-center gap-2 border-2 border-blue-300 hover:bg-blue-50 dark:border-blue-700 dark:hover:bg-blue-900/20"
+                    title={isSafari ? "Инструкции по добавлению на главный экран" : "Установить app"}
+                  >
+                    <Download className="h-4 w-4" />
+                    <span className="font-medium hidden sm:inline">
+                      {isSafari ? "Добавить app" : "Установить app"}
+                    </span>
+                    <span className="font-medium sm:hidden">🏠</span>
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -384,14 +485,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               </div>
             </div>
 
-            {/* Motivational Message */}
-            <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-              <Sparkles className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                Готов узнать что-то удивительное сегодня? Твой учитель <strong>{teacherName}</strong> с нетерпением ждёт встречи с тобой на уроке!
-              </p>
-            </div>
-
             {/* Action Buttons */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Button
@@ -419,20 +512,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                   <span className="text-xs opacity-70">Посмотреть задания</span>
                 </div>
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Info Card */}
-        <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-2">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                📌 Добавьте эту страницу в закладки для быстрого доступа к урокам
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-500">
-                ID ученика: <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{student.id}</code>
-              </p>
             </div>
           </CardContent>
         </Card>
