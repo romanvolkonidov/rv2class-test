@@ -27,13 +27,29 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
     
     // Only handle VIDEO tracks - RoomAudioRenderer handles all audio
     if (track.kind === Track.Kind.Video && videoEl) {
+      const isScreenShare = trackRef.source === Track.Source.ScreenShare;
+      
       console.log('🎥 Attaching video track:', {
         source: trackRef.source,
         participant: participant.identity,
         trackSid: track.sid,
+        isScreenShare,
       });
       
       track.attach(videoEl);
+      
+      // For screen share, log the video element properties after attachment
+      if (isScreenShare) {
+        setTimeout(() => {
+          console.log('📺 Screen share video element stats:', {
+            videoWidth: videoEl.videoWidth,
+            videoHeight: videoEl.videoHeight,
+            clientWidth: videoEl.clientWidth,
+            clientHeight: videoEl.clientHeight,
+            aspectRatio: (videoEl.videoWidth / videoEl.videoHeight).toFixed(2),
+          });
+        }, 500);
+      }
       
       // Force video to play - critical for screen share
       videoEl.play().catch(err => {
@@ -56,10 +72,11 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
   return (
     <div
       className={cn(
-        "relative rounded-xl overflow-hidden transition-all duration-200",
-        "bg-black/20 backdrop-blur-md border",
-        isSpeaking ? "border-blue-400 ring-2 ring-blue-400/50" : "border-white/10",
-        isScreenShare && "bg-black" // Solid black background for screen share
+        "relative transition-all duration-200 w-full h-full",
+        // NO rounded corners or borders for screen share - shows full content
+        isScreenShare ? "overflow-visible bg-black flex items-center justify-center" : "overflow-hidden bg-black/20 backdrop-blur-md rounded-xl",
+        !isScreenShare && "border",
+        !isScreenShare && (isSpeaking ? "border-blue-400 ring-2 ring-blue-400/50" : "border-white/10")
       )}
     >
       {/* Video */}
@@ -69,12 +86,24 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
         playsInline
         muted={isLocal}
         className={cn(
-          "w-full h-full",
           isScreenShare ? "object-contain" : "object-cover", // contain for screen share, cover for camera
           !isCameraEnabled && !isScreenShare && "hidden",
           isLocal && !isScreenShare && "scale-x-[-1]" // Don't mirror screen share
         )}
-        style={isScreenShare ? { backgroundColor: '#000' } : undefined}
+        style={isScreenShare ? { 
+          backgroundColor: '#000',
+          // CRITICAL: These ensure the ENTIRE shared window is visible
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',           // Fit entire content, no cropping
+          objectPosition: 'center',        // Center the content
+          display: 'block',
+          maxWidth: '100%',
+          maxHeight: '100%',
+        } : {
+          width: '100%',
+          height: '100%',
+        }}
       />
       
       {/* Audio is handled by RoomAudioRenderer - no manual audio elements needed */}
@@ -142,29 +171,75 @@ export default function CustomVideoConference() {
   );
 
   return (
-    <div className="w-full h-full flex bg-transparent p-4 gap-4">
-      {/* Main content area */}
-      <div className={cn(
-        "flex-1 flex",
-        screenShareTrack ? "flex-col" : "flex-col"
-      )}>
-        {/* Screen share view (if active) */}
-        {screenShareTrack ? (
-          <div className="flex-1">
-            <ParticipantView
-              participant={screenShareTrack.participant}
-              trackRef={screenShareTrack}
-            />
+    <div className="w-full h-full relative bg-transparent">
+      {/* Screen share view (if active) - FULL SCREEN */}
+      {screenShareTrack ? (
+        <>
+          {/* Full screen share - uses entire viewport, control bar auto-hides */}
+          <div 
+            className="absolute inset-0 bg-black flex items-center justify-center"
+          >
+            <div className="w-full h-full">
+              <ParticipantView
+                participant={screenShareTrack.participant}
+                trackRef={screenShareTrack}
+              />
+            </div>
           </div>
-        ) : (
-          /* Participants grid when no screen share */
+
+          {/* Floating draggable thumbnails at top */}
+          <div className="absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 z-10 flex gap-2 md:gap-3 pointer-events-none">
+            <div className="flex gap-2 md:gap-3 pointer-events-auto overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2">
+              {/* Local participant thumbnail */}
+              {localParticipant && (
+                <div 
+                  className="w-32 h-24 md:w-48 md:h-36 flex-shrink-0 cursor-move hover:scale-105 transition-transform touch-manipulation snap-start" 
+                  draggable
+                >
+                  <ParticipantView
+                    key={localParticipant.identity}
+                    participant={localParticipant}
+                    trackRef={tracks.find(
+                      (t) => t.participant === localParticipant && t.source === Track.Source.Camera
+                    )}
+                    isLocal
+                  />
+                </div>
+              )}
+
+              {/* Remote participants thumbnails */}
+              {remoteParticipants.map((participant) => {
+                const trackRef = tracks.find(
+                  (t) => t.participant === participant && t.source === Track.Source.Camera
+                );
+                return (
+                  <div 
+                    key={participant.identity} 
+                    className="w-32 h-24 md:w-48 md:h-36 flex-shrink-0 cursor-move hover:scale-105 transition-transform touch-manipulation snap-start" 
+                    draggable
+                  >
+                    <ParticipantView
+                      participant={participant}
+                      trackRef={trackRef}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      ) : (
+        /* Participants grid when no screen share */
+        <div className="w-full h-full p-2 md:p-4">
           <div
             className={cn(
-              "grid gap-4 flex-1",
-              remoteParticipants.length === 0 && "grid-cols-1",
-              remoteParticipants.length === 1 && "grid-cols-2",
-              remoteParticipants.length === 2 && "grid-cols-3",
-              remoteParticipants.length >= 3 && "grid-cols-4"
+              "grid gap-2 md:gap-4 h-full",
+              // Mobile-first responsive grid
+              "grid-cols-1",  // 1 column on mobile
+              remoteParticipants.length === 0 && "md:grid-cols-1",
+              remoteParticipants.length === 1 && "sm:grid-cols-2",
+              remoteParticipants.length === 2 && "sm:grid-cols-2 lg:grid-cols-3",
+              remoteParticipants.length >= 3 && "sm:grid-cols-2 lg:grid-cols-4"
             )}
           >
             {/* Local participant */}
@@ -193,42 +268,6 @@ export default function CustomVideoConference() {
               );
             })}
           </div>
-        )}
-      </div>
-
-      {/* Sidebar for participants when screen sharing */}
-      {screenShareTrack && (
-        <div className="w-80 flex flex-col gap-3 overflow-y-auto">
-          <div className="text-sm font-medium text-white/70 px-2">Participants</div>
-          
-          {/* Local participant */}
-          {localParticipant && (
-            <div className="h-56 flex-shrink-0">
-              <ParticipantView
-                key={localParticipant.identity}
-                participant={localParticipant}
-                trackRef={tracks.find(
-                  (t) => t.participant === localParticipant && t.source === Track.Source.Camera
-                )}
-                isLocal
-              />
-            </div>
-          )}
-
-          {/* Remote participants */}
-          {remoteParticipants.map((participant) => {
-            const trackRef = tracks.find(
-              (t) => t.participant === participant && t.source === Track.Source.Camera
-            );
-            return (
-              <div key={participant.identity} className="h-56 flex-shrink-0">
-                <ParticipantView
-                  participant={participant}
-                  trackRef={trackRef}
-                />
-              </div>
-            );
-          })}
         </div>
       )}
     </div>

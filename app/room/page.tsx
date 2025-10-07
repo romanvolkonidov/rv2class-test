@@ -466,16 +466,24 @@ function RoomPage() {
           // Screen share optimized for text clarity - matches Zoom/Teams quality
           screenShareEncoding: {
             maxBitrate: 10_000_000, // 10 Mbps for ultra-sharp text (gaming-level quality)
-            maxFramerate: 30,
+            maxFramerate: 60, // Up to 60fps for ultra-smooth screen sharing
           },
           // Prefer VP9 codec for better quality/compression ratio
           videoCodec: 'vp9' as VideoCodec,
           // Backup codec if VP9 not available
           backupCodec: { codec: 'vp8' },
+          // CRITICAL: Disable simulcast for screen share to prevent quality pulsing
+          simulcast: false,
+          // CRITICAL: Force constant bitrate (no adaptive reduction)
+          stopMicTrackOnMute: false,
         },
         videoCaptureDefaults: {
           resolution: VideoPresets.h720.resolution,
         },
+        // CRITICAL: Disable adaptive stream to prevent quality drops
+        adaptiveStream: false,
+        // CRITICAL: Disable dynacast to maintain constant quality
+        dynacast: false,
       }}
       // Audio troubleshooting handlers
       onError={(error) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
 import { Track, VideoPresets } from "livekit-client";
 import { Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, PhoneOff, Pencil, Square } from "lucide-react";
@@ -31,6 +31,8 @@ export default function CustomControlBar({
   const router = useRouter();
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [hasScreenShare, setHasScreenShare] = useState(false);
+  const [isControlBarVisible, setIsControlBarVisible] = useState(true);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sync with actual participant state
   const isMuted = localParticipant ? !localParticipant.isMicrophoneEnabled : true;
@@ -121,6 +123,58 @@ export default function CustomControlBar({
     });
   }, [hasScreenShare, showAnnotations]);
 
+  // Auto-hide control bar after inactivity
+  useEffect(() => {
+    const showControlBar = () => {
+      setIsControlBarVisible(true);
+      
+      // Clear existing timeout
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+      
+      // Hide after 3 seconds of inactivity
+      hideTimeoutRef.current = setTimeout(() => {
+        setIsControlBarVisible(false);
+      }, 3000);
+    };
+
+    // Show control bar on mouse move
+    const handleMouseMove = (e: MouseEvent) => {
+      // Only show if mouse is in bottom 150px of screen
+      const windowHeight = window.innerHeight;
+      if (e.clientY > windowHeight - 150) {
+        showControlBar();
+      }
+    };
+
+    // Show control bar on any tap/click
+    const handleClick = () => {
+      showControlBar();
+    };
+
+    // Show control bar on touch (mobile)
+    const handleTouchStart = () => {
+      showControlBar();
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('click', handleClick);
+    window.addEventListener('touchstart', handleTouchStart);
+
+    // Initial show
+    showControlBar();
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('click', handleClick);
+      window.removeEventListener('touchstart', handleTouchStart);
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Removed duplicate useEffect for isScreenSharing - now handled above
 
   const toggleMicrophone = async () => {
@@ -143,31 +197,160 @@ export default function CustomControlBar({
     if (isScreenSharing) {
       await localParticipant.setScreenShareEnabled(false);
     } else {
+      // Show helpful guidance before sharing
+      const userConfirmed = confirm(`📢 IMPORTANT: Screen Sharing Guide
+
+QUALITY (Select in order of preference):
+✅ "Entire Screen" - BEST quality + can share system audio
+✅ "Window" - GOOD quality (⚠️ audio not available)
+❌ "Chrome Tab" - POOR quality (blurry)
+
+🔊 AUDIO SHARING:
+• "Entire Screen": Check "Share system audio" ✅
+• "Window": Audio NOT supported by browsers ❌
+• "Chrome Tab": Check "Share tab audio" (tab audio only) ⚠️
+
+💡 RECOMMENDATION:
+If you need audio, share "Entire Screen" and check "Share system audio"
+
+Click OK to continue.`);
+      
+      if (!userConfirmed) {
+        console.log('❌ User cancelled screen share');
+        return;
+      }
+      
+      console.log('📢 User confirmed screen share guidance');
+      
       try {
-        console.log('🖥️ Starting screen share with simplified approach...');
+        console.log('🖥️ Requesting ULTRA quality screen share (up to 4K @ 60fps with VP9)...');
         
-        // Use absolute minimal constraints - let browser handle everything
-        // This is the most compatible approach across all browsers
-        await localParticipant.setScreenShareEnabled(true, {
-          audio: true,
-          // No resolution constraints - browser will use optimal settings
-          // No video presets - avoid any potential conflicts
+        // Manual high-quality capture with explicit constraints
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            width: { ideal: 3840, max: 3840 },      // Request 4K
+            height: { ideal: 2160, max: 2160 },     // Request 4K height
+            frameRate: { ideal: 30, max: 60 },      // Up to 60fps
+            // Important: request the full resolution without any restrictions
+            aspectRatio: { ideal: 16/9 },           // Prefer widescreen but allow any
+          },
+          audio: true, // Capture system audio if available
+          // Prefer capturing the entire content
+          preferCurrentTab: false,
+        } as any);
+
+        // Get the video track
+        const videoTrack = stream.getVideoTracks()[0];
+        const audioTrack = stream.getAudioTracks()[0];
+
+        if (videoTrack) {
+          // CRITICAL: Set contentHint to "detail" for text sharpness
+          if ('contentHint' in videoTrack) {
+            (videoTrack as any).contentHint = 'detail';
+            console.log('✅ Set contentHint="detail" for ultra-sharp text');
+          }
+
+          const settings = videoTrack.getSettings();
+          console.log(`✅ Captured screen at: ${settings.width}x${settings.height} @ ${settings.frameRate}fps`);
+          console.log('📐 Full track settings:', settings);
+          console.log('📺 Track constraints:', videoTrack.getConstraints());
+
+          // Detect if user selected a Chrome Tab (low quality)
+          const isLowQuality = settings.height && settings.height < 900;
+          const displaySurface = (settings as any).displaySurface; // 'monitor', 'window', or 'browser'
+          
+          if (displaySurface === 'browser' || isLowQuality) {
+            console.warn('⚠️ LOW QUALITY TAB SHARING DETECTED!');
+            
+            // Show warning to user
+            const shouldContinue = confirm(`⚠️ WARNING: Low Quality Detected!
+
+You selected a "Chrome Tab" which captures at low resolution (${settings.width}x${settings.height}).
+
+This will appear BLURRY to students!
+
+Recommended Actions:
+✅ Click "Stop Sharing" and reshare selecting:
+   • "Entire Screen" - Best quality
+   • "Window" - Good quality
+
+❌ Continue with blurry tab share (not recommended)
+
+Click OK to continue anyway, or Cancel to stop and reshare.`);
+
+            if (!shouldContinue) {
+              // Stop the stream
+              stream.getTracks().forEach(track => track.stop());
+              console.log('🛑 User cancelled low-quality share');
+              return;
+            } else {
+              console.log('⚠️ User chose to continue with low quality');
+            }
+          }
+
+          // Publish the screen share track manually with LiveKit
+          await localParticipant.publishTrack(videoTrack, {
+            name: 'screen_share',
+            source: Track.Source.ScreenShare,
+            // These settings prevent quality pulsing/drops
+            simulcast: false,           // CRITICAL: No quality layers
+            videoCodec: 'vp9',          // Best quality codec
+            // CRITICAL: Force high bitrate, no adaptive reduction
+            videoEncoding: {
+              maxBitrate: 10_000_000,   // 10 Mbps constant
+              maxFramerate: 60,          // 60fps
+            },
+          });
+
+          console.log('✅ Screen share published with ULTRA settings:');
+          console.log('   • Resolution:', `${settings.width}x${settings.height}`);
+          console.log('   • Frame Rate:', `${settings.frameRate}fps`);
+          console.log('   • Bitrate: 10 Mbps (gaming-level quality)');
+          console.log('   • Codec: VP9 (superior compression)');
+          console.log('   • Content Hint: DETAIL (optimized for text)');
+          console.log('   • Simulcast: DISABLED (no quality drops)');
+          console.log('   • Adaptive: DISABLED (constant quality)');
+        }
+
+        // Publish screen audio if available
+        if (audioTrack) {
+          await localParticipant.publishTrack(audioTrack, {
+            name: 'screen_share_audio',
+            source: Track.Source.ScreenShareAudio,
+          });
+          console.log('✅ Screen audio published');
+          console.log('🔊 System audio is being shared!');
+        } else {
+          console.log('⚠️ No audio track captured');
+          console.log('💡 To share audio:');
+          console.log('   1. Make sure you checked "Share audio" in the browser picker');
+          console.log('   2. Use Chrome browser (best audio support)');
+          console.log('   3. Share a Chrome Tab (has "Share tab audio" option)');
+        }
+
+        // Handle track ending (user stops sharing via browser UI)
+        videoTrack.addEventListener('ended', () => {
+          console.log('🛑 Screen share stopped by user');
+          localParticipant.setScreenShareEnabled(false);
         });
-        
-        console.log('✅ Screen share enabled successfully');
-        console.log('📊 Quality settings from room config will apply automatically');
         
       } catch (error) {
         console.error('❌ Screen share failed:', error);
         
-        // Absolute last resort: no options at all
+        // Fallback to simplified approach
         try {
-          console.log('⚠️ Trying screen share with zero constraints...');
-          await localParticipant.setScreenShareEnabled(true);
-          console.log('✅ Screen share enabled with zero constraints');
+          console.log('⚠️ Falling back to simplified screen share...');
+          await localParticipant.setScreenShareEnabled(true, { audio: true });
+          console.log('✅ Screen share enabled with fallback method');
         } catch (fallbackError) {
           console.error('❌ All screen share attempts failed:', fallbackError);
-          alert('Screen sharing failed. Please try:\n1. Refresh the page\n2. Check browser permissions\n3. Try a different browser (Chrome works best)');
+          alert(`Screen sharing failed. Please try:
+1. Refresh the page
+2. Check browser permissions
+3. Try a different browser (Chrome works best)
+
+💡 TIP: When sharing, select "Entire Screen" or "Window" 
+instead of "Chrome Tab" for best quality!`);
         }
       }
     }
@@ -200,7 +383,11 @@ export default function CustomControlBar({
         "group relative p-4 rounded-xl transition-all duration-200",
         "bg-white/10 backdrop-blur-md border border-white/20",
         "hover:bg-white/20 hover:border-white/30 hover:-translate-y-0.5 hover:scale-110",
-        "active:translate-y-0",
+        "active:translate-y-0 active:scale-95",  // Better touch feedback
+        // Larger touch target for mobile
+        "min-w-[48px] min-h-[48px] flex items-center justify-center",
+        // Touch-friendly spacing
+        "touch-manipulation select-none",
         danger && "bg-red-500/20 border-red-400/30 hover:bg-red-500/30",
         success && "bg-green-500/50 border-green-400/60 hover:bg-green-500/60 shadow-lg shadow-green-500/30",
         active && !success && "bg-white/25 border-white/40"
@@ -213,8 +400,22 @@ export default function CustomControlBar({
   );
 
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
-      <div className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl">
+    <div 
+      className={cn(
+        "fixed bottom-4 left-1/2 -translate-x-1/2 z-20 transition-all duration-300",
+        // Mobile: full width with padding, Desktop: auto width
+        "w-full max-w-[95vw] md:max-w-none md:w-auto px-2 md:px-0",
+        isControlBarVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16 pointer-events-none"
+      )}
+    >
+      <div className={cn(
+        "flex items-center gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4",
+        "rounded-2xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl",
+        // Make it scrollable on very small screens
+        "overflow-x-auto overflow-y-hidden scrollbar-hide",
+        // Smooth scrolling on mobile
+        "snap-x snap-mandatory"
+      )}>
         {/* Basic controls - always visible */}
         <GlassButton
           onClick={toggleMicrophone}

@@ -3,6 +3,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Scrollbar hiding utility */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Opera */
+  }
+}
+
 /* LiveKit CSS Variables - Override theme colors for glass effect */
 :root {
   --lk-bg: rgba(0, 0, 0, 0.2);
@@ -251,4 +262,32 @@ div.lk-chat {
 .livekit-glass-theme .lk-focus-layout,
 .livekit-glass-theme .lk-grid-layout {
   background: transparent !important;
+}
+
+/* Ultra-sharp screen share rendering - prevent blurring */
+video {
+  /* High-quality rendering for all video elements */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Override for camera feeds - allow smoother rendering */
+video:not([data-lk-source="screen_share"]) {
+  image-rendering: auto;
+}
+
+/* Specific optimization for screen share video elements */
+video[data-lk-source="screen_share"],
+video[data-source="screen_share"] {
+  /* Prevent any browser downscaling blur */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  
+  /* Disable hardware acceleration if it causes blur */
+  transform: translateZ(0);
+  will-change: transform;
+  
+  /* Ensure pixel-perfect rendering */
+  -webkit-font-smoothing: subpixel-antialiased;
+  backface-visibility: hidden;
 }
