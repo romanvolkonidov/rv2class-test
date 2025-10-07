@@ -255,8 +255,36 @@ export default function CustomControlBar({
           console.log('📐 Full track settings:', settings);
           console.log('📺 Track constraints:', videoTrack.getConstraints());
 
+          // Detect if user selected a Chrome Tab (low quality)
+          const isLowQuality = settings.height && settings.height < 900;
           const displaySurface = (settings as any).displaySurface; // 'monitor', 'window', or 'browser'
-          console.log(`📺 Display surface type: ${displaySurface}`);
+          
+          if (displaySurface === 'browser' || isLowQuality) {
+            console.warn('⚠️ LOW QUALITY TAB SHARING DETECTED!');
+            console.warn(`   Display Surface: ${displaySurface}`);
+            console.warn(`   Resolution: ${settings.width}x${settings.height}`);
+            
+            // Stop the stream immediately - we'll let user try again with better option
+            stream.getTracks().forEach(track => track.stop());
+            console.log('🛑 Stopped low-quality tab share stream');
+            
+            // Show informative message and guide user to reshare
+            alert(`❌ Tab Sharing Not Supported
+
+Chrome Tab sharing provides very low quality (${settings.width}x${settings.height}) which will be blurry for students.
+
+✅ Please click the screen share button again and select:
+   • "Entire Screen" - Best quality + audio support
+   • "Window" - Good quality
+
+💡 Tip: Look for the tabs at the top of Chrome's share picker:
+   [Entire Screen] [Window] [Chrome Tab]
+   
+Select "Entire Screen" or "Window" instead of "Chrome Tab".`);
+            
+            console.log('� User needs to reshare with Entire Screen or Window');
+            return;
+          }
 
           // Publish the screen share track manually with LiveKit
           console.log('📤 Publishing screen share track to LiveKit...', {
@@ -315,9 +343,7 @@ export default function CustomControlBar({
           console.log('💡 To share audio:');
           console.log('   1. Make sure you checked "Share audio" in the browser picker');
           console.log('   2. Use Chrome browser (best audio support)');
-          console.log('   3. Different audio options are available for different sharing types:');
-          console.log('      - Entire Screen: "Share system audio"');
-          console.log('      - Chrome Tab: "Share tab audio"');
+          console.log('   3. Share a Chrome Tab (has "Share tab audio" option)');
         }
 
         // Handle track ending (user stops sharing via browser UI)
@@ -355,7 +381,10 @@ export default function CustomControlBar({
           alert(`Screen sharing failed. Please try:
 1. Refresh the page
 2. Check browser permissions
-3. Try a different browser (Chrome works best)`);
+3. Try a different browser (Chrome works best)
+
+💡 TIP: When sharing, select "Entire Screen" or "Window" 
+instead of "Chrome Tab" for best quality!`);
         }
       }
     }
