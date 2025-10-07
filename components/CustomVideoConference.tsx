@@ -61,7 +61,8 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
         muted={isLocal}
         className={cn(
           "w-full h-full object-cover",
-          !isCameraEnabled && "hidden"
+          !isCameraEnabled && "hidden",
+          isLocal && "scale-x-[-1]"
         )}
       />
       
