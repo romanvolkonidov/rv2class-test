@@ -100,7 +100,7 @@ export default function Home() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                <p>Each student gets a unique link with their name pre-filled, automatically connecting them to their assigned teacher.</p>
+                <p>Each student gets a personalized welcome page with quick access to join their teacher's class.</p>
               </div>
               <Button
                 className="w-full"

@@ -29,9 +29,8 @@ export default function StudentsPage() {
   };
 
   const generateJoinLink = (student: Student) => {
-    const teacher = student.teacher?.toLowerCase() || "roman";
-    const studentName = encodeURIComponent(student.name || "");
-    return `${origin}/${teacher}?name=${studentName}`;
+    // Link to student's personal welcome page
+    return `${origin}/student/${student.id}`;
   };
 
   const copyToClipboard = async (text: string, studentId: string) => {
@@ -70,7 +69,7 @@ export default function StudentsPage() {
             Students
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300">
-            All registered students with their personalized join links
+            All registered students with their personalized welcome pages
           </p>
         </div>
 
@@ -127,6 +126,7 @@ export default function StudentsPage() {
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                 <LinkIcon className="h-4 w-4" />
+                                <span className="text-xs">Personal page:</span>
                                 <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                                   {joinLink}
                                 </code>
