@@ -1,6 +1,19 @@
+/* Tailwind CSS directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* LiveKit CSS Variables - Override theme colors for glass effect */
+:root {
+  --lk-bg: rgba(0, 0, 0, 0.2);
+  --lk-bg2: rgba(0, 0, 0, 0.3);
+  --lk-bg3: rgba(255, 255, 255, 0.05);
+  --lk-control-bg: rgba(0, 0, 0, 0.2);
+  --lk-button-bg: rgba(255, 255, 255, 0.05);
+  --lk-button-bg-hover: rgba(255, 255, 255, 0.15);
+  --lk-button-bg-active: rgba(255, 255, 255, 0.2);
+  --lk-border: rgba(255, 255, 255, 0.1);
+}
 
 @layer base {
   :root {
@@ -56,4 +69,186 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* LiveKit Glass Effect - Glassmorphism for controls */
+/* Use highly specific selectors to override LiveKit defaults */
+div.lk-control-bar,
+.lk-video-conference .lk-control-bar {
+  background: rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+button.lk-button,
+.lk-control-bar button {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.2s ease !important;
+  border-radius: 8px !important;
+}
+
+button.lk-button:hover,
+.lk-control-bar button:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
+button.lk-button:active,
+button.lk-button[data-lk-active="true"],
+.lk-control-bar button:active,
+.lk-control-bar button[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Disconnect/Leave button special styling */
+button.lk-disconnect-button,
+button.lk-button.lk-disconnect-button {
+  background: rgba(220, 38, 38, 0.2) !important;
+  border: 1px solid rgba(220, 38, 38, 0.3) !important;
+}
+
+button.lk-disconnect-button:hover {
+  background: rgba(220, 38, 38, 0.3) !important;
+  border: 1px solid rgba(220, 38, 38, 0.4) !important;
+}
+
+/* Chat toggle button glass effect */
+.lk-chat-toggle,
+button.lk-chat-toggle {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.lk-chat-toggle:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Settings menu glass effect */
+.lk-settings-menu,
+div.lk-settings-menu-modal {
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 12px !important;
+}
+
+/* Device selection dropdowns glass effect */
+.lk-device-menu,
+.lk-device-selector {
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 8px !important;
+}
+
+/* Participant tiles glass effect (optional - for consistency) */
+.lk-participant-tile,
+div.lk-participant-tile {
+  background: rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+}
+
+/* Focus ring glass effect */
+.lk-focus-layout,
+.lk-grid-layout {
+  background: transparent !important;
+}
+
+/* Chat panel glass effect */
+.lk-chat,
+div.lk-chat {
+  background: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Screenshare tile */
+.lk-focus-layout-wrapper,
+.lk-grid-layout-wrapper {
+  background: transparent !important;
+}
+
+/* Additional LiveKit Glass Overrides - High Specificity */
+/* Control bar - force translucent background */
+.livekit-glass-theme .lk-control-bar,
+.livekit-glass-theme [class*="lk-control-bar"],
+[data-lk-theme="default"] .lk-control-bar {
+  background: rgba(0, 0, 0, 0.2) !important;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Force all buttons to be translucent */
+.livekit-glass-theme .lk-control-bar button,
+.livekit-glass-theme .lk-button,
+.livekit-glass-theme button[class*="lk-button"],
+[data-lk-theme="default"] .lk-control-bar button {
+  background: rgba(255, 255, 255, 0.1) !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.2s ease !important;
+  border-radius: 8px !important;
+}
+
+.livekit-glass-theme .lk-control-bar button:hover,
+.livekit-glass-theme .lk-button:hover,
+[data-lk-theme="default"] .lk-control-bar button:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.livekit-glass-theme .lk-control-bar button:active,
+.livekit-glass-theme .lk-control-bar button[aria-pressed="true"],
+[data-lk-theme="default"] .lk-control-bar button:active {
+  background: rgba(255, 255, 255, 0.25) !important;
+  background-color: rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Disconnect button - red tint with translucency */
+.livekit-glass-theme .lk-disconnect-button,
+.livekit-glass-theme button[class*="disconnect"],
+[data-lk-theme="default"] .lk-disconnect-button {
+  background: rgba(220, 38, 38, 0.3) !important;
+  background-color: rgba(220, 38, 38, 0.3) !important;
+  border: 1px solid rgba(220, 38, 38, 0.4) !important;
+}
+
+.livekit-glass-theme .lk-disconnect-button:hover,
+[data-lk-theme="default"] .lk-disconnect-button:hover {
+  background: rgba(220, 38, 38, 0.4) !important;
+  background-color: rgba(220, 38, 38, 0.4) !important;
+  border: 1px solid rgba(220, 38, 38, 0.5) !important;
+}
+
+.livekit-glass-theme .lk-video-conference {
+  background: transparent !important;
+}
+
+/* Remove any opaque backgrounds from layouts */
+.livekit-glass-theme .lk-focus-layout,
+.livekit-glass-theme .lk-grid-layout {
+  background: transparent !important;
 }

@@ -2,14 +2,16 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { LiveKitRoom, VideoConference, RoomAudioRenderer, useRoomContext, useDataChannel } from "@livekit/components-react";
-import "@livekit/components-styles";
+import { LiveKitRoom, RoomAudioRenderer, useRoomContext, useDataChannel } from "@livekit/components-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, Check, Edit3 } from "lucide-react";
+import { Copy, Check, X } from "lucide-react";
 import Whiteboard from "@/components/Whiteboard";
 import AnnotationOverlay from "@/components/AnnotationOverlay";
 import JoinRequestsPanel from "@/components/JoinRequestsPanel";
+import CustomVideoConference from "@/components/CustomVideoConference";
+import CompactParticipantView from "@/components/CompactParticipantView";
+import CustomControlBar from "@/components/CustomControlBar";
 
 function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: boolean; userName: string; sessionCode: string; roomName: string }) {
   const room = useRoomContext();
@@ -140,66 +142,69 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900">
+    <div className="h-screen flex flex-col relative">
       {/* Join Requests Panel - Only visible to tutors */}
       {isTutor && <JoinRequestsPanel roomName={roomName} />}
 
-      {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-white">RV2Class</h1>
-            <p className="text-sm text-gray-400">
-              {isTutor ? "Tutor" : "Student"} • {userName}
-            </p>
-          </div>
-          {isTutor && sessionCode && (
-            <Card className="bg-gray-700/50 border-gray-600">
-              <CardContent className="p-3 flex items-center gap-3">
-                <div>
-                  <p className="text-xs text-gray-400">Session Code</p>
-                  <p className="text-lg font-mono font-bold text-white">{sessionCode}</p>
-                </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={copyCode}
-                  className="text-white hover:bg-gray-600"
-                >
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-          <div className="flex gap-2">
-            {!showWhiteboard && isTutor && (
+      {/* Session Code - Floating top-right corner for tutors only */}
+      {isTutor && sessionCode && (
+        <div className="absolute top-6 right-6 z-10">
+          <Card className="bg-black/20 backdrop-blur-xl border-white/10 shadow-2xl">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div>
+                <p className="text-xs text-gray-400">Session Code</p>
+                <p className="text-lg font-mono font-bold text-white">{sessionCode}</p>
+              </div>
               <Button
-                variant={showAnnotations ? "default" : "secondary"}
-                onClick={toggleAnnotations}
+                size="icon"
+                variant="ghost"
+                onClick={copyCode}
+                className="text-white hover:bg-white/20"
               >
-                <Edit3 className="mr-2 h-4 w-4" />
-                {showAnnotations ? "Hide Annotations" : "Annotate"}
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
-            )}
-            {isTutor && (
-              <Button
-                variant={showWhiteboard ? "default" : "secondary"}
-                onClick={toggleWhiteboard}
-              >
-                {showWhiteboard ? "Show Video" : "Show Whiteboard"}
-              </Button>
-            )}
-          </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      )}
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden relative">
+      {/* Main Content - Full screen */}
+      <div className="absolute inset-0 overflow-hidden">
         {showWhiteboard ? (
-          <Whiteboard />
+          <>
+            <Whiteboard />
+            
+            {/* Draggable participant videos during whiteboard */}
+            <CompactParticipantView />
+            
+            {/* Close button for whiteboard - top right */}
+            <button
+              onClick={toggleWhiteboard}
+              className="absolute top-6 right-6 z-20 p-3 rounded-xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl hover:bg-white/20 hover:border-white/30 transition-all duration-200 hover:scale-110"
+              title="Close Whiteboard"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+
+            {/* Control bar available even in whiteboard mode */}
+            <CustomControlBar 
+              isTutor={isTutor}
+              showWhiteboard={showWhiteboard}
+              showAnnotations={showAnnotations}
+              onToggleWhiteboard={toggleWhiteboard}
+              onToggleAnnotations={toggleAnnotations}
+            />
+          </>
         ) : (
           <>
-            <VideoConference />
+            <CustomVideoConference />
+            <CustomControlBar 
+              isTutor={isTutor}
+              showWhiteboard={showWhiteboard}
+              showAnnotations={showAnnotations}
+              onToggleWhiteboard={toggleWhiteboard}
+              onToggleAnnotations={toggleAnnotations}
+            />
             <RoomAudioRenderer />
             {/* Show annotations for everyone when active - tutor gets close button, students don't */}
             {showAnnotations && (
@@ -262,7 +267,6 @@ function RoomPage() {
       audio={isTutor}
       token={token}
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
-      data-lk-theme="default"
       className="h-full"
       connect={true}
       connectOptions={{
