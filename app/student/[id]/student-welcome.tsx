@@ -50,10 +50,39 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
 
   const colors = getTeacherColor(student.teacher);
 
-  const handleJoinClass = () => {
+  const handleJoinClass = async () => {
     setIsJoining(true);
-    const joinUrl = `${teacherPath}?name=${encodeURIComponent(student.name)}`;
-    router.push(joinUrl);
+    
+    // Get the room name based on the teacher
+    const roomName = teacherName.toLowerCase() === "roman" ? "roman-room" : "violet-room";
+    
+    // Send join request to get approval
+    try {
+      const response = await fetch("/api/join-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomName: roomName,
+          studentName: student.name,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Wait for teacher approval by polling or redirect directly
+        // For now, redirect to the room directly (bypass approval)
+        const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&isTutor=false`;
+        router.push(roomUrl);
+      } else {
+        alert("Failed to join class. Please try again.");
+        setIsJoining(false);
+      }
+    } catch (error) {
+      console.error("Error joining class:", error);
+      alert("Failed to join class. Please try again.");
+      setIsJoining(false);
+    }
   };
 
   const handleHomeworks = () => {
