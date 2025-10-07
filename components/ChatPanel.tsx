@@ -1,23 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRoomContext, useDataChannel } from "@livekit/components-react";
+import { useChat, useRoomContext } from "@livekit/components-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Send, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface ChatMessage {
-  id: string;
-  sender: string;
-  message: string;
-  timestamp: number;
-  isLocal: boolean;
-}
-
 export default function ChatPanel({ onClose }: { onClose?: () => void }) {
   const room = useRoomContext();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { chatMessages, send } = useChat();
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,64 +18,22 @@ export default function ChatPanel({ onClose }: { onClose?: () => void }) {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [chatMessages]);
 
   // Focus input when chat opens
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // Listen for chat messages
-  useDataChannel((message) => {
-    try {
-      const decoder = new TextDecoder();
-      const text = decoder.decode(message.payload);
-      const data = JSON.parse(text);
-
-      if (data.type === "chat") {
-        const newMessage: ChatMessage = {
-          id: `${data.sender}-${data.timestamp}`,
-          sender: data.sender,
-          message: data.message,
-          timestamp: data.timestamp,
-          isLocal: false, // Remote message
-        };
-        setMessages((prev) => [...prev, newMessage]);
-      }
-    } catch (error) {
-      console.error("Error processing chat message:", error);
-    }
-  });
-
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    const timestamp = Date.now();
-    const newMessage: ChatMessage = {
-      id: `local-${timestamp}`,
-      sender: localParticipantName,
-      message: inputMessage.trim(),
-      timestamp,
-      isLocal: true,
-    };
-
-    // Add to local messages
-    setMessages((prev) => [...prev, newMessage]);
-
-    // Broadcast to other participants
-    const encoder = new TextEncoder();
-    const data = encoder.encode(
-      JSON.stringify({
-        type: "chat",
-        sender: localParticipantName,
-        message: inputMessage.trim(),
-        timestamp,
-      })
-    );
-    room.localParticipant.publishData(data, { reliable: true });
-
-    // Clear input
-    setInputMessage("");
+    try {
+      await send(inputMessage.trim());
+      setInputMessage("");
+    } catch (error) {
+      console.error("Error sending chat message:", error);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -104,12 +53,14 @@ export default function ChatPanel({ onClose }: { onClose?: () => void }) {
 
   return (
     <div className="fixed right-2 md:right-4 bottom-20 md:bottom-24 z-50 w-[calc(100vw-16px)] max-w-sm md:w-96">
-      <Card className="backdrop-blur-xl bg-white/95 dark:bg-gray-800/95 shadow-2xl border-2 border-blue-200 dark:border-blue-800 touch-manipulation">
-        <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg py-3 px-4">
+      {/* Glass morphism card */}
+      <div className="backdrop-blur-xl bg-black/20 shadow-2xl border border-white/15 rounded-xl overflow-hidden touch-manipulation">
+        {/* Header with glass effect */}
+        <div className="bg-gradient-to-r from-blue-500/30 to-indigo-600/30 backdrop-blur-sm text-white border-b border-white/10 py-3 px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
-              <CardTitle className="text-lg font-bold">Chat</CardTitle>
+              <h3 className="text-lg font-bold">Chat</h3>
             </div>
             {onClose && (
               <Button
@@ -122,51 +73,57 @@ export default function ChatPanel({ onClose }: { onClose?: () => void }) {
               </Button>
             )}
           </div>
-        </CardHeader>
-        <CardContent className="p-0 flex flex-col h-[50vh] md:h-96 max-h-[600px]">
+        </div>
+        
+        <div className="flex flex-col h-[50vh] md:h-96 max-h-[600px]">
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 overscroll-contain">
-            {messages.length === 0 ? (
-              <div className="text-center text-gray-400 dark:text-gray-500 py-8">
+            {chatMessages.length === 0 ? (
+              <div className="text-center text-gray-300/60 py-8">
                 <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No messages yet</p>
                 <p className="text-xs mt-1">Start the conversation!</p>
               </div>
             ) : (
-              messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={cn(
-                    "flex flex-col",
-                    msg.isLocal ? "items-end" : "items-start"
-                  )}
-                >
+              chatMessages.map((msg) => {
+                const isLocal = msg.from?.identity === room.localParticipant?.identity;
+                const senderName = msg.from?.identity || msg.from?.name || "Unknown";
+                
+                return (
                   <div
+                    key={msg.id}
                     className={cn(
-                      "max-w-[80%] rounded-lg px-3 py-2 break-words",
-                      msg.isLocal
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      "flex flex-col",
+                      isLocal ? "items-end" : "items-start"
                     )}
                   >
-                    {!msg.isLocal && (
-                      <p className="text-xs font-semibold mb-1 opacity-75">
-                        {msg.sender}
-                      </p>
-                    )}
-                    <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                    <div
+                      className={cn(
+                        "max-w-[80%] rounded-lg px-3 py-2 break-words backdrop-blur-sm",
+                        isLocal
+                          ? "bg-blue-500/80 text-white border border-blue-400/30"
+                          : "bg-white/10 text-white border border-white/15"
+                      )}
+                    >
+                      {!isLocal && (
+                        <p className="text-xs font-semibold mb-1 opacity-75">
+                          {senderName}
+                        </p>
+                      )}
+                      <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                    </div>
+                    <span className="text-xs text-gray-300/60 mt-1 px-1">
+                      {formatTime(msg.timestamp)}
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 px-1">
-                    {formatTime(msg.timestamp)}
-                  </span>
-                </div>
-              ))
+                );
+              })
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div className="border-t border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800">
+          {/* Input Area with glass effect */}
+          <div className="border-t border-white/10 p-3 bg-black/10 backdrop-blur-sm">
             <div className="flex gap-2">
               <input
                 ref={inputRef}
@@ -175,24 +132,24 @@ export default function ChatPanel({ onClose }: { onClose?: () => void }) {
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type a message..."
-                className="flex-1 px-3 py-2.5 md:py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm touch-manipulation"
+                className="flex-1 px-3 py-2.5 md:py-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-sm touch-manipulation"
                 maxLength={500}
               />
               <Button
                 onClick={sendMessage}
                 disabled={!inputMessage.trim()}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 min-w-[44px] min-h-[44px] touch-manipulation"
+                className="bg-blue-500/80 hover:bg-blue-600/80 backdrop-blur-sm text-white px-4 min-w-[44px] min-h-[44px] touch-manipulation border border-blue-400/30 disabled:opacity-50"
                 size="sm"
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
+            <p className="text-xs text-gray-300/60 mt-1 text-right">
               Press Enter to send
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
