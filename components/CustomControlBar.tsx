@@ -195,6 +195,30 @@ export default function CustomControlBar({
     if (!localParticipant || !room) return;
 
     if (isScreenSharing) {
+      console.log('🛑 Stopping screen share...');
+      
+      // Get the screen share track publication
+      const screenSharePub = localParticipant.getTrackPublication(Track.Source.ScreenShare);
+      const screenAudioPub = localParticipant.getTrackPublication(Track.Source.ScreenShareAudio);
+      
+      // Stop and unpublish tracks
+      if (screenSharePub?.track) {
+        screenSharePub.track.stop();
+        await localParticipant.unpublishTrack(screenSharePub.track);
+        console.log('✅ Screen share video track stopped and unpublished');
+      }
+      
+      if (screenAudioPub?.track) {
+        screenAudioPub.track.stop();
+        await localParticipant.unpublishTrack(screenAudioPub.track);
+        console.log('✅ Screen share audio track stopped and unpublished');
+      }
+      
+      // Update state
+      setIsScreenSharing(false);
+      setHasScreenShare(false);
+      
+      // Also call the built-in method as fallback
       await localParticipant.setScreenShareEnabled(false);
     } else {
       // Show helpful guidance before sharing
@@ -203,15 +227,17 @@ export default function CustomControlBar({
 QUALITY (Select in order of preference):
 ✅ "Entire Screen" - BEST quality + can share system audio
 ✅ "Window" - GOOD quality (⚠️ audio not available)
-❌ "Chrome Tab" - POOR quality (blurry)
+❌ "Chrome Tab" - NOT SUPPORTED (will be rejected)
 
 🔊 AUDIO SHARING:
 • "Entire Screen": Check "Share system audio" ✅
 • "Window": Audio NOT supported by browsers ❌
-• "Chrome Tab": Check "Share tab audio" (tab audio only) ⚠️
+• "Chrome Tab": NOT SUPPORTED ❌
 
 💡 RECOMMENDATION:
 If you need audio, share "Entire Screen" and check "Share system audio"
+
+⚠️ IMPORTANT: Tab sharing will be rejected due to low quality!
 
 Click OK to continue.`);
       
@@ -235,9 +261,10 @@ Click OK to continue.`);
             aspectRatio: { ideal: 16/9 },           // Prefer widescreen but allow any
           },
           audio: true, // Capture system audio if available
-          // Prefer capturing the entire content
-          preferCurrentTab: false,
+          // Note: preferCurrentTab is removed - let user choose naturally
         } as any);
+        
+        console.log('✅ Successfully obtained display media stream');
 
         // Get the video track
         const videoTrack = stream.getVideoTracks()[0];
@@ -261,46 +288,60 @@ Click OK to continue.`);
           
           if (displaySurface === 'browser' || isLowQuality) {
             console.warn('⚠️ LOW QUALITY TAB SHARING DETECTED!');
+            console.warn(`   Display Surface: ${displaySurface}`);
+            console.warn(`   Resolution: ${settings.width}x${settings.height}`);
             
-            // Show warning to user
-            const shouldContinue = confirm(`⚠️ WARNING: Low Quality Detected!
+            // Stop the stream immediately - we'll let user try again with better option
+            stream.getTracks().forEach(track => track.stop());
+            console.log('🛑 Stopped low-quality tab share stream');
+            
+            // Show informative message and guide user to reshare
+            alert(`❌ Tab Sharing Not Supported
 
-You selected a "Chrome Tab" which captures at low resolution (${settings.width}x${settings.height}).
+Chrome Tab sharing provides very low quality (${settings.width}x${settings.height}) which will be blurry for students.
 
-This will appear BLURRY to students!
-
-Recommended Actions:
-✅ Click "Stop Sharing" and reshare selecting:
-   • "Entire Screen" - Best quality
+✅ Please click the screen share button again and select:
+   • "Entire Screen" - Best quality + audio support
    • "Window" - Good quality
 
-❌ Continue with blurry tab share (not recommended)
-
-Click OK to continue anyway, or Cancel to stop and reshare.`);
-
-            if (!shouldContinue) {
-              // Stop the stream
-              stream.getTracks().forEach(track => track.stop());
-              console.log('🛑 User cancelled low-quality share');
-              return;
-            } else {
-              console.log('⚠️ User chose to continue with low quality');
-            }
+💡 Tip: Look for the tabs at the top of Chrome's share picker:
+   [Entire Screen] [Window] [Chrome Tab]
+   
+Select "Entire Screen" or "Window" instead of "Chrome Tab".`);
+            
+            console.log('� User needs to reshare with Entire Screen or Window');
+            return;
           }
 
           // Publish the screen share track manually with LiveKit
-          await localParticipant.publishTrack(videoTrack, {
-            name: 'screen_share',
-            source: Track.Source.ScreenShare,
-            // These settings prevent quality pulsing/drops
-            simulcast: false,           // CRITICAL: No quality layers
-            videoCodec: 'vp9',          // Best quality codec
-            // CRITICAL: Force high bitrate, no adaptive reduction
-            videoEncoding: {
-              maxBitrate: 10_000_000,   // 10 Mbps constant
-              maxFramerate: 60,          // 60fps
-            },
+          console.log('📤 Publishing screen share track to LiveKit...', {
+            trackId: videoTrack.id,
+            trackLabel: videoTrack.label,
+            readyState: videoTrack.readyState,
+            muted: videoTrack.muted,
+            enabled: videoTrack.enabled,
           });
+
+          try {
+            await localParticipant.publishTrack(videoTrack, {
+              name: 'screen_share',
+              source: Track.Source.ScreenShare,
+              // These settings prevent quality pulsing/drops
+              simulcast: false,           // CRITICAL: No quality layers
+              videoCodec: 'vp9',          // Best quality codec
+              // CRITICAL: Force high bitrate, no adaptive reduction
+              videoEncoding: {
+                maxBitrate: 10_000_000,   // 10 Mbps constant
+                maxFramerate: 60,          // 60fps
+              },
+            });
+            console.log('✅ Screen share track successfully published!');
+          } catch (publishError) {
+            console.error('❌ Failed to publish screen share track:', publishError);
+            // Stop the stream since we couldn't publish it
+            stream.getTracks().forEach(track => track.stop());
+            throw publishError;
+          }
 
           console.log('✅ Screen share published with ULTRA settings:');
           console.log('   • Resolution:', `${settings.width}x${settings.height}`);
@@ -310,6 +351,10 @@ Click OK to continue anyway, or Cancel to stop and reshare.`);
           console.log('   • Content Hint: DETAIL (optimized for text)');
           console.log('   • Simulcast: DISABLED (no quality drops)');
           console.log('   • Adaptive: DISABLED (constant quality)');
+          
+          // CRITICAL: Immediately update state after publishing
+          setIsScreenSharing(true);
+          setHasScreenShare(true);
         }
 
         // Publish screen audio if available
@@ -331,17 +376,33 @@ Click OK to continue anyway, or Cancel to stop and reshare.`);
         // Handle track ending (user stops sharing via browser UI)
         videoTrack.addEventListener('ended', () => {
           console.log('🛑 Screen share stopped by user');
+          setIsScreenSharing(false);
+          setHasScreenShare(false);
           localParticipant.setScreenShareEnabled(false);
         });
         
       } catch (error) {
         console.error('❌ Screen share failed:', error);
         
-        // Fallback to simplified approach
+        // Check if user cancelled the picker
+        if (error instanceof DOMException && error.name === 'NotAllowedError') {
+          console.log('ℹ️ User cancelled screen share picker');
+          return; // Silent return, no error message needed
+        }
+        
+        // Check if user dismissed without selecting
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          console.log('ℹ️ User aborted screen share');
+          return; // Silent return, no error message needed
+        }
+        
+        // For other errors, try fallback
         try {
           console.log('⚠️ Falling back to simplified screen share...');
           await localParticipant.setScreenShareEnabled(true, { audio: true });
           console.log('✅ Screen share enabled with fallback method');
+          setIsScreenSharing(true);
+          setHasScreenShare(true);
         } catch (fallbackError) {
           console.error('❌ All screen share attempts failed:', fallbackError);
           alert(`Screen sharing failed. Please try:
