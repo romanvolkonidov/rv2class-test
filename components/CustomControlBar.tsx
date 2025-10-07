@@ -140,7 +140,65 @@ export default function CustomControlBar({
       await localParticipant.setScreenShareEnabled(false);
       // Don't immediately set these - let the event listener handle it
     } else {
-      await localParticipant.setScreenShareEnabled(true);
+      try {
+        // Show user-friendly reminder
+        const reminderDiv = document.createElement('div');
+        reminderDiv.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.9);
+          color: white;
+          padding: 16px 24px;
+          border-radius: 12px;
+          z-index: 10000;
+          font-size: 14px;
+          font-weight: 500;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          backdrop-filter: blur(10px);
+        `;
+        reminderDiv.innerHTML = '🔊 <strong>Don\'t forget:</strong> Check "Share audio" or "Share tab audio" in the popup!';
+        document.body.appendChild(reminderDiv);
+        
+        // Remove reminder after 8 seconds
+        setTimeout(() => {
+          reminderDiv.style.transition = 'opacity 0.5s';
+          reminderDiv.style.opacity = '0';
+          setTimeout(() => reminderDiv.remove(), 500);
+        }, 8000);
+        
+        // Enable screen share with audio and high quality settings
+        // Quality is configured in room options for maximum sharpness
+        
+        // Try with full audio options first (Chrome/Edge)
+        await localParticipant.setScreenShareEnabled(true, {
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+          },
+          selfBrowserSurface: "exclude",
+          surfaceSwitching: "include",
+          systemAudio: "include",
+        });
+        
+        console.log('✅ Screen share with audio enabled');
+      } catch (error) {
+        console.warn('⚠️ Screen share with audio failed, trying without audio constraints:', error);
+        
+        // Fallback: try with simpler audio option
+        try {
+          await localParticipant.setScreenShareEnabled(true, {
+            audio: true,
+          });
+          console.log('✅ Screen share enabled with basic audio');
+        } catch (fallbackError) {
+          console.warn('⚠️ Audio sharing not supported, screen share only:', fallbackError);
+          // Last resort: screen share without audio
+          await localParticipant.setScreenShareEnabled(true);
+        }
+      }
       // Don't immediately set these - let the event listener handle it
     }
   };

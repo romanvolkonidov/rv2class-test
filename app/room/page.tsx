@@ -170,6 +170,9 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
 
       {/* Main Content - Full screen */}
       <div className="absolute inset-0 overflow-hidden">
+        {/* Audio renderer - Always active for both whiteboard and video mode */}
+        <RoomAudioRenderer />
+        
         {showWhiteboard ? (
           <>
             <Whiteboard />
@@ -205,7 +208,6 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               onToggleWhiteboard={toggleWhiteboard}
               onToggleAnnotations={toggleAnnotations}
             />
-            <RoomAudioRenderer />
             {/* Show annotations for everyone when active - tutor gets close button, students don't */}
             {showAnnotations && (
               <AnnotationOverlay 
@@ -271,6 +273,21 @@ function RoomPage() {
       connect={true}
       connectOptions={{
         autoSubscribe: true,
+      }}
+      options={{
+        publishDefaults: {
+          screenShareEncoding: {
+            maxBitrate: 3_000_000, // 3 Mbps for sharp screen share
+            maxFramerate: 30,
+          },
+        },
+        videoCaptureDefaults: {
+          resolution: {
+            width: 1280,
+            height: 720,
+            frameRate: 30,
+          },
+        },
       }}
     >
       <RoomContent isTutor={isTutor} userName={userName} sessionCode={sessionCode} roomName={roomName} />
