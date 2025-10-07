@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Clock, UserCheck, Sparkles } from "lucide-react";
 
 interface WaitingRoomProps {
@@ -89,20 +88,21 @@ export default function WaitingRoom({ studentName, teacherName, onApproved }: Wa
   const quote = motivationalQuotes[currentQuote];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 flex items-center justify-center p-4">
-      <Card className="max-w-2xl w-full backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 shadow-2xl border-2 border-purple-200 dark:border-purple-800">
-        <CardContent className="pt-12 pb-12 space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
+      {/* Glass morphism card */}
+      <div className="max-w-2xl w-full backdrop-blur-xl bg-black/30 border border-white/20 shadow-2xl rounded-xl overflow-hidden">
+        <div className="pt-12 pb-12 space-y-8 px-6">
           {/* Animated Icon */}
           <div className="flex justify-center">
             <div className="relative">
               {/* Outer spinning ring */}
               <div className="absolute inset-0 animate-spin-slow">
-                <div className="h-32 w-32 rounded-full border-4 border-purple-200 dark:border-purple-800 border-t-purple-600 dark:border-t-purple-400"></div>
+                <div className="h-32 w-32 rounded-full border-4 border-white/20 border-t-blue-400"></div>
               </div>
               
               {/* Inner pulsing circle */}
               <div className="relative h-32 w-32 flex items-center justify-center">
-                <div className="absolute inset-4 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
+                <div className="absolute inset-4 bg-gradient-to-br from-blue-400/40 to-pink-400/40 backdrop-blur-sm rounded-full animate-pulse"></div>
                 <Clock className="relative h-16 w-16 text-white z-10 animate-bounce-slow" />
               </div>
             </div>
@@ -110,16 +110,16 @@ export default function WaitingRoom({ studentName, teacherName, onApproved }: Wa
 
           {/* Status Text */}
           <div className="text-center space-y-4">
-            <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
+            <h2 className="text-3xl font-bold text-white">
               Ожидаем подключения{dots}
             </h2>
-            <div className="flex items-center justify-center gap-2 text-purple-600 dark:text-purple-400">
+            <div className="flex items-center justify-center gap-2 text-blue-300">
               <UserCheck className="h-5 w-5" />
               <p className="text-lg">
                 <span className="font-semibold">{teacherName}</span> скоро подключит вас к уроку
               </p>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+            <p className="text-sm text-gray-300 max-w-md mx-auto">
               Пожалуйста, подождите немного. Учитель проверит ваш запрос и пригласит вас на урок.
               Убедитесь, что ваш микрофон и камера включены.
             </p>
@@ -128,13 +128,13 @@ export default function WaitingRoom({ studentName, teacherName, onApproved }: Wa
           {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+              <div className="w-full border-t border-white/20"></div>
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-white dark:bg-gray-800 px-4 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-amber-500" />
+              <span className="bg-black/30 backdrop-blur-sm px-4 text-sm text-gray-300 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-amber-400" />
                 Мудрость дня
-                <Sparkles className="h-4 w-4 text-amber-500" />
+                <Sparkles className="h-4 w-4 text-amber-400" />
               </span>
             </div>
           </div>
@@ -144,26 +144,26 @@ export default function WaitingRoom({ studentName, teacherName, onApproved }: Wa
             key={currentQuote}
             className="text-center space-y-3 animate-fade-in min-h-[120px] flex flex-col justify-center"
           >
-            <blockquote className="text-xl font-serif italic text-gray-700 dark:text-gray-300 leading-relaxed px-4">
+            <blockquote className="text-xl font-serif italic text-gray-200 leading-relaxed px-4">
               "{quote.text}"
             </blockquote>
-            <p className="text-sm font-medium text-purple-600 dark:text-purple-400">
+            <p className="text-sm font-medium text-blue-300">
               — {quote.author}
             </p>
           </div>
 
           {/* Progress indicator */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex items-center justify-between text-xs text-gray-300">
               <span>Проверка запроса...</span>
               <span>⏱️ Обычно занимает менее минуты</span>
             </div>
-            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-progress-bar"></div>
+            <div className="h-2 bg-white/10 backdrop-blur-sm rounded-full overflow-hidden border border-white/20">
+              <div className="h-full bg-gradient-to-r from-blue-400 via-pink-400 to-blue-400 animate-progress-bar"></div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <style jsx>{`
         @keyframes spin-slow {

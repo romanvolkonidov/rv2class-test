@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle, XCircle, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import WaitingRoom from "@/components/WaitingRoom";
+import { db } from "@/lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 interface StudentData {
   id: string;
@@ -27,6 +29,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const [shouldPulseCamera, setShouldPulseCamera] = useState(false);
   const [hasShownWelcomePopup, setHasShownWelcomePopup] = useState(false);
   const [isWaitingForTeacher, setIsWaitingForTeacher] = useState(false);
+  const [joinRequestId, setJoinRequestId] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isSafari, setIsSafari] = useState(false);
@@ -99,6 +102,47 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       }
     };
   }, [micStream, videoStream]);
+
+  // Listen for join request approval/denial
+  useEffect(() => {
+    if (!joinRequestId) return;
+
+    console.log("👂 Listening for join request status:", joinRequestId);
+    
+    const unsubscribe = onSnapshot(
+      doc(db, "joinRequests", joinRequestId),
+      (docSnapshot) => {
+        if (!docSnapshot.exists()) {
+          console.log("❌ Join request document not found");
+          return;
+        }
+
+        const data = docSnapshot.data();
+        console.log("📄 Join request status:", data.status);
+
+        if (data.status === "approved") {
+          console.log("✅ Join request approved! Redirecting to room...");
+          const roomName = teacherName.toLowerCase() === "roman" ? "roman-room" : "violet-room";
+          const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&isTutor=false`;
+          router.push(roomUrl);
+        } else if (data.status === "denied") {
+          console.log("❌ Join request denied");
+          alert("😔 Учитель отклонил ваш запрос на подключение.\n\nПожалуйста, свяжитесь с учителем или попробуйте позже.");
+          setIsWaitingForTeacher(false);
+          setIsJoining(false);
+          setJoinRequestId(null);
+        }
+      },
+      (error) => {
+        console.error("Error listening to join request:", error);
+      }
+    );
+
+    return () => {
+      console.log("🔇 Unsubscribing from join request listener");
+      unsubscribe();
+    };
+  }, [joinRequestId, teacherName, student.name, router]);
 
   const checkPermissions = async () => {
     try {
@@ -264,12 +308,10 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       const data = await response.json();
 
       if (response.ok) {
-        // Show waiting room for a moment before redirecting
-        // In production, you would poll for teacher approval here
-        setTimeout(() => {
-          const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&isTutor=false`;
-          router.push(roomUrl);
-        }, 2000);
+        console.log("📝 Join request created:", data.requestId);
+        // Store the request ID to start listening for approval
+        setJoinRequestId(data.requestId);
+        // The useEffect hook will now listen for status changes
       } else {
         alert("Не удалось подключиться к уроку. Попробуйте снова.");
         setIsJoining(false);
