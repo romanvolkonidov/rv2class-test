@@ -16,6 +16,7 @@ export default function Whiteboard() {
   const [lastUpdateTime, setLastUpdateTime] = useState(0);
   const [isReceivingUpdate, setIsReceivingUpdate] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [pendingElements, setPendingElements] = useState<any[]>([]);
 
   // Ensure component is mounted on client-side
   useEffect(() => {
@@ -57,10 +58,40 @@ export default function Whiteboard() {
       
       if (data.type === "excalidraw-update" && excalidrawAPI && data.elements) {
         setIsReceivingUpdate(true);
+        
+        // Get current scene elements
+        const currentElements = excalidrawAPI.getSceneElements();
+        
+        // Merge remote elements with local elements
+        // Create a map of remote elements by ID for quick lookup
+        const remoteElementsMap = new Map(data.elements.map((el: any) => [el.id, el]));
+        
+        // Keep local elements that aren't in remote update, and use remote versions for conflicts
+        const mergedElements = currentElements.map((localEl: any) => {
+          const remoteEl: any = remoteElementsMap.get(localEl.id);
+          if (remoteEl) {
+            // Remote element exists, use the one with higher version
+            const localVersion = localEl.version || 0;
+            const remoteVersion = remoteEl.version || 0;
+            return remoteVersion > localVersion ? remoteEl : localEl;
+          }
+          // Keep local element if not in remote
+          return localEl;
+        });
+        
+        // Add any new remote elements that aren't in local
+        const localElementIds = new Set(currentElements.map((el: any) => el.id));
+        data.elements.forEach((remoteEl: any) => {
+          if (!localElementIds.has(remoteEl.id)) {
+            mergedElements.push(remoteEl);
+          }
+        });
+        
         excalidrawAPI.updateScene({
-          elements: data.elements,
+          elements: mergedElements,
           appState: data.appState,
         });
+        
         // Reset the flag after a short delay
         setTimeout(() => setIsReceivingUpdate(false), 50);
       } else if (data.type === "excalidraw-clear" && excalidrawAPI) {
