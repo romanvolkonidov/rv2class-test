@@ -112,7 +112,7 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
         status: "completed",
         icon: <CheckCircle className="h-5 w-5 text-green-600" />,
         label: "Completed",
-        color: "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800",
+        color: "bg-green-50/80 border-green-200/50",
         score: report.score
       };
     } else if (assignment.status === "completed") {
@@ -120,14 +120,14 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
         status: "completed",
         icon: <CheckCircle className="h-5 w-5 text-green-600" />,
         label: "Completed",
-        color: "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800"
+        color: "bg-green-50/80 border-green-200/50"
       };
     } else {
       return {
         status: "pending",
         icon: <Clock className="h-5 w-5 text-orange-600" />,
         label: "Pending",
-        color: "bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800"
+        color: "bg-orange-50/80 border-orange-200/50"
       };
     }
   };
@@ -174,55 +174,65 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
   const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
-      <div className="max-w-4xl mx-auto">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-100 p-4 relative overflow-hidden">
+      {/* Animated background elements - Apple-style subtle orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-purple-400/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-blue-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="max-w-4xl mx-auto relative z-10">
         <div className="mb-6 mt-8">
           <Button
             variant="outline"
             onClick={() => router.back()}
-            className="mb-4"
+            className="mb-4 backdrop-blur-xl bg-white/60 border-gray-200/50 hover:bg-white/80"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Welcome Page
           </Button>
 
-          <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-t-lg">
+          {/* Glass morphism card */}
+          <div className="backdrop-blur-2xl bg-white/60 border border-gray-200/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] rounded-3xl overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-500/90 via-purple-600/90 to-indigo-600/90 p-8">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <BookOpen className="h-10 w-10" />
+                <div className="flex items-center gap-4">
+                  <div className="backdrop-blur-xl bg-white/20 p-3 rounded-2xl border border-white/30">
+                    <BookOpen className="h-10 w-10 text-white" />
+                  </div>
                   <div>
-                    <CardTitle className="text-3xl font-bold">
+                    <h1 className="text-3xl font-semibold text-white tracking-tight">
                       {studentName}'s Homework
-                    </CardTitle>
-                    <CardDescription className="text-purple-100 text-lg mt-1">
+                    </h1>
+                    <p className="text-white/90 text-base mt-1">
                       Track your assignments and progress
-                    </CardDescription>
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-4xl font-bold">{completionPercentage}%</div>
-                  <div className="text-sm text-purple-100">Completed</div>
+                  <div className="text-4xl font-bold text-white">{completionPercentage}%</div>
+                  <div className="text-sm text-white/90">Completed</div>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent className="pt-6">
+            </div>
+            <div className="p-6">
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                <div className="text-center p-4 rounded-xl bg-blue-50/80 backdrop-blur-xl border border-blue-200/50">
                   <div className="text-2xl font-bold text-blue-600">{totalCount}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Total</div>
+                  <div className="text-sm text-gray-600">Total</div>
                 </div>
-                <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-900/20">
+                <div className="text-center p-4 rounded-xl bg-green-50/80 backdrop-blur-xl border border-green-200/50">
                   <div className="text-2xl font-bold text-green-600">{completedCount}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Completed</div>
+                  <div className="text-sm text-gray-600">Completed</div>
                 </div>
-                <div className="text-center p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+                <div className="text-center p-4 rounded-xl bg-orange-50/80 backdrop-blur-xl border border-orange-200/50">
                   <div className="text-2xl font-bold text-orange-600">{totalCount - completedCount}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Pending</div>
+                  <div className="text-sm text-gray-600">Pending</div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {loading ? (
@@ -230,17 +240,17 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
             <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
           </div>
         ) : assignments.length === 0 ? (
-          <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80">
-            <CardContent className="py-12 text-center">
+          <div className="backdrop-blur-2xl bg-white/60 border border-gray-200/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] rounded-3xl overflow-hidden">
+            <div className="py-12 text-center px-6">
               <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 text-lg">
+              <p className="text-gray-600 text-lg">
                 No homework assignments yet.
               </p>
-              <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">
+              <p className="text-gray-500 text-sm mt-2">
                 Your teacher will assign homework for you to complete via Telegram.
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ) : (
           <div className="space-y-4">
             {assignments.map((assignment) => {
@@ -249,18 +259,18 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
               const questionInfo = questionCounts[assignment.id];
 
               return (
-                <Card
+                <div
                   key={assignment.id}
-                  className={`backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-2 ${statusInfo.color}`}
+                  className={`backdrop-blur-2xl bg-white/60 border-2 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] rounded-3xl overflow-hidden ${statusInfo.color}`}
                 >
-                  <CardContent className="pt-6">
+                  <div className="pt-6 px-6 pb-6">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         {/* Status badge and title */}
                         <div className="flex items-center gap-3 mb-3">
                           {statusInfo.icon}
                           <div>
-                            <h3 className="font-bold text-xl text-gray-900 dark:text-gray-100">
+                            <h3 className="font-bold text-xl text-gray-900">
                               {assignment.topicName || assignment.chapterName || assignment.courseName || "Homework"}
                             </h3>
                           </div>
@@ -270,22 +280,22 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                         {(assignment.courseName || assignment.chapterName) && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
                             {assignment.courseName && (
-                              <div className="bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
-                                <div className="text-xs text-blue-600 dark:text-blue-400 font-semibold">COURSE</div>
-                                <div className="text-sm font-bold text-blue-900 dark:text-blue-100">{assignment.courseName}</div>
+                              <div className="bg-blue-50/80 backdrop-blur-xl px-3 py-2 rounded-lg border border-blue-200/50">
+                                <div className="text-xs text-blue-600 font-semibold">COURSE</div>
+                                <div className="text-sm font-bold text-blue-900">{assignment.courseName}</div>
                               </div>
                             )}
                             {assignment.chapterName && (
-                              <div className="bg-purple-50 dark:bg-purple-900/30 px-3 py-2 rounded-lg border border-purple-200 dark:border-purple-800">
-                                <div className="text-xs text-purple-600 dark:text-purple-400 font-semibold">CHAPTER</div>
-                                <div className="text-sm font-bold text-purple-900 dark:text-purple-100">{assignment.chapterName}</div>
+                              <div className="bg-purple-50/80 backdrop-blur-xl px-3 py-2 rounded-lg border border-purple-200/50">
+                                <div className="text-xs text-purple-600 font-semibold">CHAPTER</div>
+                                <div className="text-sm font-bold text-purple-900">{assignment.chapterName}</div>
                               </div>
                             )}
                           </div>
                         )}
                         
                         {/* Additional info */}
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                           <div className="flex items-center gap-1">
                             📅 <span className="font-medium">{formatDate(assignment.assignedAt)}</span>
                           </div>
@@ -301,8 +311,8 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                       <div className="text-right flex flex-col items-end gap-2">
                         <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${
                           statusInfo.status === "completed" 
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                            : "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-orange-100 text-orange-800"
                         }`}>
                           {statusInfo.label}
                         </div>
@@ -314,7 +324,7 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                               {report.score}%
                             </span>
                             {report.correctAnswers !== undefined && report.totalQuestions !== undefined && (
-                              <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">
+                              <span className="text-sm text-gray-500 ml-1">
                                 ({report.correctAnswers}/{report.totalQuestions})
                               </span>
                             )}
@@ -324,11 +334,11 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                     </div>
 
                     {statusInfo.status === "pending" && (
-                      <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="mt-4 p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-xl rounded-lg border border-blue-200/50">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-start gap-2 flex-1">
                             <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                            <div className="text-sm text-gray-700 dark:text-gray-300">
+                            <div className="text-sm text-gray-700">
                               <strong>Ready to start?</strong> Click the button to begin answering questions.
                             </div>
                           </div>
@@ -342,14 +352,14 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                         </div>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               );
             })}
           </div>
         )}
 
-        <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div className="mt-8 text-center text-sm text-gray-500">
           <p>📝 Answer quiz questions to complete your homework and see your score</p>
         </div>
       </div>

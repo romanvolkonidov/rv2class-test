@@ -98,24 +98,33 @@ export default function TagStudentsPage() {
   const colorScheme = TAG_COLORS[tagColor as keyof typeof TAG_COLORS] || TAG_COLORS.gray;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col items-center justify-center p-4">
-      <div className="max-w-2xl w-full">
-        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 shadow-xl border-2">
-          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
-            <div className="flex items-center justify-center gap-3">
-              <Tag className="h-10 w-10" />
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background elements - Apple-style subtle orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-400/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-indigo-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="max-w-2xl w-full relative z-10">
+        {/* Glass morphism card */}
+        <div className="backdrop-blur-2xl bg-white/60 border border-gray-200/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] rounded-3xl overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-500/90 via-blue-600/90 to-cyan-600/90 p-8">
+            <div className="flex items-center justify-center gap-4">
+              <div className="backdrop-blur-xl bg-white/20 p-3 rounded-2xl border border-white/30">
+                <Users className="h-10 w-10 text-white" />
+              </div>
               <div className="text-center">
-                <CardTitle className="text-3xl font-bold">
-                  Выберите ученика
-                </CardTitle>
-                <div className="flex items-center justify-center gap-2 mt-2">
-                  <div className={`w-3 h-3 rounded-full ${colorScheme.dot}`}></div>
-                  <span className="text-blue-100 text-sm capitalize">{tagColor} group</span>
-                </div>
+                <h1 className="text-3xl font-semibold text-white tracking-tight">
+                  Выберите ваше имя
+                </h1>
+                <p className="text-white/90 text-base mt-1">
+                  Нажмите на своё имя, чтобы продолжить
+                </p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="pt-8 pb-8">
+          </div>
+          <div className="pt-8 pb-8 px-6">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -123,11 +132,8 @@ export default function TagStudentsPage() {
             ) : students.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 text-lg">
-                  Нет учеников с этим тегом
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-                  Tag: <span className="capitalize font-mono">{tagColor}</span>
+                <p className="text-gray-600 text-lg">
+                  Нет учеников в этой группе
                 </p>
               </div>
             ) : (
@@ -137,14 +143,13 @@ export default function TagStudentsPage() {
                     key={student.id}
                     size="lg"
                     onClick={() => handleStudentClick(student.id)}
-                    className={`h-auto py-6 border-2 transition-all shadow-lg ${colorScheme.bg} ${colorScheme.border} ${colorScheme.hover} ${colorScheme.text}`}
+                    className="h-auto py-6 bg-white/40 hover:bg-white/60 border border-gray-200/50 hover:border-gray-300/50 text-gray-900 transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-100 backdrop-blur-xl"
                     variant="outline"
                   >
                     <div className="flex flex-col items-center gap-2">
-                      <div className={`w-4 h-4 rounded-full ${colorScheme.dot}`}></div>
                       <span className="font-bold text-xl">{student.name}</span>
                       {student.teacher && (
-                        <span className="text-xs opacity-70">
+                        <span className="text-xs text-gray-600">
                           Учитель: {student.teacher}
                         </span>
                       )}
@@ -153,12 +158,8 @@ export default function TagStudentsPage() {
                 ))}
               </div>
             )}
-            
-            <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-              <p>Нажмите на своё имя, чтобы продолжить</p>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </main>
   );
