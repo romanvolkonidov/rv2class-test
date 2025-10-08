@@ -705,7 +705,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
       {!viewOnly && (
         <div 
           className={cn(
-            "fixed top-3 left-1/2 transform -translate-x-1/2 z-[60] max-w-[95vw] transition-all duration-300",
+            "fixed top-3 left-1/2 transform -translate-x-1/2 z-[60] max-w-[95vw] transition-all duration-300 touch-manipulation",
             isClosing ? "animate-slide-up-out" : "animate-slide-down"
           )}
         >
@@ -725,9 +725,9 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                   variant="ghost"
                   onClick={() => setToolbarCollapsed(false)}
                   title="Expand Toolbar"
-                  className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors"
+                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                 >
-                  <ChevronDown className="h-4 w-4 stroke-[2.5]" />
+                  <ChevronDown className="h-5 w-5 stroke-[2.5]" />
                 </Button>
                 <div className="w-px h-6 bg-white/20" />
                 <Button
@@ -735,9 +735,9 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                   variant="ghost"
                   onClick={clearAndBroadcast}
                   title="Clear All"
-                  className="h-8 w-8 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors"
+                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                 >
-                  <Trash2 className="h-4 w-4 stroke-[2.5]" />
+                  <Trash2 className="h-5 w-5 stroke-[2.5]" />
                 </Button>
                 {onClose && (
                   <>
@@ -747,9 +747,9 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                       variant="ghost"
                       onClick={onClose}
                       title="Close Annotations"
-                      className="h-8 w-8 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors"
+                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                     >
-                      <X className="h-4 w-4 stroke-[2.5]" />
+                      <X className="h-5 w-5 stroke-[2.5]" />
                     </Button>
                   </>
                 )}
@@ -763,9 +763,9 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                   variant="ghost"
                   onClick={() => setToolbarCollapsed(true)}
                   title="Collapse Toolbar"
-                  className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors"
+                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                 >
-                  <ChevronUp className="h-4 w-4 stroke-[2.5]" />
+                  <ChevronUp className="h-5 w-5 stroke-[2.5]" />
                 </Button>
 
                 <div className="w-px h-8 bg-white/20" />
@@ -777,65 +777,65 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                     variant={tool === "pencil" ? "default" : "ghost"}
                     onClick={() => setTool("pencil")}
                     title="Pencil"
-                    className={`h-8 w-8 rounded-lg transition-all border ${
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                       tool === "pencil" 
                         ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
                         : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
-                    <Pencil className="h-4 w-4 stroke-[2.5]" />
+                    <Pencil className="h-5 w-5 stroke-[2.5]" />
                   </Button>
                   <Button
                     size="icon"
                     variant={tool === "eraser" ? "default" : "ghost"}
                     onClick={() => setTool("eraser")}
                     title="Eraser"
-                    className={`h-8 w-8 rounded-lg transition-all border ${
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                       tool === "eraser" 
                         ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
                         : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
-                    <Eraser className="h-4 w-4 stroke-[2.5]" />
+                    <Eraser className="h-5 w-5 stroke-[2.5]" />
                   </Button>
                   <Button
                     size="icon"
                     variant={tool === "rectangle" ? "default" : "ghost"}
                     onClick={() => setTool("rectangle")}
                     title="Rectangle"
-                    className={`h-8 w-8 rounded-lg transition-all border ${
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                       tool === "rectangle" 
                         ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
                         : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
-                    <Square className="h-4 w-4 stroke-[2.5]" />
+                    <Square className="h-5 w-5 stroke-[2.5]" />
                   </Button>
                   <Button
                     size="icon"
                     variant={tool === "circle" ? "default" : "ghost"}
                     onClick={() => setTool("circle")}
                     title="Circle"
-                    className={`h-8 w-8 rounded-lg transition-all border ${
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                       tool === "circle" 
                         ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
                         : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
-                    <Circle className="h-4 w-4 stroke-[2.5]" />
+                    <Circle className="h-5 w-5 stroke-[2.5]" />
                   </Button>
                   <Button
                     size="icon"
                     variant={tool === "text" ? "default" : "ghost"}
                     onClick={() => setTool("text")}
                     title="Text"
-                    className={`h-8 w-8 rounded-lg transition-all border ${
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                       tool === "text" 
                         ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
                         : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
-                    <Type className="h-4 w-4 stroke-[2.5]" />
+                    <Type className="h-5 w-5 stroke-[2.5]" />
                   </Button>
                 </div>
 
@@ -847,14 +847,14 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                     type="color"
                     value={color}
                     onChange={(e) => setColor(e.target.value)}
-                    className="w-8 h-8 rounded-lg cursor-pointer border border-white/20 hover:border-white/40 transition-colors bg-white/10"
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg cursor-pointer border border-white/20 hover:border-white/40 transition-colors bg-white/10 touch-manipulation"
                     title="Pick Color"
                   />
                   <div className="flex gap-1">
                     {["#FF0000", "#0000FF", "#00FF00", "#FFFF00", "#FF00FF", "#FFFFFF"].map((c) => (
                       <button
                         key={c}
-                        className={`w-7 h-7 rounded-md transition-all border ${
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-md transition-all border active:scale-95 touch-manipulation select-none ${
                           color === c ? 'ring-2 ring-blue-400 ring-offset-1 ring-offset-black/20 border-white/40' : 'border-white/20 hover:border-white/40'
                         }`}
                         style={{ backgroundColor: c }}
@@ -907,9 +907,9 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                     onClick={undo}
                     disabled={historyStep === 0}
                     title="Undo"
-                    className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed border border-white/20 text-white transition-colors"
+                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                   >
-                    <Undo className="h-4 w-4 stroke-[2.5]" />
+                    <Undo className="h-5 w-5 stroke-[2.5]" />
                   </Button>
                   <Button
                     size="icon"
@@ -917,9 +917,9 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                     onClick={redo}
                     disabled={historyStep === history.length}
                     title="Redo"
-                    className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed border border-white/20 text-white transition-colors"
+                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                   >
-                    <Redo className="h-4 w-4 stroke-[2.5]" />
+                    <Redo className="h-5 w-5 stroke-[2.5]" />
                   </Button>
                 </div>
 
@@ -931,9 +931,9 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                   variant="ghost"
                   onClick={clearAndBroadcast}
                   title="Clear All"
-                  className="h-8 w-8 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors"
+                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                 >
-                  <Trash2 className="h-4 w-4 stroke-[2.5]" />
+                  <Trash2 className="h-5 w-5 stroke-[2.5]" />
                 </Button>
 
                 {/* Close Button */}
@@ -945,9 +945,9 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                       variant="ghost"
                       onClick={onClose}
                       title="Close Annotations"
-                      className="h-8 w-8 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors"
+                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                     >
-                      <X className="h-4 w-4 stroke-[2.5]" />
+                      <X className="h-5 w-5 stroke-[2.5]" />
                     </Button>
                   </>
                 )}

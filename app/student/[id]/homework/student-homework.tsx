@@ -187,7 +187,7 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
           <Button
             variant="outline"
             onClick={() => router.back()}
-            className="mb-4 backdrop-blur-xl bg-white/60 border-gray-200/50 hover:bg-white/80"
+            className="mb-4 backdrop-blur-xl bg-white/60 border-gray-200/50 hover:bg-white/80 min-h-[44px] touch-manipulation active:scale-95 select-none"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Welcome Page
@@ -344,7 +344,7 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                           </div>
                           <Button
                             onClick={() => handleStartHomework(assignment.id)}
-                            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-md"
+                            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-md min-h-[44px] touch-manipulation active:scale-95 select-none"
                           >
                             <Play className="mr-2 h-4 w-4" />
                             Start Homework

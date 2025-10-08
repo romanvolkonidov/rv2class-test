@@ -143,7 +143,7 @@ export default function TagStudentsPage() {
                     key={student.id}
                     size="lg"
                     onClick={() => handleStudentClick(student.id)}
-                    className="h-auto py-6 bg-white/40 hover:bg-white/60 border border-gray-200/50 hover:border-gray-300/50 text-gray-900 transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-100 backdrop-blur-xl"
+                    className="h-auto py-6 min-h-[64px] bg-white/40 hover:bg-white/60 border border-gray-200/50 hover:border-gray-300/50 text-gray-900 transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-100 backdrop-blur-xl touch-manipulation select-none"
                     variant="outline"
                   >
                     <div className="flex flex-col items-center gap-2">

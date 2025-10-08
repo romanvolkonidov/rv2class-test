@@ -481,7 +481,7 @@ export default function HomeworkQuiz({ studentId, studentName, homeworkId }: Hom
                     {questions[currentQuestionIndex].options!.map((option, optionIndex) => (
                       <label
                         key={optionIndex}
-                        className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all min-h-[52px] touch-manipulation active:scale-[0.98] select-none ${
                           answers[questions[currentQuestionIndex].id] === option
                             ? "bg-purple-50 border-purple-500 dark:bg-purple-900/20 dark:border-purple-500"
                             : "bg-white border-gray-200 hover:border-purple-300 dark:bg-gray-800 dark:border-gray-700 dark:hover:border-purple-600"
@@ -493,7 +493,7 @@ export default function HomeworkQuiz({ studentId, studentName, homeworkId }: Hom
                           value={option}
                           checked={answers[questions[currentQuestionIndex].id] === option}
                           onChange={(e) => handleAnswerChange(questions[currentQuestionIndex].id, e.target.value)}
-                          className="w-5 h-5 text-purple-600"
+                          className="w-6 h-6 text-purple-600 touch-manipulation"
                         />
                         <span className="text-lg text-gray-800 dark:text-gray-200">{option}</span>
                       </label>
@@ -523,7 +523,7 @@ export default function HomeworkQuiz({ studentId, studentName, homeworkId }: Hom
                   onClick={handlePrevious}
                   disabled={currentQuestionIndex === 0}
                   variant="outline"
-                  className="px-6 py-6"
+                  className="px-6 py-6 min-h-[48px] touch-manipulation active:scale-95 select-none"
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Previous
@@ -537,7 +537,7 @@ export default function HomeworkQuiz({ studentId, studentName, homeworkId }: Hom
                 {currentQuestionIndex < questions.length - 1 ? (
                   <Button
                     onClick={handleNext}
-                    className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold px-6 py-6"
+                    className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold px-6 py-6 min-h-[48px] touch-manipulation active:scale-95 select-none"
                   >
                     Next
                     <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
@@ -546,7 +546,7 @@ export default function HomeworkQuiz({ studentId, studentName, homeworkId }: Hom
                   <Button
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold px-6 py-6"
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold px-6 py-6 min-h-[48px] touch-manipulation active:scale-95 select-none"
                   >
                     {submitting ? (
                       <>
