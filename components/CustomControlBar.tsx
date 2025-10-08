@@ -670,7 +670,7 @@ export default function CustomControlBar({
           
           {/* Microphone menu dropdown */}
           {showMicMenu && audioDevices.length > 1 && (
-            <div className="absolute bottom-full left-0 mb-2 w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-50">
+            <div className="absolute bottom-full left-0 mb-2 w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-[9999]">
               <div className="p-2 border-b border-white/10">
                 <p className="text-xs font-semibold text-white/70 uppercase tracking-wide px-2">Select Microphone</p>
               </div>
@@ -726,7 +726,7 @@ export default function CustomControlBar({
           
           {/* Camera menu dropdown */}
           {showCameraMenu && videoDevices.length > 1 && (
-            <div className="absolute bottom-full left-0 mb-2 w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-50">
+            <div className="absolute bottom-full left-0 mb-2 w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-[9999]">
               <div className="p-2 border-b border-white/10">
                 <p className="text-xs font-semibold text-white/70 uppercase tracking-wide px-2">Select Camera</p>
               </div>
