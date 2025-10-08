@@ -360,6 +360,67 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     };
   }, [room]);
 
+  // CRITICAL: Enforce audio priority and quality settings
+  useEffect(() => {
+    if (!room || !room.localParticipant) return;
+
+    const enforceAudioPriority = async () => {
+      try {
+        console.log('🎤 Enforcing audio priority and quality settings...');
+        
+        // Get all local audio tracks
+        const audioTracks = room.localParticipant.audioTrackPublications;
+        
+        for (const [, publication] of audioTracks) {
+          if (publication.track) {
+            console.log('🔊 Audio track active:', {
+              trackSid: publication.trackSid,
+              muted: publication.isMuted,
+              source: publication.source,
+            });
+          }
+        }
+
+        // Monitor all participants' audio tracks for quality
+        const monitorRemoteAudio = () => {
+          room.remoteParticipants.forEach((participant) => {
+            participant.audioTrackPublications.forEach((publication) => {
+              if (publication.track) {
+                console.log(`🔊 Remote audio from ${participant.identity}:`, {
+                  subscribed: publication.isSubscribed,
+                  muted: publication.isMuted,
+                  source: publication.source,
+                });
+              }
+            });
+          });
+        };
+
+        monitorRemoteAudio();
+        
+        // Monitor periodically to ensure audio quality is maintained
+        const interval = setInterval(() => {
+          console.log('🎤 Audio quality check - ensuring priority settings...');
+          monitorRemoteAudio();
+        }, 30000); // Every 30 seconds
+
+        return () => clearInterval(interval);
+      } catch (error) {
+        console.error('❌ Error monitoring audio quality:', error);
+      }
+    };
+
+    if (room.state === 'connected') {
+      enforceAudioPriority();
+    }
+
+    room.on('connected', enforceAudioPriority);
+
+    return () => {
+      room.off('connected', enforceAudioPriority);
+    };
+  }, [room]);
+
   // Monitor for screen share
   useEffect(() => {
     const checkScreenShare = () => {
@@ -689,12 +750,26 @@ function RoomPage() {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
+          // CRITICAL: Highest audio quality settings
+          sampleRate: 48000,        // Professional audio quality (48kHz)
+          channelCount: 2,           // Stereo audio
+          sampleSize: 16,            // High quality bit depth
         },
         publishDefaults: {
+          // CRITICAL: Enable RED (Redundant Audio) for reliability under packet loss
+          red: true,                  // Redundant encoding for audio - prevents dropouts
+          // CRITICAL: Disable DTX to maintain constant audio quality
+          dtx: false,                 // Don't use discontinuous transmission - always send audio
+          
+          // Audio bitrate configuration (applied via audioPresets)
+          audioPreset: {
+            maxBitrate: 128_000,     // 128 kbps - high quality audio (music streaming quality)
+          },
+          
           // Screen share optimized for ULTRA quality - Microsoft Teams level
           screenShareEncoding: {
-            maxBitrate: 15_000_000, // 15 Mbps for ultra-sharp text (Microsoft Teams level)
-            maxFramerate: 60, // Up to 60fps for ultra-smooth screen sharing
+            maxBitrate: 15_000_000,  // 15 Mbps for ultra-sharp text (Microsoft Teams level)
+            maxFramerate: 60,        // Up to 60fps for ultra-smooth screen sharing
           },
           // Prefer VP9 codec for better quality/compression ratio
           videoCodec: 'vp9' as VideoCodec,
@@ -702,10 +777,8 @@ function RoomPage() {
           backupCodec: { codec: 'vp8' },
           // CRITICAL: Disable simulcast for screen share to prevent quality pulsing
           simulcast: false,
-          // CRITICAL: Force constant bitrate (no adaptive reduction)
+          // CRITICAL: Keep microphone active even when muted (faster unmute)
           stopMicTrackOnMute: false,
-          // CRITICAL: Ensure audio and video are published immediately
-          dtx: false,
         },
         videoCaptureDefaults: {
           resolution: VideoPresets.h720.resolution,

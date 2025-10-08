@@ -9,6 +9,14 @@ export const metadata: Metadata = {
   title: "RV2Class - Video Tutoring Platform",
   description: "Professional English tutoring with real-time video, screen sharing, and collaborative whiteboard",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon-192.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/icon-192.svg", type: "image/svg+xml" },
+    ],
+  },
 };
 
 export const viewport = {

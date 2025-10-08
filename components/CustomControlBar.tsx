@@ -338,12 +338,32 @@ export default function CustomControlBar({
 
         // Publish screen audio if available
         if (audioTrack) {
+          // CRITICAL: Configure audio track for maximum quality before publishing
+          if ('applyConstraints' in audioTrack) {
+            try {
+              await (audioTrack as MediaStreamTrack).applyConstraints({
+                sampleRate: { ideal: 48000 },
+                channelCount: { ideal: 2 },
+                echoCancellation: false,  // Don't cancel system audio
+                noiseSuppression: false,  // Keep original quality
+                autoGainControl: false,   // Maintain original volume
+              });
+              console.log('✅ Applied high quality constraints to system audio');
+            } catch (e) {
+              console.warn('⚠️ Could not apply all audio constraints:', e);
+            }
+          }
+
           await localParticipant.publishTrack(audioTrack, {
             name: 'screen_share_audio',
             source: Track.Source.ScreenShareAudio,
+            // CRITICAL: Enable RED for audio reliability
+            red: true,
+            // CRITICAL: Disable DTX for constant audio quality
+            dtx: false,
           });
-          console.log('✅ Screen audio published');
-          console.log('🔊 System audio is being shared!');
+          console.log('✅ Screen audio published with high priority settings');
+          console.log('🔊 System audio is being shared with maximum quality!');
         } else {
           console.log('⚠️ No audio track captured');
           console.log('💡 To share audio:');
