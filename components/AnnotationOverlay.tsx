@@ -378,15 +378,15 @@ export default function AnnotationOverlay({
     };
   }, [screenShareElement, zoomLevel]); // Re-run when zoom changes
 
-  // Initialize toolbar position - bottom-right corner, more discreet
+  // Initialize toolbar position - center it horizontally
   useEffect(() => {
     if (!isToolbarPositioned && toolbarRef.current) {
       const toolbar = toolbarRef.current;
       const toolbarRect = toolbar.getBoundingClientRect();
       
-      // Position at bottom-right with some padding
-      const x = window.innerWidth - toolbarRect.width - 20;
-      const y = window.innerHeight - toolbarRect.height - 80; // Account for control bar
+      // Center horizontally, position at the bottom
+      const x = (window.innerWidth - toolbarRect.width) / 2;
+      const y = window.innerHeight - toolbarRect.height - 80; // Above control bar
       
       setToolbarPosition({ x, y });
       setIsToolbarPositioned(true);

@@ -76,7 +76,7 @@ export const ParticipantView = memo(function ParticipantView({
             playsInline
             muted={isLocal}
             className={cn(
-            "w-full h-full object-cover",
+            "w-full h-full object-contain",
             !isCameraEnabled && "hidden",
             isLocal && "scale-x-[-1]"
             )}

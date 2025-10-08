@@ -6,6 +6,7 @@ import { Track, Participant } from "livekit-client";
 import { cn } from "@/lib/utils";
 import { GripVertical, UserX, MonitorX, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ParticipantView } from "@/components/DraggableThumbnails";
 
 interface CompactParticipantProps {
   participant: Participant;
@@ -16,6 +17,7 @@ interface CompactParticipantProps {
   onStopScreenShare?: (participantIdentity: string) => void;
 }
 
+// Use the same ParticipantView component as screen share thumbnails
 const CompactParticipant = memo(function CompactParticipant({ 
   participant, 
   trackRef, 
@@ -24,8 +26,6 @@ const CompactParticipant = memo(function CompactParticipant({
   onRemoveStudent, 
   onStopScreenShare 
 }: CompactParticipantProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
   const [showControls, setShowControls] = useState(false);
 
   // Check if participant has screen share
@@ -33,67 +33,20 @@ const CompactParticipant = memo(function CompactParticipant({
     (pub) => pub.source === Track.Source.ScreenShare
   );
 
-  useEffect(() => {
-    const videoEl = videoRef.current;
-    const audioEl = audioRef.current;
-    
-    if (!trackRef?.publication?.track) return;
-
-    const track = trackRef.publication.track;
-    
-    if (track.kind === Track.Kind.Video && videoEl) {
-      track.attach(videoEl);
-    } else if (track.kind === Track.Kind.Audio && audioEl && !isLocal) {
-      track.attach(audioEl);
-    }
-
-    return () => {
-      if (track.kind === Track.Kind.Video && videoEl) {
-        track.detach(videoEl);
-      } else if (track.kind === Track.Kind.Audio && audioEl && !isLocal) {
-        track.detach(audioEl);
-      }
-    };
-  }, [trackRef?.publication?.track, isLocal]);
-
-  const isSpeaking = participant.isSpeaking;
-  const isCameraEnabled = participant.isCameraEnabled;
-
   return (
     <div
-      className={cn(
-        "relative w-[160px] h-[120px] rounded-lg overflow-hidden transition-all duration-200",
-        "bg-black/20 backdrop-blur-md border",
-        isSpeaking ? "border-blue-400 ring-2 ring-blue-400/50" : "border-white/10"
-      )}
+      className="relative"
       onMouseEnter={() => isTutor && !isLocal && setShowControls(true)}
       onMouseLeave={() => setShowControls(false)}
     >
-      {/* Video */}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted={isLocal}
-        className={cn(
-          "w-full h-full object-cover",
-          !isCameraEnabled && "hidden"
-        )}
+      {/* Use the same ParticipantView component as screen share thumbnails */}
+      <ParticipantView
+        participant={participant}
+        trackRef={trackRef}
+        isLocal={isLocal}
+        isTutor={isTutor}
+        isThumbnail={true}
       />
-      
-      {/* Audio */}
-      {!isLocal && <audio ref={audioRef} autoPlay />}
-
-      {/* Placeholder when camera is off */}
-      {!isCameraEnabled && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-          <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
-            <span className="text-lg font-bold text-white">
-              {participant.identity.charAt(0).toUpperCase()}
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Tutor Controls - Only shown when hovering and user is tutor and not local participant */}
       {isTutor && !isLocal && showControls && (
@@ -131,23 +84,6 @@ const CompactParticipant = memo(function CompactParticipant({
               <UserX className="h-3 w-3" />
             </Button>
           )}
-        </div>
-      )}
-
-      {/* Name overlay - adjusted positioning to avoid overlap with mic indicator */}
-      <div className={cn(
-        "absolute bottom-1 px-2 py-0.5 rounded bg-black/40 backdrop-blur-sm border border-white/10",
-        !participant.isMicrophoneEnabled ? "left-10 right-1" : "left-1 right-1"
-      )}>
-        <p className="text-xs font-medium text-white truncate">
-          {participant.identity} {isLocal && "(You)"}
-        </p>
-      </div>
-
-      {/* Microphone muted indicator - bottom left with better icon */}
-      {!participant.isMicrophoneEnabled && (
-        <div className="absolute bottom-1 left-1 p-1.5 rounded-md bg-red-500/80 backdrop-blur-sm border border-red-400/50 shadow-lg">
-          <MicOff className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
         </div>
       )}
     </div>
