@@ -61,6 +61,8 @@ export default function CustomControlBar({
         
         console.log('📹 Available cameras:', cameras.length, cameras.map(c => c.label));
         console.log('🎤 Available microphones:', mics.length, mics.map(m => m.label));
+        console.log('📹 Will show camera menu:', cameras.length > 1);
+        console.log('🎤 Will show mic menu:', mics.length > 1);
         
         // Get current devices from room
         if (localParticipant) {
@@ -632,7 +634,7 @@ export default function CustomControlBar({
         "flex items-center gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4",
         "rounded-2xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl",
         // Make it scrollable on very small screens
-        "overflow-x-auto overflow-y-hidden scrollbar-hide",
+        "overflow-x-auto overflow-y-visible scrollbar-hide",
         // Smooth scrolling on mobile
         "snap-x snap-mandatory"
       )}>
@@ -651,6 +653,8 @@ export default function CustomControlBar({
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                console.log('🎤 Toggling mic menu. Current state:', showMicMenu, '-> New state:', !showMicMenu);
+                console.log('🎤 Audio devices count:', audioDevices.length);
                 setShowMicMenu(!showMicMenu);
                 setShowCameraMenu(false);
               }}
@@ -707,6 +711,8 @@ export default function CustomControlBar({
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                console.log('📹 Toggling camera menu. Current state:', showCameraMenu, '-> New state:', !showCameraMenu);
+                console.log('📹 Video devices count:', videoDevices.length);
                 setShowCameraMenu(!showCameraMenu);
                 setShowMicMenu(false);
               }}
