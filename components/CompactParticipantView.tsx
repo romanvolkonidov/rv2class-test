@@ -4,7 +4,7 @@ import { useEffect, useRef, memo, useState } from "react";
 import { useTracks, useParticipants, TrackReferenceOrPlaceholder, useRoomContext } from "@livekit/components-react";
 import { Track, Participant } from "livekit-client";
 import { cn } from "@/lib/utils";
-import { GripVertical, UserX, MonitorX } from "lucide-react";
+import { GripVertical, UserX, MonitorX, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface CompactParticipantProps {
@@ -140,15 +140,6 @@ const CompactParticipant = memo(function CompactParticipant({
           {participant.identity} {isLocal && "(You)"}
         </p>
       </div>
-
-      {/* Microphone muted indicator */}
-      {!participant.isMicrophoneEnabled && (
-        <div className="absolute top-1 left-1 p-1 rounded bg-red-500/40 backdrop-blur-sm border border-red-400/30">
-          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
-          </svg>
-        </div>
-      )}
     </div>
   );
 }, (prevProps, nextProps) => {

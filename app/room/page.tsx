@@ -646,14 +646,16 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
             {/* Draggable participant videos during whiteboard */}
             <CompactParticipantView isTutor={isTutor} />
             
-            {/* Close button for whiteboard - top right */}
-            <button
-              onClick={toggleWhiteboard}
-              className="absolute top-6 right-6 z-20 p-3 rounded-xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl hover:bg-white/20 hover:border-white/30 transition-all duration-200 hover:scale-110"
-              title="Close Whiteboard"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
+            {/* Close button for whiteboard - top right - Only visible to tutors */}
+            {isTutor && (
+              <button
+                onClick={toggleWhiteboard}
+                className="absolute top-6 right-6 z-20 p-3 rounded-xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl hover:bg-white/20 hover:border-white/30 transition-all duration-200 hover:scale-110"
+                title="Close Whiteboard"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+            )}
 
             {/* Control bar available even in whiteboard mode */}
             <CustomControlBar 
