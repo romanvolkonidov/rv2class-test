@@ -11,7 +11,15 @@
  * - Works in real-time
  */
 
-import { loadRnnoise, RnnoiseWorkletNode } from '@sapphi-red/web-noise-suppressor';
+// Only import in browser environment
+let loadRnnoise: any;
+let RnnoiseWorkletNode: any;
+
+if (typeof window !== 'undefined') {
+  const module = require('@sapphi-red/web-noise-suppressor');
+  loadRnnoise = module.loadRnnoise;
+  RnnoiseWorkletNode = module.RnnoiseWorkletNode;
+}
 
 let wasmBinary: ArrayBuffer | null = null;
 let isInitialized = false;
@@ -22,6 +30,12 @@ let audioContext: AudioContext | null = null;
  * Only needs to be called once per session
  */
 export async function initializeNoiseSuppressor(): Promise<void> {
+  // Skip if not in browser environment
+  if (typeof window === 'undefined' || !loadRnnoise || !RnnoiseWorkletNode) {
+    console.warn('⚠️ Noise suppressor not available in server environment');
+    return;
+  }
+  
   if (isInitialized) return;
   
   try {
@@ -50,6 +64,12 @@ export async function initializeNoiseSuppressor(): Promise<void> {
 export async function applyNoiseSuppression(
   audioStream: MediaStream
 ): Promise<MediaStream> {
+  // Skip if not in browser environment
+  if (typeof window === 'undefined' || !RnnoiseWorkletNode) {
+    console.warn('⚠️ Noise suppressor not available, returning original stream');
+    return audioStream;
+  }
+  
   // Ensure noise suppressor is initialized
   if (!isInitialized) {
     await initializeNoiseSuppressor();
