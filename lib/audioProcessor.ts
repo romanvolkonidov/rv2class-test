@@ -84,8 +84,21 @@ export async function applyNoiseSuppression(
     console.log('🔧 Applying noise suppression to audio stream...');
     
     // Create or reuse AudioContext
+    // IMPORTANT: AudioContext requires a user gesture, so this should only be called
+    // after the user has interacted with the page (e.g., joining a room)
     if (!audioContext) {
-      audioContext = new AudioContext();
+      try {
+        audioContext = new AudioContext();
+        // Resume context if it's suspended (required by browser autoplay policy)
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
+        console.log('✅ AudioContext created and resumed');
+      } catch (audioContextError) {
+        console.error('❌ Failed to create AudioContext:', audioContextError);
+        console.warn('⚠️ This usually means the page needs a user interaction first');
+        throw audioContextError;
+      }
     }
 
     // Get the audio track

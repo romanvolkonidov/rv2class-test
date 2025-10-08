@@ -83,7 +83,15 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
       return;
     }
 
+    let hasRun = false; // Prevent double execution
+
     const enableMediaOnConnect = async () => {
+      if (hasRun) {
+        console.log('⏭️ Media already enabled, skipping...');
+        return;
+      }
+      hasRun = true;
+
       try {
         console.log('🎥 Room connected! Enabling camera and microphone...');
         
