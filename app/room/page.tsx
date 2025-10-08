@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { LiveKitRoom, RoomAudioRenderer, useRoomContext, useDataChannel, useChat } from "@livekit/components-react";
-import { VideoPresets, VideoCodec } from "livekit-client";
+import { VideoPresets, VideoCodec, Track } from "livekit-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Copy, Check, X, MessageSquare } from "lucide-react";
@@ -466,6 +466,90 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     }
   });
 
+  // CRITICAL: Listen for tutor commands (remove student, stop screen share)
+  useDataChannel((message) => {
+    try {
+      const decoder = new TextDecoder();
+      const text = decoder.decode(message.payload);
+      const data = JSON.parse(text);
+      
+      // Only process if this is for the current participant
+      if (data.targetIdentity !== room?.localParticipant?.identity) {
+        return;
+      }
+
+      if (data.type === "removeStudent") {
+        console.log('🚫 Received remove command from tutor');
+        
+        // Show notification before disconnecting
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(239, 68, 68, 0.95);
+          color: white;
+          padding: 20px 40px;
+          border-radius: 12px;
+          z-index: 10000;
+          font-size: 18px;
+          font-weight: 600;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          text-align: center;
+        `;
+        notification.innerHTML = `
+          <div>You have been removed from the room by the tutor</div>
+          <div style="margin-top: 8px; font-size: 14px; font-weight: 400;">You can rejoin using your link</div>
+        `;
+        document.body.appendChild(notification);
+        
+        // Disconnect after 2 seconds
+        setTimeout(() => {
+          room?.disconnect();
+          // Redirect to home or show rejoin option
+          window.location.href = '/';
+        }, 2000);
+        
+      } else if (data.type === "stopScreenShare") {
+        console.log('🛑 Received stop screen share command from tutor');
+        
+        // Find and stop screen share track
+        const screenSharePub = Array.from(room?.localParticipant?.trackPublications.values() || [])
+          .find(pub => pub.source === Track.Source.ScreenShare);
+        
+        if (screenSharePub && screenSharePub.track) {
+          console.log('Stopping screen share track...');
+          screenSharePub.track.stop();
+          room?.localParticipant?.unpublishTrack(screenSharePub.track);
+          
+          // Show notification
+          const notification = document.createElement('div');
+          notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(249, 115, 22, 0.95);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          `;
+          notification.textContent = 'Your screen share was stopped by the tutor';
+          document.body.appendChild(notification);
+          
+          setTimeout(() => notification.remove(), 4000);
+        }
+      }
+    } catch (error) {
+      console.error("Error processing tutor command:", error);
+    }
+  });
+
   const toggleWhiteboard = () => {
     const newState = !showWhiteboard;
     setShowWhiteboard(newState);
@@ -560,7 +644,7 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
             <Whiteboard />
             
             {/* Draggable participant videos during whiteboard */}
-            <CompactParticipantView />
+            <CompactParticipantView isTutor={isTutor} />
             
             {/* Close button for whiteboard - top right */}
             <button

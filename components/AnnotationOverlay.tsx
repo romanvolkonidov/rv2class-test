@@ -46,7 +46,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
     offsetY: 0,
   });
   const [isDrawing, setIsDrawing] = useState(false);
-  const [tool, setTool] = useState<AnnotationTool>("pencil");
+  const [tool, setTool] = useState<AnnotationTool>("pencil"); // Default to pencil so students can draw immediately
   const [color, setColor] = useState("#FF0000");
   const [lineWidth, setLineWidth] = useState(3);
   const [history, setHistory] = useState<AnnotationAction[]>([]);
@@ -60,6 +60,13 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
   const [fontSize, setFontSize] = useState(24);
   const [internalIsClosing, setInternalIsClosing] = useState(false);
   const room = useRoomContext();
+  
+  // Toolbar dragging state
+  const [toolbarPosition, setToolbarPosition] = useState({ x: 0, y: 0 });
+  const [isDraggingToolbar, setIsDraggingToolbar] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [isToolbarPositioned, setIsToolbarPositioned] = useState(false);
   
   // Use external or internal closing state
   const isClosing = externalIsClosing || internalIsClosing;
@@ -207,6 +214,107 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
       window.removeEventListener("scroll", handleResize, true);
     };
   }, [screenShareElement]);
+
+  // Initialize toolbar position - bottom-right corner, more discreet
+  useEffect(() => {
+    if (!isToolbarPositioned && toolbarRef.current && !viewOnly) {
+      const toolbar = toolbarRef.current;
+      const toolbarRect = toolbar.getBoundingClientRect();
+      
+      // Position at bottom-right with some padding
+      const x = window.innerWidth - toolbarRect.width - 20;
+      const y = window.innerHeight - toolbarRect.height - 80; // Account for control bar
+      
+      setToolbarPosition({ x, y });
+      setIsToolbarPositioned(true);
+    }
+  }, [isToolbarPositioned, viewOnly]);
+
+  // Handle toolbar dragging - Mouse events
+  const handleToolbarMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.drag-handle')) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDraggingToolbar(true);
+      setDragStart({
+        x: e.clientX - toolbarPosition.x,
+        y: e.clientY - toolbarPosition.y,
+      });
+    }
+  };
+
+  // Handle toolbar dragging - Touch events
+  const handleToolbarTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('.drag-handle')) {
+      e.stopPropagation();
+      const touch = e.touches[0];
+      setIsDraggingToolbar(true);
+      setDragStart({
+        x: touch.clientX - toolbarPosition.x,
+        y: touch.clientY - toolbarPosition.y,
+      });
+    }
+  };
+
+  // Mouse/Touch move and end handlers
+  useEffect(() => {
+    if (!isDraggingToolbar) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const newX = e.clientX - dragStart.x;
+      const newY = e.clientY - dragStart.y;
+      
+      // Keep within viewport bounds
+      const toolbar = toolbarRef.current;
+      if (toolbar) {
+        const maxX = window.innerWidth - toolbar.offsetWidth;
+        const maxY = window.innerHeight - toolbar.offsetHeight;
+        
+        setToolbarPosition({
+          x: Math.max(0, Math.min(newX, maxX)),
+          y: Math.max(0, Math.min(newY, maxY)),
+        });
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const newX = touch.clientX - dragStart.x;
+      const newY = touch.clientY - dragStart.y;
+      
+      // Keep within viewport bounds
+      const toolbar = toolbarRef.current;
+      if (toolbar) {
+        const maxX = window.innerWidth - toolbar.offsetWidth;
+        const maxY = window.innerHeight - toolbar.offsetHeight;
+        
+        setToolbarPosition({
+          x: Math.max(0, Math.min(newX, maxX)),
+          y: Math.max(0, Math.min(newY, maxY)),
+        });
+      }
+    };
+
+    const handleEnd = () => {
+      setIsDraggingToolbar(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleEnd);
+    document.addEventListener('touchcancel', handleEnd);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleEnd);
+      document.removeEventListener('touchcancel', handleEnd);
+    };
+  }, [isDraggingToolbar, dragStart, toolbarPosition]);
 
   // Convert absolute pixel coordinates to relative (0-1 range)
   const toRelative = (x: number, y: number): RelativePoint => {
@@ -601,6 +709,39 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
     redrawCanvas();
   }, [historyStep, history]);
 
+  // CRITICAL: Ensure canvas is initialized and ready for immediate drawing
+  useEffect(() => {
+    if (!canvasRef.current || !screenShareElement || viewOnly) return;
+    
+    // Small delay to ensure everything is mounted and sized correctly
+    const timer = setTimeout(() => {
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext("2d");
+      
+      if (ctx && canvas && canvas.width > 0 && canvas.height > 0) {
+        console.log('✅ Annotation canvas initialized and ready for drawing:', {
+          width: canvas.width,
+          height: canvas.height,
+          tool,
+          color,
+          lineWidth,
+        });
+        
+        // Ensure canvas is cleared and in the correct state
+        ctx.save();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.restore();
+        
+        // Redraw existing annotations if any
+        redrawCanvas();
+      } else {
+        console.warn('⚠️ Canvas dimensions not ready yet');
+      }
+    }, 100); // Small delay to ensure DOM is settled
+    
+    return () => clearTimeout(timer);
+  }, [screenShareElement, viewOnly]);
+
   // Don't render anything if screen share element is not found yet (unless we're closing with animation)
   if (!screenShareElement && !isClosing) {
     return null;
@@ -704,15 +845,33 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
       {/* Toolbar - Only show for teachers, not in view-only mode */}
       {!viewOnly && (
         <div 
+          ref={toolbarRef}
           className={cn(
-            "fixed top-3 left-1/2 transform -translate-x-1/2 z-[60] max-w-[95vw] transition-all duration-300 touch-manipulation",
+            "fixed z-[60] transition-opacity duration-300 touch-manipulation",
+            isDraggingToolbar ? "cursor-grabbing" : "cursor-grab",
             isClosing ? "animate-slide-up-out" : "animate-slide-down"
           )}
+          style={{
+            left: `${toolbarPosition.x}px`,
+            top: `${toolbarPosition.y}px`,
+          }}
+          onMouseDown={handleToolbarMouseDown}
+          onTouchStart={handleToolbarTouchStart}
         >
+          {/* Drag Handle */}
+          <div className="drag-handle absolute -top-6 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-t-lg bg-black/30 backdrop-blur-xl border border-white/10 border-b-0 cursor-grab active:cursor-grabbing flex items-center gap-2">
+            <div className="flex gap-0.5">
+              <div className="w-1 h-1 rounded-full bg-white/40"></div>
+              <div className="w-1 h-1 rounded-full bg-white/40"></div>
+              <div className="w-1 h-1 rounded-full bg-white/40"></div>
+            </div>
+            <span className="text-xs text-white/60 font-medium select-none">Drag</span>
+          </div>
+
           {/* Main Toolbar with glass morphism */}
           <div 
             className={`
-              backdrop-blur-xl bg-black/20 border border-white/15 rounded-xl shadow-2xl
+              backdrop-blur-xl bg-black/30 border border-white/15 rounded-xl shadow-2xl
               transition-all duration-300 ease-in-out
               ${toolbarCollapsed ? 'p-1.5' : 'p-2'}
             `}
