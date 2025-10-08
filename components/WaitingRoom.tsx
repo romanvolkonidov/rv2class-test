@@ -62,7 +62,6 @@ const motivationalQuotes = [
 
 export default function WaitingRoom({ studentName, teacherName, onApproved }: WaitingRoomProps) {
   const [currentQuote, setCurrentQuote] = useState(0);
-  const [dots, setDots] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
@@ -126,18 +125,6 @@ export default function WaitingRoom({ studentName, teacherName, onApproved }: Wa
     const interval = setInterval(() => {
       setCurrentQuote((prev) => (prev + 1) % motivationalQuotes.length);
     }, 8000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Animated dots
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDots((prev) => {
-        if (prev === "...") return "";
-        return prev + ".";
-      });
-    }, 500);
 
     return () => clearInterval(interval);
   }, []);
@@ -220,9 +207,6 @@ export default function WaitingRoom({ studentName, teacherName, onApproved }: Wa
 
           {/* Status Text */}
           <div className="text-center space-y-4">
-            <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">
-              Ожидаем подключения{dots}
-            </h2>
             <div className="flex items-center justify-center gap-2 text-blue-600">
               <UserCheck className="h-5 w-5" />
               <p className="text-lg">
