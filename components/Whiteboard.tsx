@@ -163,7 +163,7 @@ export default function Whiteboard() {
 
   // Custom eraser that only erases own elements
   useEffect(() => {
-    if (!excalidrawAPI || !room?.localParticipant) return;
+    if (!excalidrawAPI || !room?.localParticipant) return undefined;
     
     const userId = room.localParticipant.identity;
     
@@ -186,6 +186,11 @@ export default function Whiteboard() {
     
     // Note: Excalidraw doesn't expose easy eraser customization
     // So we handle this via filtering during sync
+    
+    // Return cleanup function (even if empty) to satisfy React's requirement
+    return () => {
+      // Cleanup if needed
+    };
   }, [excalidrawAPI, room]);
 
   return (
