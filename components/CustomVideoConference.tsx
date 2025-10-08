@@ -9,7 +9,7 @@ import {
 import { Track, Participant, RemoteParticipant } from "livekit-client";
 import { cn } from "@/lib/utils";
 
-// Draggable Thumbnail Component with touch support
+// Draggable Thumbnail Component with full surface touch and mouse support
 function DraggableThumbnail({ 
   children, 
   participantKey 
@@ -22,7 +22,7 @@ function DraggableThumbnail({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const elementRef = useRef<HTMLDivElement>(null);
 
-  // Mouse drag handlers
+  // Mouse drag handlers - entire surface is draggable
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return; // Only left click
     e.preventDefault();
@@ -34,8 +34,9 @@ function DraggableThumbnail({
     });
   };
 
-  // Touch drag handlers
+  // Touch drag handlers - entire surface is draggable, optimized for touch
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Don't prevent default on touch start to allow scrolling if needed
     e.stopPropagation();
     const touch = e.touches[0];
     setIsDragging(true);
@@ -50,21 +51,43 @@ function DraggableThumbnail({
 
     const handleMouseMove = (e: MouseEvent) => {
       e.preventDefault();
-      const newPosition = {
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      };
-      setPosition(newPosition);
+      const newX = e.clientX - dragStart.x;
+      const newY = e.clientY - dragStart.y;
+      
+      // Keep within viewport bounds
+      const element = elementRef.current;
+      if (element) {
+        const maxX = window.innerWidth - element.offsetWidth - 10;
+        const maxY = window.innerHeight - element.offsetHeight - 10;
+        
+        setPosition({
+          x: Math.max(10, Math.min(newX, maxX)),
+          y: Math.max(10, Math.min(newY, maxY)),
+        });
+      } else {
+        setPosition({ x: newX, y: newY });
+      }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
+      e.preventDefault(); // Prevent scrolling while dragging
       const touch = e.touches[0];
-      const newPosition = {
-        x: touch.clientX - dragStart.x,
-        y: touch.clientY - dragStart.y,
-      };
-      setPosition(newPosition);
+      const newX = touch.clientX - dragStart.x;
+      const newY = touch.clientY - dragStart.y;
+      
+      // Keep within viewport bounds
+      const element = elementRef.current;
+      if (element) {
+        const maxX = window.innerWidth - element.offsetWidth - 10;
+        const maxY = window.innerHeight - element.offsetHeight - 10;
+        
+        setPosition({
+          x: Math.max(10, Math.min(newX, maxX)),
+          y: Math.max(10, Math.min(newY, maxY)),
+        });
+      } else {
+        setPosition({ x: newX, y: newY });
+      }
     };
 
     const handleEnd = () => {
@@ -92,15 +115,31 @@ function DraggableThumbnail({
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       className={cn(
-        "w-32 h-24 md:w-48 md:h-36 flex-shrink-0 cursor-move touch-manipulation select-none",
-        isDragging ? "opacity-90 scale-110 z-50 shadow-2xl" : "hover:scale-105",
-        "transition-all duration-200"
+        "w-32 h-24 md:w-48 md:h-36 flex-shrink-0 touch-manipulation select-none",
+        isDragging ? "cursor-grabbing opacity-90 scale-105 z-[100] shadow-2xl" : "cursor-grab hover:shadow-lg",
+        "transition-all duration-150 active:scale-105"
       )}
       style={{
         transform: `translate(${position.x}px, ${position.y}px)`,
         position: 'relative',
+        touchAction: 'none', // Prevent default touch behaviors like scroll
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
       }}
     >
+      {/* Visual indicator that it's draggable */}
+      {!isDragging && (
+        <div className="absolute top-1 left-1/2 transform -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded-full border border-white/20 pointer-events-none z-10">
+          <div className="flex items-center gap-1">
+            <div className="flex gap-0.5">
+              <div className="w-1 h-1 rounded-full bg-white/60"></div>
+              <div className="w-1 h-1 rounded-full bg-white/60"></div>
+              <div className="w-1 h-1 rounded-full bg-white/60"></div>
+            </div>
+            <span className="text-[10px] text-white/70 font-medium">Drag</span>
+          </div>
+        </div>
+      )}
       {children}
     </div>
   );
