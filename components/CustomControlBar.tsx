@@ -36,6 +36,11 @@ export default function CustomControlBar({
   const [isControlBarVisible, setIsControlBarVisible] = useState(true);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  const micButtonRef = useRef<HTMLButtonElement>(null);
+  const cameraButtonRef = useRef<HTMLButtonElement>(null);
+  const micMenuRef = useRef<HTMLDivElement>(null);
+  const cameraMenuRef = useRef<HTMLDivElement>(null);
+  
   // Device selection state
   const [showCameraMenu, setShowCameraMenu] = useState(false);
   const [showMicMenu, setShowMicMenu] = useState(false);
@@ -104,16 +109,22 @@ export default function CustomControlBar({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.device-menu')) {
-        setShowCameraMenu(false);
+      
+      // Check if the click is outside the mic button and menu
+      if (showMicMenu && micButtonRef.current && !micButtonRef.current.contains(target) && micMenuRef.current && !micMenuRef.current.contains(target)) {
         setShowMicMenu(false);
+      }
+      
+      // Check if the click is outside the camera button and menu
+      if (showCameraMenu && cameraButtonRef.current && !cameraButtonRef.current.contains(target) && cameraMenuRef.current && !cameraMenuRef.current.contains(target)) {
+        setShowCameraMenu(false);
       }
     };
 
-    if (showCameraMenu || showMicMenu) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [showCameraMenu, showMicMenu]);
 
   // Check if anyone (local or remote) is screen sharing
@@ -620,212 +631,211 @@ export default function CustomControlBar({
   );
 
   return (
-    <div 
-      className={cn(
-        "fixed bottom-4 left-1/2 -translate-x-1/2 transition-all duration-300",
-        // Increase z-index when annotations or whiteboard are active to ensure device menus are always visible
-        // Annotation overlay uses up to z-[70], so we use z-[100] to ensure device menus stay on top
-        (showAnnotations || showWhiteboard) ? "z-[100]" : "z-20",
-        // Mobile: full width with padding, Desktop: auto width
-        "w-full max-w-[95vw] md:max-w-none md:w-auto px-2 md:px-0",
-        // CRITICAL: Allow overflow visible so device menus don't get clipped
-        "overflow-visible",
-        isControlBarVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16 pointer-events-none"
-      )}
-    >
-      <div className={cn(
-        "flex items-center gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4",
-        "rounded-2xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl",
-        // CRITICAL: Allow overflow visible so dropdowns can appear above without clipping
-        // Only enable horizontal scroll on very small screens
-        "overflow-x-auto overflow-y-visible scrollbar-hide",
-        // Smooth scrolling on mobile
-        "snap-x snap-mandatory"
-      )}>
-        {/* Basic controls - always visible */}
-        <div className="relative flex items-center gap-1 device-menu">
-          <GlassButton
-            onClick={toggleMicrophone}
-            active={!isMuted}
-            title={isMuted ? "Unmute" : "Mute"}
-          >
-            {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-          </GlassButton>
-          
-          {/* Microphone device selector */}
-          {audioDevices.length > 1 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('🎤 Toggling mic menu. Current state:', showMicMenu, '-> New state:', !showMicMenu);
-                console.log('🎤 Audio devices count:', audioDevices.length);
-                setShowMicMenu(!showMicMenu);
-                setShowCameraMenu(false);
-              }}
-              className={cn(
-                "w-8 h-12 flex items-center justify-center rounded-lg",
-                "bg-white/10 backdrop-blur-md border border-white/20",
-                "hover:bg-white/20 hover:border-white/30",
-                "transition-all duration-200",
-                "touch-manipulation select-none",
-                showMicMenu && "bg-white/25 border-white/40"
-              )}
-              title="Select Microphone"
-            >
-              <ChevronDown className="w-4 h-4 text-white" />
-            </button>
-          )}
-          
-          {/* Microphone menu dropdown */}
-          {showMicMenu && audioDevices.length > 1 && (
-            <div className="absolute bottom-full left-0 mb-3 w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-200">
-              <div className="p-2 border-b border-white/10">
-                <p className="text-xs font-semibold text-white/70 uppercase tracking-wide px-2">Select Microphone</p>
-              </div>
-              {audioDevices.map((device) => (
-                <button
-                  key={device.deviceId}
-                  onClick={() => switchMicrophone(device.deviceId)}
-                  className={cn(
-                    "w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between gap-2",
-                    device.deviceId === currentMicId && "bg-blue-500/20"
-                  )}
-                >
-                  <span className="truncate">{device.label || `Microphone ${audioDevices.indexOf(device) + 1}`}</span>
-                  {device.deviceId === currentMicId && (
-                    <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="relative flex items-center gap-1 device-menu">
-          <GlassButton
-            onClick={toggleCamera}
-            active={!isCameraOff}
-            title={isCameraOff ? "Turn Camera On" : "Turn Camera Off"}
-          >
-            {isCameraOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
-          </GlassButton>
-          
-          {/* Camera device selector */}
-          {videoDevices.length > 1 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('📹 Toggling camera menu. Current state:', showCameraMenu, '-> New state:', !showCameraMenu);
-                console.log('📹 Video devices count:', videoDevices.length);
-                setShowCameraMenu(!showCameraMenu);
-                setShowMicMenu(false);
-              }}
-              className={cn(
-                "w-8 h-12 flex items-center justify-center rounded-lg",
-                "bg-white/10 backdrop-blur-md border border-white/20",
-                "hover:bg-white/20 hover:border-white/30",
-                "transition-all duration-200",
-                "touch-manipulation select-none",
-                showCameraMenu && "bg-white/25 border-white/40"
-              )}
-              title="Select Camera"
-            >
-              <ChevronDown className="w-4 h-4 text-white" />
-            </button>
-          )}
-          
-          {/* Camera menu dropdown */}
-          {showCameraMenu && videoDevices.length > 1 && (
-            <div className="absolute bottom-full left-0 mb-3 w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-200">
-              <div className="p-2 border-b border-white/10">
-                <p className="text-xs font-semibold text-white/70 uppercase tracking-wide px-2">Select Camera</p>
-              </div>
-              {videoDevices.map((device) => (
-                <button
-                  key={device.deviceId}
-                  onClick={() => switchCamera(device.deviceId)}
-                  className={cn(
-                    "w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between gap-2",
-                    device.deviceId === currentCameraId && "bg-blue-500/20"
-                  )}
-                >
-                  <span className="truncate">{device.label || `Camera ${videoDevices.indexOf(device) + 1}`}</span>
-                  {device.deviceId === currentCameraId && (
-                    <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <GlassButton
-          onClick={toggleScreenShare}
-          active={isScreenSharing}
-          title={isScreenSharing ? "Stop Sharing Screen" : "Share Screen"}
-        >
-          <Monitor className="w-5 h-5" />
-        </GlassButton>
-
-        <div className="w-px h-10 bg-white/20 mx-2" />
-
-        {/* Chat Button - Available to everyone */}
-        {onToggleChat && (
-          <div className="relative">
+    <>
+      <div 
+        className={cn(
+          "fixed bottom-4 left-1/2 -translate-x-1/2 transition-all duration-300",
+          "z-50", // Keep control bar itself on a high z-index
+          "w-full max-w-[95vw] md:max-w-none md:w-auto px-2 md:px-0",
+          isControlBarVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16 pointer-events-none"
+        )}
+      >
+        <div className={cn(
+          "flex items-center gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4",
+          "rounded-2xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl",
+          "overflow-x-auto scrollbar-hide",
+          "snap-x snap-mandatory"
+        )}>
+          {/* Mic Control */}
+          <div className="flex items-center gap-1">
             <GlassButton
-              onClick={onToggleChat}
-              active={showChat}
-              title={showChat ? "Close Chat" : "Open Chat"}
+              onClick={toggleMicrophone}
+              active={!isMuted}
+              title={isMuted ? "Unmute" : "Mute"}
             >
-              <MessageSquare className="w-5 h-5" />
+              {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             </GlassButton>
             
-            {/* Unread message badge */}
-            {unreadChatCount > 0 && !showChat && (
-              <div className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center border-2 border-black/50 animate-pulse">
-                <span className="text-xs font-bold text-white">
-                  {unreadChatCount > 9 ? '9+' : unreadChatCount}
-                </span>
-              </div>
+            {audioDevices.length > 1 && (
+              <button
+                ref={micButtonRef}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMicMenu(!showMicMenu);
+                  setShowCameraMenu(false);
+                }}
+                className={cn(
+                  "w-8 h-12 flex items-center justify-center rounded-lg",
+                  "bg-white/10 backdrop-blur-md border border-white/20",
+                  "hover:bg-white/20 hover:border-white/30",
+                  "transition-all duration-200 touch-manipulation select-none",
+                  showMicMenu && "bg-white/25 border-white/40"
+                )}
+                title="Select Microphone"
+              >
+                <ChevronDown className="w-4 h-4 text-white" />
+              </button>
             )}
           </div>
-        )}
 
-        {/* Annotation button - Available to tutor always, or to student when they're screen sharing */}
-        {(isTutor || isScreenSharing) && !showWhiteboard && onToggleAnnotations && (
-          <>
-            <div className="w-px h-10 bg-white/20 mx-2" />
+          {/* Camera Control */}
+          <div className="flex items-center gap-1">
             <GlassButton
-              onClick={onToggleAnnotations}
-              active={showAnnotations}
-              success={hasScreenShare}
-              title={showAnnotations ? "Hide Annotations" : "Annotate Screen"}
+              onClick={toggleCamera}
+              active={!isCameraOff}
+              title={isCameraOff ? "Turn Camera On" : "Turn Camera Off"}
             >
-              <Pencil className="w-5 h-5" />
+              {isCameraOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
             </GlassButton>
-          </>
-        )}
+            
+            {videoDevices.length > 1 && (
+              <button
+                ref={cameraButtonRef}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCameraMenu(!showCameraMenu);
+                  setShowMicMenu(false);
+                }}
+                className={cn(
+                  "w-8 h-12 flex items-center justify-center rounded-lg",
+                  "bg-white/10 backdrop-blur-md border border-white/20",
+                  "hover:bg-white/20 hover:border-white/30",
+                  "transition-all duration-200 touch-manipulation select-none",
+                  showCameraMenu && "bg-white/25 border-white/40"
+                )}
+                title="Select Camera"
+              >
+                <ChevronDown className="w-4 h-4 text-white" />
+              </button>
+            )}
+          </div>
 
-        {/* Whiteboard button - Tutor-only */}
-        {isTutor && onToggleWhiteboard && (
-          <>
-            <div className="w-px h-10 bg-white/20 mx-2" />
-            <GlassButton
-              onClick={onToggleWhiteboard}
-              active={showWhiteboard}
-              title={showWhiteboard ? "Show Video" : "Open Whiteboard"}
-            >
-              <Square className="w-5 h-5" />
-            </GlassButton>
-          </>
-        )}
+          <GlassButton
+            onClick={toggleScreenShare}
+            active={isScreenSharing}
+            title={isScreenSharing ? "Stop Sharing Screen" : "Share Screen"}
+          >
+            <Monitor className="w-5 h-5" />
+          </GlassButton>
 
-        <div className="w-px h-10 bg-white/20 mx-2" />
+          <div className="w-px h-10 bg-white/20 mx-2" />
 
-        <GlassButton onClick={handleLeave} danger title="Leave Session">
-          <PhoneOff className="w-5 h-5" />
-        </GlassButton>
+          {/* Chat Button */}
+          {onToggleChat && (
+            <div className="relative">
+              <GlassButton
+                onClick={onToggleChat}
+                active={showChat}
+                title={showChat ? "Close Chat" : "Open Chat"}
+              >
+                <MessageSquare className="w-5 h-5" />
+              </GlassButton>
+              {unreadChatCount > 0 && !showChat && (
+                <div className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center border-2 border-black/50 animate-pulse">
+                  <span className="text-xs font-bold text-white">
+                    {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Annotation & Whiteboard Buttons */}
+          {(isTutor || isScreenSharing) && !showWhiteboard && onToggleAnnotations && (
+            <>
+              <div className="w-px h-10 bg-white/20 mx-2" />
+              <GlassButton
+                onClick={onToggleAnnotations}
+                active={showAnnotations}
+                success={hasScreenShare}
+                title={showAnnotations ? "Hide Annotations" : "Annotate Screen"}
+              >
+                <Pencil className="w-5 h-5" />
+              </GlassButton>
+            </>
+          )}
+          {isTutor && onToggleWhiteboard && (
+            <>
+              <div className="w-px h-10 bg-white/20 mx-2" />
+              <GlassButton
+                onClick={onToggleWhiteboard}
+                active={showWhiteboard}
+                title={showWhiteboard ? "Show Video" : "Open Whiteboard"}
+              >
+                <Square className="w-5 h-5" />
+              </GlassButton>
+            </>
+          )}
+
+          <div className="w-px h-10 bg-white/20 mx-2" />
+
+          <GlassButton onClick={handleLeave} danger title="Leave Session">
+            <PhoneOff className="w-5 h-5" />
+          </GlassButton>
+        </div>
       </div>
-    </div>
+
+      {/* Microphone Menu Dropdown (Portal) */}
+      {showMicMenu && audioDevices.length > 1 && micButtonRef.current && (
+        <div 
+          ref={micMenuRef}
+          className="fixed w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-200"
+          style={{
+            bottom: `${window.innerHeight - micButtonRef.current.getBoundingClientRect().top + 12}px`,
+            left: `${micButtonRef.current.getBoundingClientRect().left}px`,
+          }}
+        >
+          <div className="p-2 border-b border-white/10">
+            <p className="text-xs font-semibold text-white/70 uppercase tracking-wide px-2">Select Microphone</p>
+          </div>
+          {audioDevices.map((device) => (
+            <button
+              key={device.deviceId}
+              onClick={() => switchMicrophone(device.deviceId)}
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between gap-2",
+                device.deviceId === currentMicId && "bg-blue-500/20"
+              )}
+            >
+              <span className="truncate">{device.label || `Microphone ${audioDevices.indexOf(device) + 1}`}</span>
+              {device.deviceId === currentMicId && (
+                <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Camera Menu Dropdown (Portal) */}
+      {showCameraMenu && videoDevices.length > 1 && cameraButtonRef.current && (
+        <div 
+          ref={cameraMenuRef}
+          className="fixed w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-200"
+          style={{
+            bottom: `${window.innerHeight - cameraButtonRef.current.getBoundingClientRect().top + 12}px`,
+            left: `${cameraButtonRef.current.getBoundingClientRect().left}px`,
+          }}
+        >
+          <div className="p-2 border-b border-white/10">
+            <p className="text-xs font-semibold text-white/70 uppercase tracking-wide px-2">Select Camera</p>
+          </div>
+          {videoDevices.map((device) => (
+            <button
+              key={device.deviceId}
+              onClick={() => switchCamera(device.deviceId)}
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between gap-2",
+                device.deviceId === currentCameraId && "bg-blue-500/20"
+              )}
+            >
+              <span className="truncate">{device.label || `Camera ${videoDevices.indexOf(device) + 1}`}</span>
+              {device.deviceId === currentCameraId && (
+                <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
