@@ -31,29 +31,8 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
         fetchHomeworkReports(studentId)
       ]);
       
-      // Filter: Only show homework assigned from October 7, 2025 onwards
-      const cutoffDate = new Date('2025-10-07T00:00:00.000Z');
-      const filteredAssignments = assignmentsData.filter(assignment => {
-        if (!assignment.assignedAt) return true; // Keep if no date
-        
-        let assignedDate;
-        if (assignment.assignedAt.toDate && typeof assignment.assignedAt.toDate === "function") {
-          assignedDate = assignment.assignedAt.toDate();
-        } else if (assignment.assignedAt instanceof Date) {
-          assignedDate = assignment.assignedAt;
-        } else if (assignment.assignedAt.seconds !== undefined) {
-          assignedDate = new Date(assignment.assignedAt.seconds * 1000);
-        } else if (typeof assignment.assignedAt === "string" || typeof assignment.assignedAt === "number") {
-          assignedDate = new Date(assignment.assignedAt);
-        } else {
-          return true; // Keep if can't parse date
-        }
-        
-        return assignedDate >= cutoffDate;
-      });
-      
       // Sort: Newest first (latest assigned on top)
-      filteredAssignments.sort((a, b) => {
+      const sortedAssignments = assignmentsData.sort((a, b) => {
         const getTime = (dateValue: any) => {
           if (!dateValue) return 0;
           if (dateValue.toDate && typeof dateValue.toDate === "function") {
@@ -71,13 +50,13 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
         return getTime(b.assignedAt) - getTime(a.assignedAt); // Descending order
       });
       
-      setAssignments(filteredAssignments);
+      setAssignments(sortedAssignments);
       setReports(reportsData);
       
       // Fetch question counts for each assignment
       const counts: Record<string, { total: number; incomplete: number }> = {};
       await Promise.all(
-        filteredAssignments.map(async (assignment) => {
+        sortedAssignments.map(async (assignment) => {
           const topicIds = assignment.topicIds || (assignment.topicId ? [assignment.topicId] : []);
           if (topicIds.length > 0) {
             const questions = await fetchQuestionsForHomework(topicIds);
