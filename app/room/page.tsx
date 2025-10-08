@@ -15,6 +15,7 @@ import CompactParticipantView from "@/components/CompactParticipantView";
 import CustomControlBar from "@/components/CustomControlBar";
 import ChatPanel from "@/components/ChatPanel";
 import AudioDiagnostics from "@/components/AudioDiagnostics";
+import { initializeNoiseSuppressor, applyNoiseSuppression } from "@/lib/audioProcessor";
 
 function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: boolean; userName: string; sessionCode: string; roomName: string }) {
   const room = useRoomContext();
@@ -95,6 +96,41 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
           try {
             await room.localParticipant.setMicrophoneEnabled(true);
             console.log('✅ Microphone enabled successfully');
+            
+            // Apply AI noise suppression to microphone (if enabled by tutor)
+            const aiNoiseCancellationEnabled = localStorage.getItem('aiNoiseCancellation');
+            const shouldApplyNoiseCancellation = aiNoiseCancellationEnabled !== 'false'; // Default to true if not set
+            
+            if (shouldApplyNoiseCancellation) {
+              try {
+                console.log('🔊 Applying AI noise suppression to microphone...');
+                await initializeNoiseSuppressor();
+                
+                const micTrack = room.localParticipant.getTrackPublication(Track.Source.Microphone);
+                if (micTrack && micTrack.track && micTrack.track instanceof MediaStreamTrack) {
+                  const originalStream = new MediaStream([micTrack.track]);
+                  const processedStream = await applyNoiseSuppression(originalStream);
+                  
+                  if (processedStream && processedStream.getAudioTracks().length > 0) {
+                    // Replace the track with the noise-suppressed version
+                    await room.localParticipant.unpublishTrack(micTrack.track);
+                    const newTrack = processedStream.getAudioTracks()[0];
+                    await room.localParticipant.publishTrack(newTrack, {
+                      source: Track.Source.Microphone,
+                      name: 'microphone',
+                    });
+                    console.log('✅ AI noise suppression applied to microphone');
+                  } else {
+                    console.warn('⚠️ Noise suppression produced no tracks, keeping original');
+                  }
+                }
+              } catch (noiseError) {
+                console.warn('⚠️ Could not apply noise suppression, using standard audio:', noiseError);
+                // Continue with standard audio processing
+              }
+            } else {
+              console.log('ℹ️ AI noise suppression disabled by user preference');
+            }
           } catch (micError) {
             console.error('❌ Failed to enable microphone:', micError);
           }

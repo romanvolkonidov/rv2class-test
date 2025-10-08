@@ -48,6 +48,15 @@ export default function CustomControlBar({
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [currentCameraId, setCurrentCameraId] = useState<string>("");
   const [currentMicId, setCurrentMicId] = useState<string>("");
+  
+  // AI Noise Cancellation setting (tutor only)
+  const [aiNoiseCancellation, setAiNoiseCancellation] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('aiNoiseCancellation');
+      return saved !== null ? saved === 'true' : true; // Default to enabled
+    }
+    return true;
+  });
 
   // Sync with actual participant state
   const isMuted = localParticipant ? !localParticipant.isMicrophoneEnabled : true;
@@ -363,6 +372,39 @@ export default function CustomControlBar({
       console.error('❌ Failed to switch microphone:', error);
       alert('Не удалось переключить микрофон. Пожалуйста, проверьте разрешения.');
     }
+  };
+
+  const toggleAiNoiseCancellation = () => {
+    const newValue = !aiNoiseCancellation;
+    setAiNoiseCancellation(newValue);
+    localStorage.setItem('aiNoiseCancellation', String(newValue));
+    console.log('🎛️ AI Noise Cancellation:', newValue ? 'Enabled' : 'Disabled');
+    
+    // Notify user - will need page refresh to apply
+    const message = newValue 
+      ? '✅ AI noise cancellation enabled for your microphone'
+      : '⚠️ AI noise cancellation disabled - your raw microphone audio will be used';
+    
+    // Show visual notification
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: ${newValue ? 'rgba(34, 197, 94, 0.95)' : 'rgba(249, 115, 22, 0.95)'};
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      z-index: 10000;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.remove(), 3000);
   };
 
   const toggleScreenShare = async () => {
@@ -803,6 +845,34 @@ export default function CustomControlBar({
               )}
             </button>
           ))}
+          
+          {/* AI Noise Cancellation Toggle (Tutor Only) */}
+          {isTutor && (
+            <>
+              <div className="border-t border-white/10 my-1"></div>
+              <div className="p-3">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={aiNoiseCancellation}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleAiNoiseCancellation();
+                    }}
+                    className="mt-0.5 w-4 h-4 rounded border-white/30 bg-white/10 checked:bg-blue-500 checked:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-white group-hover:text-blue-300 transition-colors">
+                      AI Noise Cancellation
+                    </div>
+                    <div className="text-xs text-white/60 mt-0.5">
+                      Remove background noise from your voice (keyboard, fans, etc.)
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </>
+          )}
         </div>
       )}
 

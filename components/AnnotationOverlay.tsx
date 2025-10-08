@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, ChevronUp, Type, MousePointer2, Edit, GripVertical } from "lucide-react";
+import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, ChevronUp, Type, MousePointer2, Edit, GripVertical, Move } from "lucide-react";
 import { useRoomContext, useDataChannel } from "@livekit/components-react";
 import { cn } from "@/lib/utils";
 
@@ -107,6 +107,14 @@ export default function AnnotationOverlay({
   const [toolbarOrientation, setToolbarOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
   const lastOrientationChangeRef = useRef<number>(0);
   const orientationDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isOrientationLocked = useRef<boolean>(false);
+  const lastUserDragPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const snappedEdgeRef = useRef<'left' | 'right' | 'top' | 'bottom' | null>(null); // Track which edge we're snapped to
+  const [shouldWrap, setShouldWrap] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
+  const [showSizePicker, setShowSizePicker] = useState(false);
+  const sizePickerRef = useRef<HTMLDivElement>(null);
   
   // Zoom detection
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -173,6 +181,50 @@ export default function AnnotationOverlay({
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [draggingTextId, dragOffset, history, remoteActions]);
+
+  // Define available colors
+  const availableColors = [
+    { value: "#FF0000", label: "Red" },
+    { value: "#00FF00", label: "Green" },
+    { value: "#0000FF", label: "Blue" },
+    { value: "#FFFF00", label: "Yellow" },
+    { value: "#FF00FF", label: "Magenta" },
+    { value: "#00FFFF", label: "Cyan" },
+    { value: "#FFA500", label: "Orange" },
+    { value: "#800080", label: "Purple" },
+    { value: "#FFFFFF", label: "White" },
+    { value: "#000000", label: "Black" },
+  ];
+
+  // Click outside to close color picker
+  useEffect(() => {
+    if (!showColorPicker) return;
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.color-picker-container')) {
+        setShowColorPicker(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showColorPicker]);
+
+  // Click outside to close size picker
+  useEffect(() => {
+    if (!showSizePicker) return;
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.size-picker-container')) {
+        setShowSizePicker(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSizePicker]);
 
   // Click outside to close clear options
   useEffect(() => {
@@ -398,6 +450,44 @@ export default function AnnotationOverlay({
     }
   }, [isToolbarPositioned]);
 
+  // Adjust toolbar position after orientation changes to maintain edge snapping
+  useEffect(() => {
+    if (!isToolbarPositioned || !toolbarRef.current || isDraggingToolbar) return;
+    if (!snappedEdgeRef.current) return; // Only adjust if we're snapped to an edge
+
+    // Wait for CSS transition to complete before adjusting position
+    const adjustPositionTimeout = setTimeout(() => {
+      const toolbar = toolbarRef.current;
+      if (!toolbar || !snappedEdgeRef.current) return;
+
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const toolbarRect = toolbar.getBoundingClientRect();
+
+      let newPosition = { ...toolbarPosition };
+
+      // Adjust position based on which edge we're snapped to
+      switch (snappedEdgeRef.current) {
+        case 'right':
+          newPosition.x = screenWidth - toolbarRect.width;
+          break;
+        case 'left':
+          newPosition.x = 0;
+          break;
+        case 'bottom':
+          newPosition.y = screenHeight - toolbarRect.height;
+          break;
+        case 'top':
+          newPosition.y = 0;
+          break;
+      }
+
+      setToolbarPosition(newPosition);
+    }, 650); // Wait slightly longer than CSS transition (600ms)
+
+    return () => clearTimeout(adjustPositionTimeout);
+  }, [toolbarOrientation, isToolbarPositioned, isDraggingToolbar]);
+
   // Handle toolbar dragging - Mouse events
   const handleToolbarMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -520,9 +610,14 @@ export default function AnnotationOverlay({
     if (!isDraggingToolbar) return;
 
     const updateOrientationBasedOnPosition = (x: number, y: number) => {
-      // Debounce: prevent orientation changes within 200ms of the last change
+      // Skip if orientation is locked
+      if (isOrientationLocked.current) {
+        return;
+      }
+
+      // Strong debounce: prevent orientation changes within 500ms of the last change
       const now = Date.now();
-      if (now - lastOrientationChangeRef.current < 200) {
+      if (now - lastOrientationChangeRef.current < 500) {
         return;
       }
 
@@ -532,41 +627,70 @@ export default function AnnotationOverlay({
       const toolbarWidth = toolbar?.offsetWidth || 0;
       const toolbarHeight = toolbar?.offsetHeight || 0;
       
-      // Hysteresis: different thresholds for entering vs leaving edge state
-      const enterEdgeThreshold = 5; // Touch edge to activate
-      const leaveEdgeThreshold = 30; // Move 30px away to deactivate
+      // Much larger hysteresis: different thresholds for entering vs leaving edge state
+      const enterEdgeThreshold = 3; // Must be very close to edge to activate
+      // Simpler approach: only change orientation when ENTERING an edge
+      // Use tight threshold - must be very close to edge to trigger change
+      const edgeThreshold = 3;
       
-      // Use different threshold based on current orientation
-      const useEnterThreshold = (
-        (toolbarOrientation === 'horizontal' && (x <= enterEdgeThreshold || x >= screenWidth - toolbarWidth - enterEdgeThreshold)) ||
-        (toolbarOrientation === 'vertical' && (y <= enterEdgeThreshold || y >= screenHeight - toolbarHeight - enterEdgeThreshold))
-      );
+      // Check if toolbar is actually touching edges
+      const touchingLeft = x <= edgeThreshold;
+      const touchingRight = x >= screenWidth - toolbarWidth - edgeThreshold;
+      const touchingTop = y <= edgeThreshold;
+      const touchingBottom = y >= screenHeight - toolbarHeight - edgeThreshold;
       
-      const threshold = useEnterThreshold ? enterEdgeThreshold : leaveEdgeThreshold;
-      
-      // Check if toolbar is touching edges
-      const touchingLeft = x <= threshold;
-      const touchingRight = x >= screenWidth - toolbarWidth - threshold;
-      const touchingTop = y <= threshold;
-      const touchingBottom = y >= screenHeight - toolbarHeight - threshold;
-      
-      let newOrientation = toolbarOrientation;
+      let newOrientation = toolbarOrientation; // Keep current by default
+      let snapToEdge = false;
+      let edgePosition = { x, y };
       
       // Priority 1: Check if touching top or bottom edges -> Horizontal
       if (touchingTop || touchingBottom) {
         newOrientation = 'horizontal';
+        snapToEdge = true;
+        if (touchingTop) {
+          edgePosition.y = 0;
+          snappedEdgeRef.current = 'top';
+        } else if (touchingBottom) {
+          edgePosition.y = screenHeight - toolbarHeight;
+          snappedEdgeRef.current = 'bottom';
+        }
       }
       // Priority 2: Check if touching left or right edges -> Vertical
       else if (touchingLeft || touchingRight) {
         newOrientation = 'vertical';
+        snapToEdge = true;
+        if (touchingLeft) {
+          edgePosition.x = 0;
+          snappedEdgeRef.current = 'left';
+        } else if (touchingRight) {
+          edgePosition.x = screenWidth - toolbarWidth;
+          snappedEdgeRef.current = 'right';
+        }
       }
-      // Not touching any edge: keep current orientation
+      // Not touching any edge: keep current orientation (this is the key!)
+      else {
+        snappedEdgeRef.current = null; // Clear edge tracking when not at edge
+      }
+      
+      // Snap to edge if we detected edge contact
+      if (snapToEdge && (edgePosition.x !== x || edgePosition.y !== y)) {
+        return edgePosition; // Return snapped position
+      }
       
       // Only update if orientation actually changed
       if (newOrientation !== toolbarOrientation) {
+        // Lock orientation changes for a period
+        isOrientationLocked.current = true;
         lastOrientationChangeRef.current = now;
         setToolbarOrientation(newOrientation);
+        
+        // Unlock after animation completes
+        setTimeout(() => {
+          isOrientationLocked.current = false;
+        }, 600); // Lock for 600ms to allow transition to complete
       }
+      
+      return null; // No snapping needed
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -583,12 +707,18 @@ export default function AnnotationOverlay({
         const finalX = Math.max(0, Math.min(newX, maxX));
         const finalY = Math.max(0, Math.min(newY, maxY));
         
-        setToolbarPosition({
-          x: finalX,
-          y: finalY,
-        });
+        // Check for edge snapping and orientation update
+        const snappedPosition = updateOrientationBasedOnPosition(finalX, finalY);
+        const actualX = snappedPosition?.x ?? finalX;
+        const actualY = snappedPosition?.y ?? finalY;
         
-        updateOrientationBasedOnPosition(finalX, finalY);
+        // Mark this position as coming from user drag
+        lastUserDragPositionRef.current = { x: actualX, y: actualY };
+        
+        setToolbarPosition({
+          x: actualX,
+          y: actualY,
+        });
       }
     };
 
@@ -607,17 +737,28 @@ export default function AnnotationOverlay({
         const finalX = Math.max(0, Math.min(newX, maxX));
         const finalY = Math.max(0, Math.min(newY, maxY));
         
-        setToolbarPosition({
-          x: finalX,
-          y: finalY,
-        });
+        // Check for edge snapping and orientation update
+        const snappedPosition = updateOrientationBasedOnPosition(finalX, finalY);
+        const actualX = snappedPosition?.x ?? finalX;
+        const actualY = snappedPosition?.y ?? finalY;
         
-        updateOrientationBasedOnPosition(finalX, finalY);
+        // Mark this position as coming from user drag
+        lastUserDragPositionRef.current = { x: actualX, y: actualY };
+        
+        setToolbarPosition({
+          x: actualX,
+          y: actualY,
+        });
       }
     };
 
     const handleEnd = () => {
       setIsDraggingToolbar(false);
+      // Clear the drag position tracking after drag ends
+      setTimeout(() => {
+        lastUserDragPositionRef.current = null;
+      }, 200); // Keep it for a short time to allow position effect to run
+      
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = null;
@@ -645,12 +786,21 @@ export default function AnnotationOverlay({
   // Update orientation based on toolbar position (runs whenever position changes)
   useEffect(() => {
     const toolbar = toolbarRef.current;
-    if (!toolbar || isDraggingToolbar) return; // Skip if already dragging (handled by drag effect)
+    if (!toolbar || isDraggingToolbar || isOrientationLocked.current) return; // Skip if dragging or locked
+
+    // CRITICAL: Only check orientation if this position came from user dragging
+    // Don't react to position changes caused by orientation changes themselves
+    if (!lastUserDragPositionRef.current || 
+        (lastUserDragPositionRef.current.x !== toolbarPosition.x || 
+         lastUserDragPositionRef.current.y !== toolbarPosition.y)) {
+      // Position didn't come from user drag, ignore it
+      return;
+    }
 
     const updateOrientation = () => {
-      // Debounce: prevent orientation changes within 200ms of the last change
+      // Strong debounce: prevent orientation changes within 500ms of the last change
       const now = Date.now();
-      if (now - lastOrientationChangeRef.current < 200) {
+      if (now - lastOrientationChangeRef.current < 500) {
         return;
       }
 
@@ -659,9 +809,9 @@ export default function AnnotationOverlay({
       const toolbarWidth = toolbar.offsetWidth;
       const toolbarHeight = toolbar.offsetHeight;
       
-      // Hysteresis: different thresholds for entering vs leaving edge state
-      const enterEdgeThreshold = 5; // Touch edge to activate
-      const leaveEdgeThreshold = 30; // Move 30px away to deactivate
+      // Much larger hysteresis
+      const enterEdgeThreshold = 3;
+      const leaveEdgeThreshold = 80;
       
       // Use different threshold based on current orientation
       const useEnterThreshold = (
@@ -691,17 +841,24 @@ export default function AnnotationOverlay({
       
       // Only update if orientation actually changed
       if (newOrientation !== toolbarOrientation) {
+        // Lock orientation changes for a period
+        isOrientationLocked.current = true;
         lastOrientationChangeRef.current = now;
         setToolbarOrientation(newOrientation);
+        
+        // Unlock after animation completes
+        setTimeout(() => {
+          isOrientationLocked.current = false;
+        }, 600);
       }
     };
 
-    // Use a small delay to allow toolbar to settle after position change
+    // Use a longer delay to allow toolbar to settle after position change
     if (orientationDebounceTimeoutRef.current) {
       clearTimeout(orientationDebounceTimeoutRef.current);
     }
     
-    orientationDebounceTimeoutRef.current = setTimeout(updateOrientation, 50);
+    orientationDebounceTimeoutRef.current = setTimeout(updateOrientation, 150);
     
     return () => {
       if (orientationDebounceTimeoutRef.current) {
@@ -709,6 +866,46 @@ export default function AnnotationOverlay({
       }
     };
   }, [toolbarPosition, isToolbarPositioned, isDraggingToolbar, toolbarOrientation]);
+
+  // Check if wrapping is needed based on available space
+  useEffect(() => {
+    const toolbar = toolbarRef.current;
+    if (!toolbar) return;
+
+    const checkWrapping = () => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const toolbarRect = toolbar.getBoundingClientRect();
+      
+      // Add margins - don't use 100% of screen
+      const horizontalMargin = 40; // 20px on each side
+      const verticalMargin = 40; // 20px on each side
+      
+      const availableWidth = screenWidth - horizontalMargin;
+      const availableHeight = screenHeight - verticalMargin;
+      
+      // Get the natural size of toolbar content (unwrapped)
+      // This is a rough estimate - in reality we'd need to measure
+      // For now, check if toolbar is too large for available space
+      
+      if (toolbarOrientation === 'horizontal') {
+        // Check if toolbar width exceeds available width
+        const needsWrap = toolbarRect.width > availableWidth;
+        setShouldWrap(needsWrap);
+      } else {
+        // Vertical orientation
+        const needsWrap = toolbarRect.height > availableHeight;
+        setShouldWrap(needsWrap);
+      }
+    };
+
+    // Check on mount and when orientation/position changes
+    checkWrapping();
+    
+    // Also check on window resize
+    window.addEventListener('resize', checkWrapping);
+    return () => window.removeEventListener('resize', checkWrapping);
+  }, [toolbarOrientation, toolbarPosition, toolbarCollapsed]);
 
   // Convert absolute pixel coordinates to relative (0-1 range)
   const toRelative = (x: number, y: number): RelativePoint => {
@@ -1681,7 +1878,9 @@ export default function AnnotationOverlay({
           <div 
             className={cn(
               "backdrop-blur-xl bg-black/30 border border-white/15 rounded-xl shadow-2xl transition-all duration-300 ease-in-out",
-              toolbarCollapsed ? 'p-1.5' : 'p-2'
+              toolbarCollapsed ? 'p-1.5' : 'p-2',
+              toolbarOrientation === 'horizontal' && "max-w-[calc(100vw-40px)]",
+              toolbarOrientation === 'vertical' && "max-h-[calc(100vh-40px)]"
             )}
           >
             {toolbarCollapsed ? (
@@ -1689,7 +1888,8 @@ export default function AnnotationOverlay({
               <div className={cn(
                 "flex items-center gap-1.5",
                 toolbarOrientation === 'vertical' && "flex-col",
-                toolbarOrientation === 'horizontal' && ""
+                toolbarOrientation === 'horizontal' && "",
+                shouldWrap && "flex-wrap"
               )}>
                 <Button
                   size="icon"
@@ -1810,29 +2010,28 @@ export default function AnnotationOverlay({
                     )}
                   </>
                 )}
-                {onClose && (
-                  <>
-                    <div className={cn(
-                      "bg-white/20",
-                      toolbarOrientation === 'horizontal' ? "w-px h-6" : "h-px w-6"
-                    )} />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={onClose}
-                      title="Close Annotations"
-                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                    >
-                      <X className="h-5 w-5 stroke-[2.5]" />
-                    </Button>
-                  </>
-                )}
+                
+                {/* Drag Handle - Looks like a divider */}
+                <div className={cn(
+                  "bg-white/20",
+                  toolbarOrientation === 'horizontal' ? "w-px h-6" : "h-px w-6"
+                )} />
+                <div
+                  title="Drag to move toolbar"
+                  className={cn(
+                    "cursor-move flex items-center justify-center select-none touch-manipulation text-white/40 hover:text-white/70 transition-colors",
+                    toolbarOrientation === 'horizontal' ? "px-2" : "py-2"
+                  )}
+                >
+                  <Move className="h-4 w-4 stroke-[2]" />
+                </div>
               </div>
             ) : (
               /* Expanded View - Full toolbar */
               <div className={cn(
                 "flex items-center gap-2 justify-center",
-                toolbarOrientation === 'vertical' && "flex-col"
+                toolbarOrientation === 'vertical' && "flex-col",
+                shouldWrap && "flex-wrap"
               )}>
                 {/* Collapse Button */}
                 <Button
@@ -1941,33 +2140,41 @@ export default function AnnotationOverlay({
                 )} />
 
                 {/* Color Picker */}
-                <div className={cn(
-                  "flex items-center gap-1.5",
-                  toolbarOrientation === 'vertical' && "flex-col"
-                )}>
-                  <input
-                    type="color"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg cursor-pointer border border-white/20 hover:border-white/40 transition-colors bg-white/10 touch-manipulation"
-                    title="Pick Color"
+                <div className="relative color-picker-container">
+                  <button
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg transition-all border-2 border-white/40 hover:border-white/60 active:scale-95 touch-manipulation select-none shadow-md"
+                    style={{ backgroundColor: color }}
+                    onClick={() => setShowColorPicker(!showColorPicker)}
+                    title={`Current color: ${availableColors.find(c => c.value === color)?.label || color}`}
+                    aria-label="Choose color"
                   />
-                  <div className={cn(
-                    "flex gap-1",
-                    toolbarOrientation === 'vertical' && "flex-col"
-                  )}>
-                    {["#FF0000", "#0000FF", "#00FF00", "#FFFF00", "#FF00FF", "#FFFFFF"].map((c) => (
-                      <button
-                        key={c}
-                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-md transition-all border active:scale-95 touch-manipulation select-none ${
-                          color === c ? 'ring-2 ring-blue-400 ring-offset-1 ring-offset-black/20 border-white/40' : 'border-white/20 hover:border-white/40'
-                        }`}
-                        style={{ backgroundColor: c }}
-                        onClick={() => setColor(c)}
-                        aria-label={`Color ${c}`}
-                      />
-                    ))}
-                  </div>
+                  {showColorPicker && (
+                    <div className={cn(
+                      "absolute z-[70] bg-black/95 backdrop-blur-xl border border-white/30 rounded-lg p-3 shadow-2xl",
+                      toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
+                    )}>
+                      <div className="text-xs text-white/80 font-semibold mb-2">Select Color:</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {availableColors.map((c) => (
+                          <button
+                            key={c.value}
+                            className={`w-10 h-10 rounded-md transition-all border active:scale-95 touch-manipulation select-none ${
+                              color === c.value 
+                                ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-black/20 border-white/60' 
+                                : 'border-white/30 hover:border-white/50'
+                            }`}
+                            style={{ backgroundColor: c.value }}
+                            onClick={() => {
+                              setColor(c.value);
+                              setShowColorPicker(false);
+                            }}
+                            title={c.label}
+                            aria-label={c.label}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className={cn(
@@ -1975,87 +2182,68 @@ export default function AnnotationOverlay({
                   toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
                 )} />
 
-                {/* Line Width or Font Size based on tool */}
-                {tool === "text" ? (
-                  <div className={cn(
-                    "flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/20",
-                    toolbarOrientation === 'vertical' && "flex-col py-2"
-                  )}>
-                    <span className="text-xs font-semibold text-white">Size:</span>
-                    <input
-                      type="range"
-                      min="12"
-                      max="72"
-                      value={fontSize}
-                      onChange={(e) => setFontSize(Number(e.target.value))}
-                      className={cn(
-                        "accent-blue-400",
-                        toolbarOrientation === 'horizontal' ? "w-20" : "w-8 h-20"
+                {/* Size Picker (Line Width or Font Size) */}
+                <div className="relative size-picker-container">
+                  <button
+                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none flex items-center justify-center"
+                    onClick={() => setShowSizePicker(!showSizePicker)}
+                    title={tool === "text" ? `Font Size: ${fontSize}px` : `Line Width: ${lineWidth}px`}
+                  >
+                    <span className="text-sm font-bold">{tool === "text" ? fontSize : lineWidth}</span>
+                  </button>
+                  {showSizePicker && (
+                    <div className={cn(
+                      "absolute z-[70] bg-black/95 backdrop-blur-xl border border-white/30 rounded-lg p-4 shadow-2xl",
+                      toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
+                    )}>
+                      <div className="text-xs text-white/80 font-semibold mb-3">
+                        {tool === "text" ? "Font Size:" : "Line Width:"}
+                      </div>
+                      {tool === "text" ? (
+                        <div className="flex flex-col gap-2 min-w-[120px]">
+                          <input
+                            type="range"
+                            min="12"
+                            max="72"
+                            value={fontSize}
+                            onChange={(e) => setFontSize(Number(e.target.value))}
+                            className="accent-blue-400 w-full"
+                          />
+                          <div className="text-center text-white font-bold">{fontSize}px</div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2 min-w-[120px]">
+                          <input
+                            type="range"
+                            min="1"
+                            max="20"
+                            value={lineWidth}
+                            onChange={(e) => setLineWidth(Number(e.target.value))}
+                            className="accent-blue-400 w-full"
+                          />
+                          <div className="text-center text-white font-bold">{lineWidth}px</div>
+                        </div>
                       )}
-                      style={toolbarOrientation === 'vertical' ? {
-                        transform: 'rotate(-90deg)',
-                        transformOrigin: 'center'
-                      } : {}}
-                      title="Font Size"
-                    />
-                    <span className="text-xs font-bold text-white w-8 text-center">{fontSize}px</span>
-                  </div>
-                ) : (
-                  <div className={cn(
-                    "flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/20",
-                    toolbarOrientation === 'vertical' && "flex-col py-2"
-                  )}>
-                    <input
-                      type="range"
-                      min="1"
-                      max="20"
-                      value={lineWidth}
-                      onChange={(e) => setLineWidth(Number(e.target.value))}
-                      className={cn(
-                        "accent-blue-400",
-                        toolbarOrientation === 'horizontal' ? "w-20" : "w-6 h-20"
-                      )}
-                      style={toolbarOrientation === 'vertical' ? {
-                        transform: 'rotate(-90deg)',
-                        transformOrigin: 'center'
-                      } : {}}
-                      title="Line Width"
-                    />
-                    <span className="text-xs font-bold text-white w-6 text-center">{lineWidth}</span>
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
 
                 <div className={cn(
                   "bg-white/20",
                   toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
                 )} />
 
-                {/* History Controls */}
-                <div className={cn(
-                  "flex gap-1.5",
-                  toolbarOrientation === 'vertical' && "flex-col"
-                )}>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={undo}
-                    disabled={historyStep === 0}
-                    title="Undo"
-                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                  >
-                    <Undo className="h-5 w-5 stroke-[2.5]" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={redo}
-                    disabled={historyStep === history.length}
-                    title="Redo"
-                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                  >
-                    <Redo className="h-5 w-5 stroke-[2.5]" />
-                  </Button>
-                </div>
+                {/* Undo Button */}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={undo}
+                  disabled={historyStep === 0}
+                  title="Undo"
+                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
+                >
+                  <Undo className="h-5 w-5 stroke-[2.5]" />
+                </Button>
 
                 <div className={cn(
                   "bg-white/20",
@@ -2117,25 +2305,21 @@ export default function AnnotationOverlay({
                     <Trash2 className="h-5 w-5 stroke-[2.5]" />
                   </Button>
                 )}
-
-                {/* Close Button */}
-                {onClose && (
-                  <>
-                    <div className={cn(
-                      "bg-white/20",
-                      toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
-                    )} />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={onClose}
-                      title="Close Annotations"
-                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                    >
-                      <X className="h-5 w-5 stroke-[2.5]" />
-                    </Button>
-                  </>
-                )}
+                
+                {/* Drag Handle - Looks like a divider */}
+                <div className={cn(
+                  "bg-white/20",
+                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+                )} />
+                <div
+                  title="Drag to move toolbar"
+                  className={cn(
+                    "cursor-move flex items-center justify-center select-none touch-manipulation text-white/40 hover:text-white/70 transition-colors",
+                    toolbarOrientation === 'horizontal' ? "px-2" : "py-2"
+                  )}
+                >
+                  <Move className="h-4 w-4 stroke-[2]" />
+                </div>
               </div>
             )}
           </div>

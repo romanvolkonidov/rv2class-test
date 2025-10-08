@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { Loader2, Clock, UserCheck, Sparkles, Video, Mic } from "lucide-react";
+import { initializeNoiseSuppressor, applyNoiseSuppression } from "@/lib/audioProcessor";
 
 interface WaitingRoomProps {
   studentName: string;
@@ -95,6 +96,18 @@ const WaitingRoom = forwardRef<WaitingRoomHandle, WaitingRoomProps>(({ studentNa
     const startPreview = async () => {
       try {
         console.log('🎥 Starting waiting room preview...');
+        
+        // Check if AI noise suppression is enabled
+        const aiNoiseCancellationEnabled = localStorage.getItem('aiNoiseCancellation');
+        const shouldApplyNoiseCancellation = aiNoiseCancellationEnabled !== 'false'; // Default to true
+        
+        // Initialize AI noise suppressor if enabled
+        if (shouldApplyNoiseCancellation) {
+          await initializeNoiseSuppressor().catch(err => {
+            console.warn('⚠️ Could not initialize noise suppressor in waiting room:', err);
+          });
+        }
+        
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: { ideal: 1280 },
@@ -108,14 +121,43 @@ const WaitingRoom = forwardRef<WaitingRoomHandle, WaitingRoomProps>(({ studentNa
           }
         });
 
-        streamRef.current = stream;
-        setPreviewStream(stream);
-        setHasVideo(stream.getVideoTracks().length > 0);
-        setHasAudio(stream.getAudioTracks().length > 0);
+        // Apply AI noise suppression to audio if enabled
+        let processedStream = stream;
+        if (shouldApplyNoiseCancellation) {
+          try {
+            const audioTrack = stream.getAudioTracks()[0];
+            if (audioTrack) {
+              const audioStream = new MediaStream([audioTrack]);
+              const noiseSuppressedStream = await applyNoiseSuppression(audioStream);
+              
+              // Combine noise-suppressed audio with video
+              const videoTrack = stream.getVideoTracks()[0];
+              const tracks = [];
+              if (noiseSuppressedStream.getAudioTracks()[0]) {
+                tracks.push(noiseSuppressedStream.getAudioTracks()[0]);
+              }
+              if (videoTrack) {
+                tracks.push(videoTrack);
+              }
+              processedStream = new MediaStream(tracks);
+              console.log('✅ AI noise suppression applied to waiting room audio');
+            }
+          } catch (noiseError) {
+            console.warn('⚠️ Could not apply noise suppression, using standard audio:', noiseError);
+            // Continue with original stream
+          }
+        } else {
+          console.log('ℹ️ AI noise suppression disabled by user preference');
+        }
+
+        streamRef.current = processedStream;
+        setPreviewStream(processedStream);
+        setHasVideo(processedStream.getVideoTracks().length > 0);
+        setHasAudio(processedStream.getAudioTracks().length > 0);
 
         // Attach to video element
-        if (videoRef.current && stream) {
-          videoRef.current.srcObject = stream;
+        if (videoRef.current && processedStream) {
+          videoRef.current.srcObject = processedStream;
           console.log('✅ Preview stream attached to video element');
         }
       } catch (error) {
