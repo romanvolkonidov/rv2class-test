@@ -338,7 +338,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 size="sm"
                 onClick={requestMicPermission}
                 disabled={micPermission === "granted" || micPermission === "checking"}
-                className={`flex items-center gap-2 transition-all duration-300 backdrop-blur-xl border ${
+                className={`flex items-center gap-2 transition-all duration-300 backdrop-blur-xl border min-h-[44px] touch-manipulation active:scale-95 select-none ${
                   shouldPulseMic ? 'animate-pulse ring-4 ring-blue-400/40' : ''
                 } ${
                   micPermission === "granted"
@@ -384,7 +384,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 size="sm"
                 onClick={requestVideoPermission}
                 disabled={videoPermission === "granted" || videoPermission === "checking"}
-                className={`flex items-center gap-2 transition-all duration-300 backdrop-blur-xl border ${
+                className={`flex items-center gap-2 transition-all duration-300 backdrop-blur-xl border min-h-[44px] touch-manipulation active:scale-95 select-none ${
                   shouldPulseCamera ? 'animate-pulse ring-4 ring-blue-400/40' : ''
                 } ${
                   videoPermission === "granted"
@@ -488,7 +488,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <Button
                 size="lg"
-                className={`w-full h-auto py-5 bg-gradient-to-r ${colors.gradient} hover:scale-105 hover:shadow-2xl active:scale-100 transition-all duration-300 shadow-xl border border-white/20 backdrop-blur-xl font-medium group`}
+                className={`w-full h-auto py-5 min-h-[64px] bg-gradient-to-r ${colors.gradient} hover:scale-105 hover:shadow-2xl active:scale-100 transition-all duration-300 shadow-xl border border-white/20 backdrop-blur-xl font-medium group touch-manipulation select-none`}
                 onClick={handleJoinClass}
                 disabled={isJoining}
               >
@@ -506,7 +506,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full h-auto py-5 backdrop-blur-xl bg-white/40 border border-gray-200/50 hover:bg-white/60 text-gray-700 transition-all duration-300 shadow-xl font-medium"
+                className="w-full h-auto py-5 min-h-[64px] backdrop-blur-xl bg-white/40 border border-gray-200/50 hover:bg-white/60 text-gray-700 transition-all duration-300 shadow-xl font-medium touch-manipulation active:scale-95 select-none"
                 onClick={handleHomeworks}
               >
                 <div className="flex items-center gap-3">
