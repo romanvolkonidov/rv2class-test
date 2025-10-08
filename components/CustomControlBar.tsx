@@ -15,6 +15,7 @@ interface CustomControlBarProps {
   onToggleWhiteboard?: () => void;
   onToggleAnnotations?: () => void;
   onToggleChat?: () => void;
+  unreadChatCount?: number;
 }
 
 export default function CustomControlBar({ 
@@ -25,6 +26,7 @@ export default function CustomControlBar({
   onToggleWhiteboard,
   onToggleAnnotations,
   onToggleChat,
+  unreadChatCount = 0,
 }: CustomControlBarProps) {
   const { localParticipant } = useLocalParticipant();
   const room = useRoomContext();
@@ -484,13 +486,24 @@ export default function CustomControlBar({
 
         {/* Chat Button - Available to everyone */}
         {onToggleChat && (
-          <GlassButton
-            onClick={onToggleChat}
-            active={showChat}
-            title={showChat ? "Close Chat" : "Open Chat"}
-          >
-            <MessageSquare className="w-5 h-5" />
-          </GlassButton>
+          <div className="relative">
+            <GlassButton
+              onClick={onToggleChat}
+              active={showChat}
+              title={showChat ? "Close Chat" : "Open Chat"}
+            >
+              <MessageSquare className="w-5 h-5" />
+            </GlassButton>
+            
+            {/* Unread message badge */}
+            {unreadChatCount > 0 && !showChat && (
+              <div className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center border-2 border-black/50 animate-pulse">
+                <span className="text-xs font-bold text-white">
+                  {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                </span>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Annotation button - Available to tutor always, or to student when they're screen sharing */}

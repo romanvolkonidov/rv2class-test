@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { LiveKitRoom, RoomAudioRenderer, useRoomContext, useDataChannel } from "@livekit/components-react";
+import { LiveKitRoom, RoomAudioRenderer, useRoomContext, useDataChannel, useChat } from "@livekit/components-react";
 import { VideoPresets, VideoCodec } from "livekit-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, Check, X } from "lucide-react";
+import { Copy, Check, X, MessageSquare } from "lucide-react";
 import Whiteboard from "@/components/Whiteboard";
 import AnnotationOverlay from "@/components/AnnotationOverlay";
 import JoinRequestsPanel from "@/components/JoinRequestsPanel";
@@ -25,6 +25,52 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   const [showChat, setShowChat] = useState(false);
   const [chatClosing, setChatClosing] = useState(false);
   const [hasScreenShare, setHasScreenShare] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [lastMessagePreview, setLastMessagePreview] = useState<{ from: string; message: string } | null>(null);
+  const [showMessageToast, setShowMessageToast] = useState(false);
+  const lastMessageCountRef = useRef(0);
+  const { chatMessages } = useChat();
+
+  // Monitor for new chat messages when chat is closed
+  useEffect(() => {
+    if (!room || !room.localParticipant) return;
+
+    // If chat is open, reset unread count
+    if (showChat) {
+      setUnreadCount(0);
+      lastMessageCountRef.current = chatMessages.length;
+      return;
+    }
+
+    // Check for new messages when chat is closed
+    if (chatMessages.length > lastMessageCountRef.current && lastMessageCountRef.current > 0) {
+      const newMessagesCount = chatMessages.length - lastMessageCountRef.current;
+      const latestMessage = chatMessages[chatMessages.length - 1];
+      
+      // Only show notification if message is not from current user
+      const isFromCurrentUser = latestMessage.from?.identity === room.localParticipant.identity;
+      
+      if (!isFromCurrentUser) {
+        setUnreadCount(prev => prev + newMessagesCount);
+        
+        // Show toast with message preview
+        const senderName = latestMessage.from?.identity || latestMessage.from?.name || "Someone";
+        const messageText = latestMessage.message.length > 50 
+          ? latestMessage.message.substring(0, 50) + "..." 
+          : latestMessage.message;
+        
+        setLastMessagePreview({ from: senderName, message: messageText });
+        setShowMessageToast(true);
+        
+        // Hide toast after 5 seconds
+        setTimeout(() => {
+          setShowMessageToast(false);
+        }, 5000);
+      }
+    }
+    
+    lastMessageCountRef.current = chatMessages.length;
+  }, [chatMessages, showChat, room]);
 
   // CRITICAL: Ensure camera and microphone are enabled on room connection
   useEffect(() => {
@@ -436,6 +482,7 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               onToggleWhiteboard={toggleWhiteboard}
               onToggleAnnotations={toggleAnnotations}
               onToggleChat={toggleChat}
+              unreadChatCount={unreadCount}
             />
           </>
         ) : (
@@ -449,6 +496,7 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               onToggleWhiteboard={toggleWhiteboard}
               onToggleAnnotations={toggleAnnotations}
               onToggleChat={toggleChat}
+              unreadChatCount={unreadCount}
             />
             {/* Show annotations for everyone when active - tutor gets close button, students don't */}
             {(showAnnotations || annotationsClosing) && (
@@ -468,10 +516,54 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
             isClosing={chatClosing}
           />
         )}
+
+        {/* New Message Toast Notification */}
+        {showMessageToast && lastMessagePreview && (
+          <div 
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] animate-slide-in-fade"
+            style={{
+              animation: 'slideInFade 0.3s ease-out, slideOutFade 0.3s ease-out 4.7s'
+            }}
+          >
+            <div className="backdrop-blur-xl bg-blue-500/90 text-white px-6 py-4 rounded-2xl shadow-2xl border border-blue-400/30 max-w-sm">
+              <div className="flex items-start gap-3">
+                <MessageSquare className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm">{lastMessagePreview.from}</p>
+                  <p className="text-sm text-white/90 mt-0.5 truncate">{lastMessagePreview.message}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Audio Diagnostics - Press Ctrl+Shift+A to show */}
         <AudioDiagnostics />
       </div>
+
+      <style jsx>{`
+        @keyframes slideInFade {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -20px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+        
+        @keyframes slideOutFade {
+          from {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+          to {
+            opacity: 0;
+            transform: translate(-50%, -20px);
+          }
+        }
+      `}</style>
     </div>
   );
 }
