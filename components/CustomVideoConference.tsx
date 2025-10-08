@@ -166,25 +166,65 @@ function DraggableThumbnailContainer({
       let newX = resizeStart.posX;
       let newY = resizeStart.posY;
 
+      // Calculate aspect ratio from the starting size
+      const aspectRatio = resizeStart.width / resizeStart.height;
+
       // Calculate new dimensions based on resize mode
-      if (resizeMode.includes('e')) { // East (right edge)
-        newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width + deltaX));
-      }
-      if (resizeMode.includes('w')) { // West (left edge)
-        const proposedWidth = resizeStart.width - deltaX;
-        if (proposedWidth >= MIN_WIDTH && proposedWidth <= MAX_WIDTH) {
-          newWidth = proposedWidth;
-          newX = resizeStart.posX + deltaX;
+      // For corner resize modes (se, ne, sw, nw), maintain aspect ratio
+      if (resizeMode === 'se') { // Southeast (bottom-right corner) - proportional resize
+        // Use the larger delta to determine scale, maintaining aspect ratio
+        const scale = Math.max(
+          (resizeStart.width + deltaX) / resizeStart.width,
+          (resizeStart.height + deltaY) / resizeStart.height
+        );
+        newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width * scale));
+        newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height * scale));
+      } else if (resizeMode === 'ne') { // Northeast (top-right corner)
+        const scale = Math.max(
+          (resizeStart.width + deltaX) / resizeStart.width,
+          (resizeStart.height - deltaY) / resizeStart.height
+        );
+        newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width * scale));
+        newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height * scale));
+        newY = resizeStart.posY - (newHeight - resizeStart.height);
+      } else if (resizeMode === 'sw') { // Southwest (bottom-left corner)
+        const scale = Math.max(
+          (resizeStart.width - deltaX) / resizeStart.width,
+          (resizeStart.height + deltaY) / resizeStart.height
+        );
+        newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width * scale));
+        newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height * scale));
+        newX = resizeStart.posX - (newWidth - resizeStart.width);
+      } else if (resizeMode === 'nw') { // Northwest (top-left corner)
+        const scale = Math.max(
+          (resizeStart.width - deltaX) / resizeStart.width,
+          (resizeStart.height - deltaY) / resizeStart.height
+        );
+        newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width * scale));
+        newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height * scale));
+        newX = resizeStart.posX - (newWidth - resizeStart.width);
+        newY = resizeStart.posY - (newHeight - resizeStart.height);
+      } else {
+        // Edge-only resizing (non-proportional)
+        if (resizeMode.includes('e')) { // East (right edge)
+          newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width + deltaX));
         }
-      }
-      if (resizeMode.includes('s')) { // South (bottom edge)
-        newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height + deltaY));
-      }
-      if (resizeMode.includes('n')) { // North (top edge)
-        const proposedHeight = resizeStart.height - deltaY;
-        if (proposedHeight >= MIN_HEIGHT && proposedHeight <= MAX_HEIGHT) {
-          newHeight = proposedHeight;
-          newY = resizeStart.posY + deltaY;
+        if (resizeMode.includes('w')) { // West (left edge)
+          const proposedWidth = resizeStart.width - deltaX;
+          if (proposedWidth >= MIN_WIDTH && proposedWidth <= MAX_WIDTH) {
+            newWidth = proposedWidth;
+            newX = resizeStart.posX + deltaX;
+          }
+        }
+        if (resizeMode.includes('s')) { // South (bottom edge)
+          newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height + deltaY));
+        }
+        if (resizeMode.includes('n')) { // North (top edge)
+          const proposedHeight = resizeStart.height - deltaY;
+          if (proposedHeight >= MIN_HEIGHT && proposedHeight <= MAX_HEIGHT) {
+            newHeight = proposedHeight;
+            newY = resizeStart.posY + deltaY;
+          }
         }
       }
 

@@ -1461,7 +1461,7 @@ export default function AnnotationOverlay({
                           <Trash2 className="h-5 w-5 stroke-[2.5]" />
                         </Button>
                         {showClearOptions && (
-                          <div className="absolute bottom-full mb-2 left-0 bg-black/90 backdrop-blur-xl border border-white/20 rounded-lg p-2 shadow-2xl min-w-[180px] z-[70]">
+                          <div className="absolute top-full mt-2 left-0 bg-black/90 backdrop-blur-xl border border-white/20 rounded-lg p-2 shadow-2xl min-w-[180px] z-[70]">
                             <div className="text-xs text-white/80 font-semibold mb-2 px-2">Clear:</div>
                             <Button
                               size="sm"
@@ -1717,7 +1717,7 @@ export default function AnnotationOverlay({
                     
                     {/* Clear options dropdown */}
                     {showClearOptions && (
-                      <div className="absolute bottom-full mb-2 right-0 bg-black/90 backdrop-blur-xl border border-white/20 rounded-lg p-2 shadow-2xl min-w-[180px] z-[70]">
+                      <div className="absolute top-full mt-2 right-0 bg-black/90 backdrop-blur-xl border border-white/20 rounded-lg p-2 shadow-2xl min-w-[180px] z-[70]">
                         <div className="text-xs text-white/80 font-semibold mb-2 px-2">Clear:</div>
                         <Button
                           size="sm"
