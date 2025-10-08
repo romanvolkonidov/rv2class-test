@@ -51,6 +51,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
   const [lineWidth, setLineWidth] = useState(3);
   const [history, setHistory] = useState<AnnotationAction[]>([]);
   const [historyStep, setHistoryStep] = useState(0);
+  const [remoteActions, setRemoteActions] = useState<AnnotationAction[]>([]); // Separate array for remote actions
   const [startPoint, setStartPoint] = useState<RelativePoint | null>(null);
   const [screenShareElement, setScreenShareElement] = useState<HTMLVideoElement | null>(null);
   const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
@@ -423,25 +424,26 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
       
       if (data.type === "annotate" && canvasRef.current) {
         const action = data.action;
-        // Add received action to history
-        setHistory(prev => {
-          const newHistory = [...prev.slice(0, historyStep), action];
-          return newHistory;
-        });
-        setHistoryStep(prev => prev + 1);
+        
+        // CRITICAL: Store remote actions separately to enable concurrent drawing
+        // This prevents remote actions from affecting local undo/redo state
+        setRemoteActions(prev => [...prev, action]);
         
         // Immediately draw the received action for real-time feedback
-        setTimeout(() => {
+        // Use requestAnimationFrame for smoother rendering
+        requestAnimationFrame(() => {
           if (canvasRef.current) {
             drawAction(action);
           }
-        }, 0);
+        });
       } else if (data.type === "clearAnnotations") {
         clearCanvas();
+        setRemoteActions([]); // Clear remote actions too
       } else if (data.type === "syncAnnotations" && viewOnly) {
         // Receive full annotation history from teacher
         setHistory(data.history || []);
         setHistoryStep(data.historyStep || 0);
+        setRemoteActions([]); // Clear remote actions when syncing
       }
     } catch (error) {
       console.error("Error processing annotation message:", error);
@@ -533,7 +535,13 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
 
+    // CRITICAL: Draw local actions up to historyStep (for undo/redo)
     history.slice(0, historyStep).forEach((action) => {
+      drawAction(action);
+    });
+
+    // CRITICAL: Draw ALL remote actions (concurrent drawing support)
+    remoteActions.forEach((action) => {
       drawAction(action);
     });
   };
@@ -760,6 +768,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
     ctx.restore();
     setHistory([]);
     setHistoryStep(0);
+    setRemoteActions([]); // Clear remote actions too
   };
 
   const clearAndBroadcast = () => {
@@ -771,7 +780,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
 
   useEffect(() => {
     redrawCanvas();
-  }, [historyStep, history]);
+  }, [historyStep, history, remoteActions]);
 
   // CRITICAL: Ensure canvas is initialized and ready for immediate drawing
   useEffect(() => {

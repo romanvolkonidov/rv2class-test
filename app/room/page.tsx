@@ -847,8 +847,8 @@ function RoomPage() {
 
   return (
     <LiveKitRoom
-      video={false} // DON'T auto-start video - we'll enable manually after connection
-      audio={true} // Enable audio immediately - audio rarely has conflicts
+      video={true} // CRITICAL: Enable video by default for all participants
+      audio={true} // CRITICAL: Enable audio by default for all participants
       token={token}
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
       className="h-full"

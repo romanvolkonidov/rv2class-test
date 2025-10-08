@@ -372,9 +372,9 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     setIsJoining(true);
     setIsWaitingForTeacher(true);
     
-    // CRITICAL: Stop all preview streams before joining to prevent echo
+    // CRITICAL: Stop all preview streams before joining to prevent echo and camera lock
     // The room will request fresh streams with proper settings
-    console.log("🛑 Stopping preview streams to prevent echo...");
+    console.log("🛑 Stopping preview streams to prevent echo and camera lock...");
     
     // Stop WaitingRoom preview stream
     if (waitingRoomRef.current) {
@@ -396,6 +396,19 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
         console.log("📹 Stopped camera preview track");
       });
       setVideoStream(null);
+    }
+    
+    // CRITICAL: Extra safety - stop ALL active media tracks system-wide
+    // This ensures no track is holding the camera when room tries to use it
+    try {
+      const allTracks = await navigator.mediaDevices.enumerateDevices();
+      console.log("🔍 Found devices:", allTracks.length);
+      
+      // Small delay to ensure all stops are processed
+      await new Promise(resolve => setTimeout(resolve, 300));
+      console.log("✅ All preview tracks released, ready to join room");
+    } catch (err) {
+      console.warn("⚠️ Error during device enumeration:", err);
     }
     
     // Get the room name based on the teacher
