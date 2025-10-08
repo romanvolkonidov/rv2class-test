@@ -102,6 +102,8 @@ export default function AnnotationOverlay({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [isToolbarPositioned, setIsToolbarPositioned] = useState(false);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [showDragHint, setShowDragHint] = useState(false);
   
   // Zoom detection
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -395,7 +397,41 @@ export default function AnnotationOverlay({
 
   // Handle toolbar dragging - Mouse events
   const handleToolbarMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.drag-handle')) {
+    const target = e.target as HTMLElement;
+    
+    // Immediate drag if clicking on drag handle
+    if (target.closest('.drag-handle')) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDraggingToolbar(true);
+      setDragStart({
+        x: e.clientX - toolbarPosition.x,
+        y: e.clientY - toolbarPosition.y,
+      });
+      return;
+    }
+    
+    // Check if clicked on a button or input element
+    const isButton = target.closest('button') || target.closest('input') || target.closest('select');
+    
+    if (isButton) {
+      // Clicked on button - start long press timer (2 seconds)
+      const startX = e.clientX;
+      const startY = e.clientY;
+      
+      longPressTimerRef.current = setTimeout(() => {
+        setShowDragHint(true);
+        setIsDraggingToolbar(true);
+        setDragStart({
+          x: startX - toolbarPosition.x,
+          y: startY - toolbarPosition.y,
+        });
+        
+        // Hide hint after 1 second
+        setTimeout(() => setShowDragHint(false), 1000);
+      }, 2000); // 2 seconds for buttons
+    } else {
+      // Clicked on empty space - immediate drag
       e.preventDefault();
       e.stopPropagation();
       setIsDraggingToolbar(true);
@@ -405,17 +441,74 @@ export default function AnnotationOverlay({
       });
     }
   };
+  
+  const handleToolbarMouseUp = (e: React.MouseEvent) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+      
+      // If not dragging, allow the click event to propagate to buttons
+      if (!isDraggingToolbar) {
+        // Let the button handle its own click
+      }
+    }
+  };
 
   // Handle toolbar dragging - Touch events
   const handleToolbarTouchStart = (e: React.TouchEvent) => {
-    if ((e.target as HTMLElement).closest('.drag-handle')) {
+    const target = e.target as HTMLElement;
+    const touch = e.touches[0];
+    
+    // Immediate drag if touching drag handle
+    if (target.closest('.drag-handle')) {
       e.stopPropagation();
-      const touch = e.touches[0];
       setIsDraggingToolbar(true);
       setDragStart({
         x: touch.clientX - toolbarPosition.x,
         y: touch.clientY - toolbarPosition.y,
       });
+      return;
+    }
+    
+    // Check if touched a button or input element
+    const isButton = target.closest('button') || target.closest('input') || target.closest('select');
+    
+    if (isButton) {
+      // Touched button - start long press timer (2 seconds)
+      const startX = touch.clientX;
+      const startY = touch.clientY;
+      
+      longPressTimerRef.current = setTimeout(() => {
+        setShowDragHint(true);
+        setIsDraggingToolbar(true);
+        setDragStart({
+          x: startX - toolbarPosition.x,
+          y: startY - toolbarPosition.y,
+        });
+        
+        // Haptic feedback if available
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+        
+        // Hide hint after 1 second
+        setTimeout(() => setShowDragHint(false), 1000);
+      }, 2000); // 2 seconds for buttons
+    } else {
+      // Touched empty space - immediate drag
+      e.stopPropagation();
+      setIsDraggingToolbar(true);
+      setDragStart({
+        x: touch.clientX - toolbarPosition.x,
+        y: touch.clientY - toolbarPosition.y,
+      });
+    }
+  };
+  
+  const handleToolbarTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
     }
   };
 
@@ -462,6 +555,10 @@ export default function AnnotationOverlay({
 
     const handleEnd = () => {
       setIsDraggingToolbar(false);
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -476,6 +573,9 @@ export default function AnnotationOverlay({
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleEnd);
       document.removeEventListener('touchcancel', handleEnd);
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
     };
   }, [isDraggingToolbar, dragStart, toolbarPosition]);
 
@@ -1406,7 +1506,6 @@ export default function AnnotationOverlay({
         ref={toolbarRef}
         className={cn(
           "fixed z-[60] transition-opacity duration-300 touch-manipulation",
-          isDraggingToolbar ? "cursor-grabbing" : "cursor-grab",
           isClosing ? "animate-slide-up-out" : "animate-slide-down"
         )}
         style={{
@@ -1414,16 +1513,26 @@ export default function AnnotationOverlay({
           top: `${toolbarPosition.y}px`,
         }}
         onMouseDown={handleToolbarMouseDown}
+        onMouseUp={handleToolbarMouseUp}
         onTouchStart={handleToolbarTouchStart}
+        onTouchEnd={handleToolbarTouchEnd}
       >
-        {/* Drag Handle - Always show, students can drag too */}
-        <div className="drag-handle absolute -top-6 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-t-lg bg-black/30 backdrop-blur-xl border border-white/10 border-b-0 cursor-grab active:cursor-grabbing flex items-center gap-2">
-          <div className="flex gap-0.5">
-            <div className="w-1 h-1 rounded-full bg-white/40"></div>
-            <div className="w-1 h-1 rounded-full bg-white/40"></div>
-            <div className="w-1 h-1 rounded-full bg-white/40"></div>
+        {/* Drag Hint - Shows when long press is activated */}
+        {showDragHint && (
+          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-blue-500/90 text-white px-3 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap animate-pulse shadow-lg z-[70] border border-blue-400/30">
+            ✋ Dragging enabled!
           </div>
-          <span className="text-xs text-white/60 font-medium select-none">Drag</span>
+        )}
+        
+        {/* Drag Handle - Always show, students can drag too */}
+        <div 
+          className={cn(
+            "drag-handle absolute -top-6 left-1/2 transform -translate-x-1/2 px-4 py-1.5 rounded-t-lg bg-black/40 backdrop-blur-xl border border-white/20 border-b-0 flex items-center gap-2 transition-colors pointer-events-auto",
+            isDraggingToolbar ? "cursor-grabbing bg-black/60" : "cursor-grab hover:bg-black/50"
+          )}
+        >
+          <GripVertical className="h-4 w-4 text-white/60" />
+          <span className="text-xs text-white/70 font-medium select-none">Drag Here or Between Buttons</span>
         </div>
 
           {/* Main Toolbar with glass morphism */}
@@ -1435,7 +1544,7 @@ export default function AnnotationOverlay({
             `}
           >
             {toolbarCollapsed ? (
-              /* Collapsed View - Just essential buttons */
+              /* Collapsed View - Essential drawing tools + utilities */
               <div className="flex items-center gap-1.5">
                 <Button
                   size="icon"
@@ -1446,9 +1555,56 @@ export default function AnnotationOverlay({
                 >
                   <ChevronDown className="h-5 w-5 stroke-[2.5]" />
                 </Button>
+                
                 {!viewOnly && (
                   <>
                     <div className="w-px h-6 bg-white/20" />
+                    
+                    {/* Quick Drawing Tools */}
+                    <Button
+                      size="icon"
+                      variant={tool === "pencil" ? "default" : "ghost"}
+                      onClick={() => setTool("pencil")}
+                      title="Pencil"
+                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
+                        tool === "pencil" 
+                          ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                          : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
+                      }`}
+                    >
+                      <Pencil className="h-5 w-5 stroke-[2.5]" />
+                    </Button>
+                    
+                    <Button
+                      size="icon"
+                      variant={tool === "text" ? "default" : "ghost"}
+                      onClick={() => setTool("text")}
+                      title="Text"
+                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
+                        tool === "text" 
+                          ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                          : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
+                      }`}
+                    >
+                      <Type className="h-5 w-5 stroke-[2.5]" />
+                    </Button>
+                    
+                    <Button
+                      size="icon"
+                      variant={tool === "eraser" ? "default" : "ghost"}
+                      onClick={() => setTool("eraser")}
+                      title="Eraser"
+                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
+                        tool === "eraser" 
+                          ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                          : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
+                      }`}
+                    >
+                      <Eraser className="h-5 w-5 stroke-[2.5]" />
+                    </Button>
+                    
+                    <div className="w-px h-6 bg-white/20" />
+                    
                     {isTutor ? (
                       <div className="relative clear-options-container">
                         <Button
