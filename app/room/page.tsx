@@ -75,21 +75,32 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   // CRITICAL: Ensure camera and microphone are enabled on room connection
   useEffect(() => {
     if (!room || !room.localParticipant) return;
+    
+    // Only run this after room is fully connected
+    if (room.state !== 'connected') {
+      console.log('⏳ Waiting for room to connect before enabling media...');
+      return;
+    }
 
     const enableMediaOnConnect = async () => {
       try {
         console.log('🎥 Ensuring camera and microphone are enabled...');
         
-        // Enable microphone
+        // Small delay to ensure LiveKitRoom has finished its initial setup
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Enable microphone only if not already enabled
         if (!room.localParticipant.isMicrophoneEnabled) {
+          console.log('🎤 Microphone not enabled, enabling now...');
           await room.localParticipant.setMicrophoneEnabled(true);
           console.log('✅ Microphone enabled');
         } else {
           console.log('✅ Microphone already enabled');
         }
         
-        // Enable camera
+        // Enable camera only if not already enabled
         if (!room.localParticipant.isCameraEnabled) {
+          console.log('📹 Camera not enabled, enabling now...');
           await room.localParticipant.setCameraEnabled(true);
           console.log('✅ Camera enabled');
         } else {
