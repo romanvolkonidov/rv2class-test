@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { Loader2, Clock, UserCheck, Sparkles, Video, Mic } from "lucide-react";
-import { initializeNoiseSuppressor, applyNoiseSuppression } from "@/lib/audioProcessor";
 
 interface WaitingRoomProps {
   studentName: string;
@@ -101,53 +100,67 @@ const WaitingRoom = forwardRef<WaitingRoomHandle, WaitingRoomProps>(({ studentNa
         const aiNoiseCancellationEnabled = localStorage.getItem('aiNoiseCancellation');
         const shouldApplyNoiseCancellation = aiNoiseCancellationEnabled !== 'false'; // Default to true
         
-        // Initialize AI noise suppressor if enabled
-        if (shouldApplyNoiseCancellation) {
-          await initializeNoiseSuppressor().catch(err => {
-            console.warn('⚠️ Could not initialize noise suppressor in waiting room:', err);
-          });
-        }
+        let processedStream: MediaStream;
         
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 30 },
-          },
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          }
-        });
-
-        // Apply AI noise suppression to audio if enabled
-        let processedStream = stream;
         if (shouldApplyNoiseCancellation) {
           try {
-            const audioTrack = stream.getAudioTracks()[0];
-            if (audioTrack) {
-              const audioStream = new MediaStream([audioTrack]);
-              const noiseSuppressedStream = await applyNoiseSuppression(audioStream);
-              
-              // Combine noise-suppressed audio with video
-              const videoTrack = stream.getVideoTracks()[0];
-              const tracks = [];
-              if (noiseSuppressedStream.getAudioTracks()[0]) {
-                tracks.push(noiseSuppressedStream.getAudioTracks()[0]);
-              }
-              if (videoTrack) {
-                tracks.push(videoTrack);
-              }
-              processedStream = new MediaStream(tracks);
-              console.log('✅ AI noise suppression applied to waiting room audio');
-            }
+            console.log('🔊 Getting microphone with AI noise suppression...');
+            
+            // Import the function dynamically to avoid SSR issues
+            const { getProcessedMicrophoneAudio } = await import('@/lib/audioProcessor');
+            
+            // Get microphone audio that's already processed by RNNoise
+            const audioStream = await getProcessedMicrophoneAudio();
+            const audioTrack = audioStream.getAudioTracks()[0];
+            
+            // Get video separately
+            const videoStream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 30 },
+              },
+              audio: false, // Don't get audio again
+            });
+            const videoTrack = videoStream.getVideoTracks()[0];
+            
+            // Combine processed audio with video
+            const tracks = [];
+            if (audioTrack) tracks.push(audioTrack);
+            if (videoTrack) tracks.push(videoTrack);
+            processedStream = new MediaStream(tracks);
+            
+            console.log('✅ AI noise-suppressed audio + video ready for waiting room');
           } catch (noiseError) {
             console.warn('⚠️ Could not apply noise suppression, using standard audio:', noiseError);
-            // Continue with original stream
+            // Fallback to standard method
+            processedStream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 30 },
+              },
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+              }
+            });
           }
         } else {
           console.log('ℹ️ AI noise suppression disabled by user preference');
+          processedStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              frameRate: { ideal: 30 },
+            },
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            }
+          });
         }
 
         streamRef.current = processedStream;

@@ -121,33 +121,77 @@ export async function applyNoiseSuppression(
 }
 
 /**
- * Process microphone audio with noise suppression
- * This is a convenience function that gets the microphone and applies noise suppression
+ * Get processed microphone audio with RNNoise
+ * This gets the raw microphone, applies RNNoise, and returns the processed stream
  * 
- * @param constraints - MediaTrackConstraints for the microphone
+ * @param deviceId - Optional specific microphone device ID
  * @returns A MediaStream with noise-suppressed audio
  */
 export async function getProcessedMicrophoneAudio(
-  constraints: MediaTrackConstraints = {
-    echoCancellation: true,
-    noiseSuppression: true, // Browser's built-in first
-    autoGainControl: true,
-  }
+  deviceId?: string
 ): Promise<MediaStream> {
+  // Skip if not in browser environment
+  if (typeof window === 'undefined' || !RnnoiseWorkletNode) {
+    console.warn('⚠️ Noise suppressor not available, getting standard audio');
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: deviceId ? { deviceId: { exact: deviceId } } : true
+    });
+    return stream;
+  }
+  
   try {
-    // Get the raw microphone stream
+    console.log('🎙️ Getting processed microphone audio with RNNoise...');
+    
+    // Initialize if needed
+    if (!isInitialized) {
+      await initializeNoiseSuppressor();
+    }
+
+    if (!wasmBinary) {
+      console.warn('⚠️ WASM not loaded, using standard audio');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: deviceId ? { deviceId: { exact: deviceId } } : true
+      });
+      return stream;
+    }
+
+    // Get RAW microphone audio with minimal processing
     const rawStream = await navigator.mediaDevices.getUserMedia({
-      audio: constraints,
-      video: false,
+      audio: {
+        deviceId: deviceId ? { exact: deviceId } : undefined,
+        // Disable browser processing - let RNNoise do everything
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        // High quality settings
+        sampleRate: 48000,
+        channelCount: 1, // Mono for RNNoise
+      }
     });
 
-    // Apply AI noise suppression on top of browser's processing
+    console.log('✅ Got raw microphone stream');
+
+    // Apply RNNoise processing
     const processedStream = await applyNoiseSuppression(rawStream);
     
+    // Stop the raw track since we're using the processed one
+    rawStream.getTracks().forEach(track => track.stop());
+    
+    console.log('✅ RNNoise processing applied successfully');
     return processedStream;
   } catch (error) {
-    console.error('❌ Failed to get processed microphone audio:', error);
-    throw error;
+    console.error('❌ Failed to get processed audio:', error);
+    // Fallback to standard audio with browser processing
+    console.log('⚠️ Falling back to standard audio with browser processing');
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        deviceId: deviceId ? { exact: deviceId } : undefined,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      }
+    });
+    return stream;
   }
 }
 
