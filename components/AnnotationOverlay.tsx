@@ -68,6 +68,9 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [isToolbarPositioned, setIsToolbarPositioned] = useState(false);
   
+  // Zoom detection
+  const [zoomLevel, setZoomLevel] = useState(1);
+  
   // Use external or internal closing state
   const isClosing = externalIsClosing || internalIsClosing;
 
@@ -124,6 +127,41 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
     }
   }, [isClosing]);
 
+  // Detect browser zoom level
+  useEffect(() => {
+    const detectZoom = () => {
+      // Method 1: Using devicePixelRatio and screen width
+      const zoom = window.devicePixelRatio / (window.outerWidth / window.innerWidth);
+      
+      // Method 2: More reliable - using visualViewport if available
+      if (window.visualViewport) {
+        const detectedZoom = window.visualViewport.scale;
+        setZoomLevel(detectedZoom);
+        console.log('🔍 Browser zoom detected:', (detectedZoom * 100).toFixed(0) + '%');
+      } else {
+        // Fallback: assume no zoom or use devicePixelRatio
+        setZoomLevel(1);
+      }
+    };
+
+    detectZoom();
+
+    // Listen for zoom changes
+    window.addEventListener('resize', detectZoom);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', detectZoom);
+      window.visualViewport.addEventListener('scroll', detectZoom);
+    }
+
+    return () => {
+      window.removeEventListener('resize', detectZoom);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', detectZoom);
+        window.visualViewport.removeEventListener('scroll', detectZoom);
+      }
+    };
+  }, []);
+
   // Update canvas size and position to match screen share video
   useEffect(() => {
     if (!screenShareElement || !canvasRef.current || !containerRef.current) return;
@@ -135,6 +173,9 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
       if (!screenShareElement || !canvas || !container) return;
 
       const rect = screenShareElement.getBoundingClientRect();
+      
+      // Account for browser zoom level
+      const effectiveZoom = window.visualViewport ? window.visualViewport.scale : 1;
       const cssWidth = rect.width;
       const cssHeight = rect.height;
 
@@ -176,6 +217,18 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
         offsetY,
       };
 
+      // Log zoom-aware metrics for debugging
+      console.log('📐 Canvas metrics updated:', {
+        cssWidth: cssWidth.toFixed(2),
+        cssHeight: cssHeight.toFixed(2),
+        contentWidth: contentWidth.toFixed(2),
+        contentHeight: contentHeight.toFixed(2),
+        offsetX: offsetX.toFixed(2),
+        offsetY: offsetY.toFixed(2),
+        zoom: effectiveZoom.toFixed(2),
+        videoNatural: `${naturalWidth}x${naturalHeight}`,
+      });
+
       // Position the container to match the video exactly
       container.style.left = `${rect.left}px`;
       container.style.top = `${rect.top}px`;
@@ -213,7 +266,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("scroll", handleResize, true);
     };
-  }, [screenShareElement]);
+  }, [screenShareElement, zoomLevel]); // Re-run when zoom changes
 
   // Initialize toolbar position - bottom-right corner, more discreet
   useEffect(() => {
@@ -325,10 +378,21 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
     const normalizedX = (x - metrics.offsetX) / effectiveWidth;
     const normalizedY = (y - metrics.offsetY) / effectiveHeight;
 
-    return {
+    const result = {
       x: Math.min(Math.max(normalizedX, 0), 1),
       y: Math.min(Math.max(normalizedY, 0), 1),
     };
+
+    // Log first few conversions for debugging zoom issues
+    if (!viewOnly && Math.random() < 0.1) { // Log 10% of events to avoid spam
+      console.log('🎯 toRelative:', { 
+        input: {x, y}, 
+        metrics: { width: effectiveWidth.toFixed(2), height: effectiveHeight.toFixed(2), offsetX: metrics.offsetX.toFixed(2), offsetY: metrics.offsetY.toFixed(2) },
+        output: { x: result.x.toFixed(3), y: result.y.toFixed(3) }
+      });
+    }
+
+    return result;
   };
 
   // Convert relative coordinates to absolute pixels within the video content

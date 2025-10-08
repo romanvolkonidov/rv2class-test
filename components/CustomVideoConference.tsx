@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, memo, useState } from "react";
+import { useEffect, useRef, memo, useState, useCallback } from "react";
 import {
   useTracks,
   useParticipants,
@@ -8,22 +8,32 @@ import {
 } from "@livekit/components-react";
 import { Track, Participant, RemoteParticipant } from "livekit-client";
 import { cn } from "@/lib/utils";
+import { X, Minimize2, Maximize2, GripHorizontal } from "lucide-react";
 
-// Draggable Thumbnail Component with full surface touch and mouse support
-function DraggableThumbnail({ 
-  children, 
-  participantKey 
+// Draggable Thumbnail Container - moves all thumbnails as a group
+function DraggableThumbnailContainer({ 
+  children,
+  isMinimized,
+  onToggleMinimize,
+  onHideLocal,
+  showLocal,
 }: { 
   children: React.ReactNode;
-  participantKey: string;
+  isMinimized: boolean;
+  onToggleMinimize: () => void;
+  onHideLocal: () => void;
+  showLocal: boolean;
 }) {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ x: 10, y: 10 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const elementRef = useRef<HTMLDivElement>(null);
+  const dragHandleRef = useRef<HTMLDivElement>(null);
 
-  // Mouse drag handlers - entire surface is draggable
+  // Mouse drag handlers - only drag handle is draggable
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Only allow dragging from the drag handle
+    if (!dragHandleRef.current?.contains(e.target as Node)) return;
     if (e.button !== 0) return; // Only left click
     e.preventDefault();
     e.stopPropagation();
@@ -34,9 +44,10 @@ function DraggableThumbnail({
     });
   };
 
-  // Touch drag handlers - entire surface is draggable, optimized for touch
+  // Touch drag handlers - only drag handle is draggable
   const handleTouchStart = (e: React.TouchEvent) => {
-    // Don't prevent default on touch start to allow scrolling if needed
+    // Only allow dragging from the drag handle
+    if (!dragHandleRef.current?.contains(e.target as Node)) return;
     e.stopPropagation();
     const touch = e.touches[0];
     setIsDragging(true);
@@ -46,6 +57,29 @@ function DraggableThumbnail({
     });
   };
 
+  // Throttle position updates for better performance
+  const rafRef = useRef<number | undefined>(undefined);
+  const updatePosition = useCallback((newX: number, newY: number) => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+    }
+    
+    rafRef.current = requestAnimationFrame(() => {
+      const element = elementRef.current;
+      if (element) {
+        const maxX = window.innerWidth - element.offsetWidth - 10;
+        const maxY = window.innerHeight - element.offsetHeight - 10;
+        
+        setPosition({
+          x: Math.max(10, Math.min(newX, maxX)),
+          y: Math.max(10, Math.min(newY, maxY)),
+        });
+      } else {
+        setPosition({ x: newX, y: newY });
+      }
+    });
+  }, []);
+
   useEffect(() => {
     if (!isDragging) return;
 
@@ -53,41 +87,15 @@ function DraggableThumbnail({
       e.preventDefault();
       const newX = e.clientX - dragStart.x;
       const newY = e.clientY - dragStart.y;
-      
-      // Keep within viewport bounds
-      const element = elementRef.current;
-      if (element) {
-        const maxX = window.innerWidth - element.offsetWidth - 10;
-        const maxY = window.innerHeight - element.offsetHeight - 10;
-        
-        setPosition({
-          x: Math.max(10, Math.min(newX, maxX)),
-          y: Math.max(10, Math.min(newY, maxY)),
-        });
-      } else {
-        setPosition({ x: newX, y: newY });
-      }
+      updatePosition(newX, newY);
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault(); // Prevent scrolling while dragging
+      e.preventDefault();
       const touch = e.touches[0];
       const newX = touch.clientX - dragStart.x;
       const newY = touch.clientY - dragStart.y;
-      
-      // Keep within viewport bounds
-      const element = elementRef.current;
-      if (element) {
-        const maxX = window.innerWidth - element.offsetWidth - 10;
-        const maxY = window.innerHeight - element.offsetHeight - 10;
-        
-        setPosition({
-          x: Math.max(10, Math.min(newX, maxX)),
-          y: Math.max(10, Math.min(newY, maxY)),
-        });
-      } else {
-        setPosition({ x: newX, y: newY });
-      }
+      updatePosition(newX, newY);
     };
 
     const handleEnd = () => {
@@ -106,8 +114,11 @@ function DraggableThumbnail({
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleEnd);
       document.removeEventListener('touchcancel', handleEnd);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
     };
-  }, [isDragging, dragStart]);
+  }, [isDragging, dragStart, updatePosition]);
 
   return (
     <div
@@ -115,32 +126,79 @@ function DraggableThumbnail({
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       className={cn(
-        "w-32 h-24 md:w-48 md:h-36 flex-shrink-0 touch-manipulation select-none",
-        isDragging ? "cursor-grabbing opacity-90 scale-105 z-[100] shadow-2xl" : "cursor-grab hover:shadow-lg",
-        "transition-all duration-150 active:scale-105"
+        "select-none",
+        isDragging ? "z-[100]" : "z-10"
       )}
       style={{
+        position: 'fixed',
+        left: 0,
+        top: 0,
         transform: `translate(${position.x}px, ${position.y}px)`,
-        position: 'relative',
-        touchAction: 'none', // Prevent default touch behaviors like scroll
+        willChange: isDragging ? 'transform' : 'auto',
         WebkitUserSelect: 'none',
         userSelect: 'none',
       }}
     >
-      {/* Visual indicator that it's draggable */}
-      {!isDragging && (
-        <div className="absolute top-1 left-1/2 transform -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded-full border border-white/20 pointer-events-none z-10">
-          <div className="flex items-center gap-1">
-            <div className="flex gap-0.5">
-              <div className="w-1 h-1 rounded-full bg-white/60"></div>
-              <div className="w-1 h-1 rounded-full bg-white/60"></div>
-              <div className="w-1 h-1 rounded-full bg-white/60"></div>
-            </div>
-            <span className="text-[10px] text-white/70 font-medium">Drag</span>
-          </div>
+      {/* Control bar with buttons */}
+      <div className="bg-black/60 backdrop-blur-md rounded-t-lg border border-white/20 border-b-0 px-2 py-1 flex items-center gap-2">
+        {/* Drag handle */}
+        <div 
+          ref={dragHandleRef}
+          className={cn(
+            "flex items-center gap-1 px-2 py-1 rounded cursor-move hover:bg-white/10 transition-colors touch-manipulation",
+            isDragging && "bg-white/20"
+          )}
+          title="Drag to move"
+        >
+          <GripHorizontal className="w-4 h-4 text-white/70" />
+          <span className="text-xs text-white/70 font-medium hidden sm:inline">Drag</span>
+        </div>
+
+        {/* Button controls */}
+        <div className="flex items-center gap-1">
+          {/* Hide/Show local thumbnail */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onHideLocal();
+            }}
+            className="p-1.5 rounded hover:bg-white/10 transition-colors group"
+            title={showLocal ? "Hide your camera" : "Show your camera"}
+          >
+            {showLocal ? (
+              <X className="w-4 h-4 text-white/70 group-hover:text-white" />
+            ) : (
+              <svg className="w-4 h-4 text-white/70 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            )}
+          </button>
+
+          {/* Minimize/Maximize */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleMinimize();
+            }}
+            className="p-1.5 rounded hover:bg-white/10 transition-colors group"
+            title={isMinimized ? "Show thumbnails" : "Minimize"}
+          >
+            {isMinimized ? (
+              <Maximize2 className="w-4 h-4 text-white/70 group-hover:text-white" />
+            ) : (
+              <Minimize2 className="w-4 h-4 text-white/70 group-hover:text-white" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Thumbnails container - hidden when minimized */}
+      {!isMinimized && (
+        <div className="bg-black/40 backdrop-blur-md rounded-b-lg border border-white/20 p-2 flex gap-2 items-start">
+          {children}
         </div>
       )}
-      {children}
     </div>
   );
 }
@@ -291,6 +349,10 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
 export default function CustomVideoConference() {
   const participants = useParticipants();
   
+  // State for thumbnail controls
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [showLocalThumbnail, setShowLocalThumbnail] = useState(true);
+  
   // Get all video and audio tracks
   const tracks = useTracks([
     { source: Track.Source.Camera, withPlaceholder: true },
@@ -326,47 +388,45 @@ export default function CustomVideoConference() {
             </div>
           </div>
 
-          {/* Floating draggable thumbnails at top with staggered animation */}
-          <div 
-            className="absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 z-10 flex gap-2 md:gap-3 pointer-events-auto animate-slide-in-top"
-            style={{
-              animation: 'slideInTop 0.5s ease-out 0.2s both'
-            }}
+          {/* Floating draggable thumbnail container */}
+          <DraggableThumbnailContainer
+            isMinimized={isMinimized}
+            onToggleMinimize={() => setIsMinimized(!isMinimized)}
+            onHideLocal={() => setShowLocalThumbnail(!showLocalThumbnail)}
+            showLocal={showLocalThumbnail}
           >
-            <div className="flex gap-2 md:gap-3 flex-wrap">
-              {/* Local participant thumbnail */}
-              {localParticipant && (
-                <DraggableThumbnail participantKey={`local-${localParticipant.identity}`}>
-                  <ParticipantView
-                    key={localParticipant.identity}
-                    participant={localParticipant}
-                    trackRef={tracks.find(
-                      (t) => t.participant === localParticipant && t.source === Track.Source.Camera
-                    )}
-                    isLocal
-                  />
-                </DraggableThumbnail>
-              )}
+            {/* Local participant thumbnail */}
+            {localParticipant && showLocalThumbnail && (
+              <div className="w-28 h-20 sm:w-32 sm:h-24 md:w-40 md:h-28 max-w-[30vw] max-h-[25vh] flex-shrink-0">
+                <ParticipantView
+                  key={localParticipant.identity}
+                  participant={localParticipant}
+                  trackRef={tracks.find(
+                    (t) => t.participant === localParticipant && t.source === Track.Source.Camera
+                  )}
+                  isLocal
+                />
+              </div>
+            )}
 
-              {/* Remote participants thumbnails */}
-              {remoteParticipants.map((participant) => {
-                const trackRef = tracks.find(
-                  (t) => t.participant === participant && t.source === Track.Source.Camera
-                );
-                return (
-                  <DraggableThumbnail 
-                    key={participant.identity}
-                    participantKey={participant.identity}
-                  >
-                    <ParticipantView
-                      participant={participant}
-                      trackRef={trackRef}
-                    />
-                  </DraggableThumbnail>
-                );
-              })}
-            </div>
-          </div>
+            {/* Remote participants thumbnails */}
+            {remoteParticipants.map((participant) => {
+              const trackRef = tracks.find(
+                (t) => t.participant === participant && t.source === Track.Source.Camera
+              );
+              return (
+                <div 
+                  key={participant.identity}
+                  className="w-28 h-20 sm:w-32 sm:h-24 md:w-40 md:h-28 max-w-[30vw] max-h-[25vh] flex-shrink-0"
+                >
+                  <ParticipantView
+                    participant={participant}
+                    trackRef={trackRef}
+                  />
+                </div>
+              );
+            })}
+          </DraggableThumbnailContainer>
         </>
       ) : (
         /* Participants grid when no screen share */
