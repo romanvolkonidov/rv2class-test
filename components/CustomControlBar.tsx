@@ -628,15 +628,17 @@ export default function CustomControlBar({
         (showAnnotations || showWhiteboard) ? "z-[100]" : "z-20",
         // Mobile: full width with padding, Desktop: auto width
         "w-full max-w-[95vw] md:max-w-none md:w-auto px-2 md:px-0",
+        // CRITICAL: Allow overflow visible so device menus don't get clipped
+        "overflow-visible",
         isControlBarVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16 pointer-events-none"
       )}
     >
       <div className={cn(
         "flex items-center gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4",
         "rounded-2xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl",
-        // CRITICAL: Allow overflow-y-visible so dropdowns can appear above without clipping
+        // CRITICAL: Allow overflow visible so dropdowns can appear above without clipping
         // Only enable horizontal scroll on very small screens
-        "overflow-x-auto scrollbar-hide",
+        "overflow-x-auto overflow-y-visible scrollbar-hide",
         // Smooth scrolling on mobile
         "snap-x snap-mandatory"
       )}>
