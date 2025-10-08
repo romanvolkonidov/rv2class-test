@@ -2,11 +2,11 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, ChevronUp, Type } from "lucide-react";
+import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, ChevronUp, Type, MousePointer2 } from "lucide-react";
 import { useRoomContext, useDataChannel } from "@livekit/components-react";
 import { cn } from "@/lib/utils";
 
-type AnnotationTool = "pencil" | "eraser" | "rectangle" | "circle" | "text";
+type AnnotationTool = "pointer" | "pencil" | "eraser" | "rectangle" | "circle" | "text";
 
 // Use relative coordinates (0-1 range) instead of absolute pixels
 interface RelativePoint {
@@ -23,6 +23,8 @@ interface AnnotationAction {
   endPoint?: RelativePoint;
   text?: string; // For text annotations
   fontSize?: number; // Relative font size (0-1 range)
+  author?: string; // Identity of the participant who created this annotation
+  id?: string; // Unique ID for this annotation (useful for editing)
 }
 
 interface VideoMetrics {
@@ -34,7 +36,17 @@ interface VideoMetrics {
   offsetY: number;
 }
 
-export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing: externalIsClosing = false }: { onClose?: () => void; viewOnly?: boolean; isClosing?: boolean }) {
+export default function AnnotationOverlay({ 
+  onClose, 
+  viewOnly = false, 
+  isClosing: externalIsClosing = false,
+  isTutor = false 
+}: { 
+  onClose?: () => void; 
+  viewOnly?: boolean; 
+  isClosing?: boolean;
+  isTutor?: boolean;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const metricsRef = useRef<VideoMetrics>({
@@ -46,7 +58,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
     offsetY: 0,
   });
   const [isDrawing, setIsDrawing] = useState(false);
-  const [tool, setTool] = useState<AnnotationTool>("pencil"); // Default to pencil so students can draw immediately
+  const [tool, setTool] = useState<AnnotationTool>("pointer"); // Default to pointer
   const [color, setColor] = useState("#FF0000");
   const [lineWidth, setLineWidth] = useState(3);
   const [history, setHistory] = useState<AnnotationAction[]>([]);
@@ -60,6 +72,8 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
   const [isTextInputVisible, setIsTextInputVisible] = useState(false);
   const [fontSize, setFontSize] = useState(24);
   const [internalIsClosing, setInternalIsClosing] = useState(false);
+  const [editingTextId, setEditingTextId] = useState<string | null>(null); // ID of text being edited
+  const [showClearOptions, setShowClearOptions] = useState(false); // For clear options modal
   const room = useRoomContext();
   
   // Toolbar dragging state
@@ -74,6 +88,21 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
   
   // Use external or internal closing state
   const isClosing = externalIsClosing || internalIsClosing;
+
+  // Click outside to close clear options
+  useEffect(() => {
+    if (!showClearOptions) return;
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.clear-options-container')) {
+        setShowClearOptions(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showClearOptions]);
 
   // Find the screen share video element
   useEffect(() => {
@@ -439,6 +468,29 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
       } else if (data.type === "clearAnnotations") {
         clearCanvas();
         setRemoteActions([]); // Clear remote actions too
+      } else if (data.type === "clearAnnotationsByType") {
+        // Handle selective clear from teacher
+        const { authorType, teacherIdentity } = data;
+        
+        let filteredHistory: AnnotationAction[];
+        let filteredRemote: AnnotationAction[];
+
+        if (authorType === "all") {
+          filteredHistory = [];
+          filteredRemote = [];
+        } else if (authorType === "teacher") {
+          // Remove teacher's drawings
+          filteredHistory = history.filter(a => a.author !== teacherIdentity);
+          filteredRemote = remoteActions.filter(a => a.author !== teacherIdentity);
+        } else { // "students"
+          // Remove students' drawings (keep teacher's)
+          filteredHistory = history.filter(a => a.author === teacherIdentity);
+          filteredRemote = remoteActions.filter(a => a.author === teacherIdentity);
+        }
+
+        setHistory(filteredHistory);
+        setHistoryStep(filteredHistory.length);
+        setRemoteActions(filteredRemote);
       } else if (data.type === "syncAnnotations" && viewOnly) {
         // Receive full annotation history from teacher
         setHistory(data.history || []);
@@ -546,6 +598,53 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
     });
   };
 
+  // Find text annotation at a given point
+  const findTextAtPoint = (point: RelativePoint): AnnotationAction | null => {
+    const allActions = [...history.slice(0, historyStep), ...remoteActions];
+    
+    // Search in reverse order (most recent first)
+    for (let i = allActions.length - 1; i >= 0; i--) {
+      const action = allActions[i];
+      if (action.tool === "text" && action.startPoint && action.text) {
+        const pos = toAbsolute(action.startPoint);
+        const clickPos = toAbsolute(point);
+        
+        const metrics = metricsRef.current;
+        const effectiveWidth = metrics.contentWidth || metrics.cssWidth || 1;
+        const absoluteFontSize = action.fontSize ? action.fontSize * effectiveWidth : 24;
+        
+        // Create a temporary canvas to measure text
+        const canvas = canvasRef.current;
+        if (!canvas) continue;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) continue;
+        
+        ctx.font = `${absoluteFontSize}px Arial, sans-serif`;
+        
+        // Calculate bounding box for text
+        const lines = action.text.split('\n');
+        let maxWidth = 0;
+        lines.forEach(line => {
+          const width = ctx.measureText(line).width;
+          if (width > maxWidth) maxWidth = width;
+        });
+        
+        const textHeight = lines.length * absoluteFontSize * 1.2;
+        
+        // Check if click is within text bounds (with some padding for easier selection)
+        const padding = 5;
+        if (clickPos.x >= pos.x - padding && 
+            clickPos.x <= pos.x + maxWidth + padding &&
+            clickPos.y >= pos.y - padding && 
+            clickPos.y <= pos.y + textHeight + padding) {
+          return action;
+        }
+      }
+    }
+    
+    return null;
+  };
+
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (viewOnly) return; // Don't allow drawing in view-only mode
     e.preventDefault();
@@ -577,6 +676,26 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
       setTextInputPosition(relativePoint);
       setIsTextInputVisible(true);
       setTextInput("");
+      setEditingTextId(null); // Not editing existing text
+      return;
+    }
+
+    // Handle pointer tool - check if clicking on existing text
+    if (tool === "pointer") {
+      const clickedText = findTextAtPoint(relativePoint);
+      if (clickedText) {
+        // Check if user can edit this text
+        const canEdit = isTutor || clickedText.author === room.localParticipant.identity;
+        if (canEdit) {
+          // Open edit mode
+          setTextInputPosition(clickedText.startPoint!);
+          setTextInput(clickedText.text || "");
+          setFontSize(clickedText.fontSize ? clickedText.fontSize * (metricsRef.current.contentWidth || metricsRef.current.cssWidth || 1) : 24);
+          setColor(clickedText.color);
+          setIsTextInputVisible(true);
+          setEditingTextId(clickedText.id || null);
+        }
+      }
       return;
     }
 
@@ -593,6 +712,8 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
         color,
         width: relativeWidth,
         points: [relativePoint],
+        author: room.localParticipant.identity,
+        id: `${room.localParticipant.identity}-${Date.now()}`,
       };
       setHistory([...history.slice(0, historyStep), action]);
       setHistoryStep(historyStep + 1);
@@ -690,6 +811,8 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
         width: relativeWidth,
         startPoint,
         endPoint: relativePoint,
+        author: room.localParticipant.identity,
+        id: `${room.localParticipant.identity}-${Date.now()}`,
       };
       setHistory([...history.slice(0, historyStep), action]);
       setHistoryStep(historyStep + 1);
@@ -728,29 +851,69 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
     const effectiveWidth = metrics.contentWidth || metrics.cssWidth || canvas.width;
     const relativeFontSize = effectiveWidth ? fontSize / effectiveWidth : 0;
 
-    const action: AnnotationAction = {
-      tool: "text",
-      color,
-      width: 0,
-      text: textInput,
-      startPoint: textInputPosition,
-      fontSize: relativeFontSize,
-    };
+    if (editingTextId) {
+      // Editing existing text
+      const allActions = [...history.slice(0, historyStep), ...remoteActions];
+      const editIndex = allActions.findIndex(a => a.id === editingTextId);
+      
+      if (editIndex !== -1) {
+        const updatedAction: AnnotationAction = {
+          ...allActions[editIndex],
+          text: textInput,
+          color,
+          fontSize: relativeFontSize,
+        };
+        
+        // Check if it's in history or remote actions
+        const historyIndex = history.slice(0, historyStep).findIndex(a => a.id === editingTextId);
+        if (historyIndex !== -1) {
+          // Update in history
+          const newHistory = [...history];
+          newHistory[historyIndex] = updatedAction;
+          setHistory(newHistory);
+        } else {
+          // Update in remote actions
+          const remoteIndex = remoteActions.findIndex(a => a.id === editingTextId);
+          if (remoteIndex !== -1) {
+            const newRemoteActions = [...remoteActions];
+            newRemoteActions[remoteIndex] = updatedAction;
+            setRemoteActions(newRemoteActions);
+          }
+        }
+        
+        // Broadcast the update
+        sendAnnotationData({ ...updatedAction, tool: "text" });
+      }
+    } else {
+      // Creating new text
+      const action: AnnotationAction = {
+        tool: "text",
+        color,
+        width: 0,
+        text: textInput,
+        startPoint: textInputPosition,
+        fontSize: relativeFontSize,
+        author: room.localParticipant.identity,
+        id: `${room.localParticipant.identity}-${Date.now()}`,
+      };
 
-    setHistory([...history.slice(0, historyStep), action]);
-    setHistoryStep(historyStep + 1);
-    sendAnnotationData(action);
+      setHistory([...history.slice(0, historyStep), action]);
+      setHistoryStep(historyStep + 1);
+      sendAnnotationData(action);
+    }
 
     // Reset text input
     setTextInput("");
     setTextInputPosition(null);
     setIsTextInputVisible(false);
+    setEditingTextId(null);
   };
 
   const handleTextCancel = () => {
     setTextInput("");
     setTextInputPosition(null);
     setIsTextInputVisible(false);
+    setEditingTextId(null);
   };
 
   // Remove the old handleClose function - X button will now use onClose directly
@@ -776,6 +939,46 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
     const encoder = new TextEncoder();
     const data = encoder.encode(JSON.stringify({ type: "clearAnnotations" }));
     room.localParticipant.publishData(data, { reliable: true });
+  };
+
+  // Clear specific types of drawings (teacher only)
+  const clearByAuthor = (authorType: "all" | "teacher" | "students") => {
+    const canvas = canvasRef.current;
+    if (!canvas || !isTutor) return;
+
+    // Determine which authors to keep based on selection
+    let filteredHistory: AnnotationAction[];
+    let filteredRemote: AnnotationAction[];
+
+    if (authorType === "all") {
+      filteredHistory = [];
+      filteredRemote = [];
+    } else if (authorType === "teacher") {
+      // Remove teacher's drawings (keep students')
+      const teacherIdentity = room.localParticipant.identity;
+      filteredHistory = history.filter(a => a.author !== teacherIdentity);
+      filteredRemote = remoteActions.filter(a => a.author !== teacherIdentity);
+    } else { // "students"
+      // Remove students' drawings (keep teacher's)
+      const teacherIdentity = room.localParticipant.identity;
+      filteredHistory = history.filter(a => a.author === teacherIdentity);
+      filteredRemote = remoteActions.filter(a => a.author === teacherIdentity);
+    }
+
+    setHistory(filteredHistory);
+    setHistoryStep(filteredHistory.length);
+    setRemoteActions(filteredRemote);
+
+    // Broadcast the selective clear
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify({ 
+      type: "clearAnnotationsByType", 
+      authorType,
+      teacherIdentity: room.localParticipant.identity 
+    }));
+    room.localParticipant.publishData(data, { reliable: true });
+
+    setShowClearOptions(false);
   };
 
   useEffect(() => {
@@ -841,7 +1044,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
           className="w-full h-full touch-none"
           style={{ 
             pointerEvents: viewOnly ? 'none' : 'auto',
-            cursor: viewOnly ? 'default' : tool === 'text' ? 'text' : 'crosshair'
+            cursor: viewOnly ? 'default' : tool === 'pointer' ? 'pointer' : tool === 'text' ? 'text' : 'crosshair'
           }}
         />
       </div>
@@ -903,7 +1106,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                 disabled={!textInput.trim()}
                 className="h-7 px-3 bg-blue-500/80 hover:bg-blue-600/80 text-white disabled:opacity-50 border border-blue-400/30"
               >
-                Add
+                {editingTextId ? "Update" : "Add"}
               </Button>
             </div>
             
@@ -963,15 +1166,58 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                 {!viewOnly && (
                   <>
                     <div className="w-px h-6 bg-white/20" />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={clearAndBroadcast}
-                      title="Clear All"
-                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                    >
-                      <Trash2 className="h-5 w-5 stroke-[2.5]" />
-                    </Button>
+                    {isTutor ? (
+                      <div className="relative clear-options-container">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setShowClearOptions(!showClearOptions)}
+                          title="Clear Options"
+                          className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
+                        >
+                          <Trash2 className="h-5 w-5 stroke-[2.5]" />
+                        </Button>
+                        {showClearOptions && (
+                          <div className="absolute bottom-full mb-2 left-0 bg-black/90 backdrop-blur-xl border border-white/20 rounded-lg p-2 shadow-2xl min-w-[180px] z-[70]">
+                            <div className="text-xs text-white/80 font-semibold mb-2 px-2">Clear:</div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => clearByAuthor("all")}
+                              className="w-full justify-start text-white hover:bg-white/10 border border-white/10 mb-1"
+                            >
+                              All Drawings
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => clearByAuthor("teacher")}
+                              className="w-full justify-start text-white hover:bg-white/10 border border-white/10 mb-1"
+                            >
+                              Teacher's Drawings
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => clearByAuthor("students")}
+                              className="w-full justify-start text-white hover:bg-white/10 border border-white/10"
+                            >
+                              Students' Drawings
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={clearAndBroadcast}
+                        title="Clear All"
+                        className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
+                      >
+                        <Trash2 className="h-5 w-5 stroke-[2.5]" />
+                      </Button>
+                    )}
                   </>
                 )}
                 {onClose && (
@@ -1007,6 +1253,19 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
 
                 {/* Drawing Tools */}
                 <div className="flex gap-1.5">
+                  <Button
+                    size="icon"
+                    variant={tool === "pointer" ? "default" : "ghost"}
+                    onClick={() => setTool("pointer")}
+                    title="Pointer - Click text to edit"
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
+                      tool === "pointer" 
+                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
+                    }`}
+                  >
+                    <MousePointer2 className="h-5 w-5 stroke-[2.5]" />
+                  </Button>
                   <Button
                     size="icon"
                     variant={tool === "pencil" ? "default" : "ghost"}
@@ -1160,16 +1419,61 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
 
                 <div className="w-px h-8 bg-white/20" />
 
-                {/* Clear */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={clearAndBroadcast}
-                  title="Clear All"
-                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                >
-                  <Trash2 className="h-5 w-5 stroke-[2.5]" />
-                </Button>
+                {/* Clear - Teachers get options, students get simple clear */}
+                {isTutor ? (
+                  <div className="relative clear-options-container">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setShowClearOptions(!showClearOptions)}
+                      title="Clear Options"
+                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
+                    >
+                      <Trash2 className="h-5 w-5 stroke-[2.5]" />
+                    </Button>
+                    
+                    {/* Clear options dropdown */}
+                    {showClearOptions && (
+                      <div className="absolute bottom-full mb-2 right-0 bg-black/90 backdrop-blur-xl border border-white/20 rounded-lg p-2 shadow-2xl min-w-[180px] z-[70]">
+                        <div className="text-xs text-white/80 font-semibold mb-2 px-2">Clear:</div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => clearByAuthor("all")}
+                          className="w-full justify-start text-white hover:bg-white/10 border border-white/10 mb-1"
+                        >
+                          All Drawings
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => clearByAuthor("teacher")}
+                          className="w-full justify-start text-white hover:bg-white/10 border border-white/10 mb-1"
+                        >
+                          Teacher's Drawings
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => clearByAuthor("students")}
+                          className="w-full justify-start text-white hover:bg-white/10 border border-white/10"
+                        >
+                          Students' Drawings
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={clearAndBroadcast}
+                    title="Clear All"
+                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
+                  >
+                    <Trash2 className="h-5 w-5 stroke-[2.5]" />
+                  </Button>
+                )}
 
                 {/* Close Button */}
                 {onClose && (

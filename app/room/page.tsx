@@ -740,6 +740,7 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
                 onClose={isTutor ? () => toggleAnnotations() : undefined} 
                 viewOnly={false}
                 isClosing={annotationsClosing}
+                isTutor={isTutor}
               />
             )}
           </>
