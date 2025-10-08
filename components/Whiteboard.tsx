@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRoomContext, useDataChannel } from "@livekit/components-react";
 
@@ -13,7 +13,7 @@ const Excalidraw = dynamic(
 export default function Whiteboard() {
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const room = useRoomContext();
-  const [lastUpdateTime, setLastUpdateTime] = useState(0);
+  const lastUpdateTimeRef = useRef(0); // Changed from state to ref
   const [isReceivingUpdate, setIsReceivingUpdate] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [pendingElements, setPendingElements] = useState<any[]>([]);
@@ -30,7 +30,7 @@ export default function Whiteboard() {
     
     const now = Date.now();
     // Throttle updates to every 50ms for smoother experience
-    if (now - lastUpdateTime < 50) return;
+    if (now - lastUpdateTimeRef.current < 50) return;
     
     try {
       const encoder = new TextEncoder();
@@ -56,11 +56,11 @@ export default function Whiteboard() {
         }
       }));
       room.localParticipant.publishData(data, { reliable: true });
-      setLastUpdateTime(now);
+      lastUpdateTimeRef.current = now; // Use ref instead of state
     } catch (error) {
       console.error("Whiteboard: Error sending excalidraw data:", error);
     }
-  }, [room, lastUpdateTime, isReceivingUpdate]);
+  }, [room, isReceivingUpdate]); // Removed lastUpdateTime from dependencies to prevent infinite loop
 
   // Receive Excalidraw data from other participants
   useDataChannel((message) => {
@@ -136,12 +136,20 @@ export default function Whiteboard() {
         .filter((el: any) => !currentIds.has(el.id))
         .map((el: any) => el.id);
       
+      // Only update deletedElementIds state if there are actually deleted elements
+      // This prevents unnecessary re-renders
       if (deletedIds.length > 0) {
-        // Track deleted IDs locally
         setDeletedElementIds(prev => {
           const updated = new Set(prev);
-          deletedIds.forEach((id: string) => updated.add(id));
-          return updated;
+          let hasChanges = false;
+          deletedIds.forEach((id: string) => {
+            if (!updated.has(id)) {
+              updated.add(id);
+              hasChanges = true;
+            }
+          });
+          // Only return new Set if there were actual changes
+          return hasChanges ? updated : prev;
         });
       }
       
