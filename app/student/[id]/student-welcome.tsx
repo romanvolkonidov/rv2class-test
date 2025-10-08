@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle, XCircle, Download } from "lucide-react";
+import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle, XCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import WaitingRoom from "@/components/WaitingRoom";
 import { db } from "@/lib/firebase";
@@ -30,16 +30,13 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const [hasShownWelcomePopup, setHasShownWelcomePopup] = useState(false);
   const [isWaitingForTeacher, setIsWaitingForTeacher] = useState(false);
   const [joinRequestId, setJoinRequestId] = useState<string | null>(null);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstallButton, setShowInstallButton] = useState(false);
-  const [isSafari, setIsSafari] = useState(false);
 
   const teacherName = student.teacher || "Roman";
   const teacherPath = `/${teacherName.toLowerCase()}`;
 
-  // Show welcome popup on first load
+  // Show welcome popup on FIRST visit ever (using localStorage for persistence)
   useEffect(() => {
-    const hasSeenPopup = sessionStorage.getItem(`welcome-popup-${student.id}`);
+    const hasSeenPopup = localStorage.getItem(`welcome-popup-${student.id}`);
     if (!hasSeenPopup) {
       setTimeout(() => {
         alert("🎓 Добро пожаловать на урок!\n\n" +
@@ -47,7 +44,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               "📹 К камере\n" +
               "🎤 К микрофону\n\n" +
               "Когда браузер спросит разрешение - нажмите 'Разрешить'.");
-        sessionStorage.setItem(`welcome-popup-${student.id}`, 'true');
+        localStorage.setItem(`welcome-popup-${student.id}`, 'true');
         setHasShownWelcomePopup(true);
       }, 500);
     } else {
@@ -58,37 +55,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   // Check initial permissions
   useEffect(() => {
     checkPermissions();
-  }, []);
-
-  // Detect Safari and listen for PWA install prompt
-  useEffect(() => {
-    // Detect Safari
-    const userAgent = navigator.userAgent.toLowerCase();
-    const isSafariBrowser = /safari/.test(userAgent) && !/chrome|chromium|edg/.test(userAgent);
-    setIsSafari(isSafariBrowser);
-
-    // Listen for install prompt (Chrome, Edge, Firefox)
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallButton(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setShowInstallButton(false);
-    } else {
-      // Show button for Safari or if install prompt is available
-      if (isSafariBrowser) {
-        setShowInstallButton(true);
-      }
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
   }, []);
 
   // Cleanup streams on unmount
@@ -330,41 +296,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     router.push(`/student/${student.id}/homework`);
   };
 
-  const handleInstallApp = async () => {
-    // For Safari, always show instructions
-    if (isSafari) {
-      const userAgent = navigator.userAgent.toLowerCase();
-      let instructions = "";
-      
-      if (/iphone|ipad|ipod/.test(userAgent)) {
-        instructions = "1. Нажмите кнопку 'Поделиться' (Share) ⬆️\n" +
-                      "2. Прокрутите вниз и выберите 'На экран «Домой»'\n" +
-                      "3. Нажмите 'Добавить'";
-      } else {
-        // macOS Safari
-        instructions = "1. Нажмите 'Файл' в меню\n" +
-                      "2. Выберите 'Добавить в Dock'\n" +
-                      "Или добавьте страницу в закладки для быстрого доступа";
-      }
-      
-      alert("🏠 Добавить app на главный экран\n\n" + instructions);
-      return;
-    }
-
-    // For Chrome, Edge, Firefox - trigger native install
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-        setShowInstallButton(false);
-      }
-      
-      setDeferredPrompt(null);
-    }
-  };
-
   const activeSubjects = student.subjects 
     ? Object.entries(student.subjects)
         .filter(([_, isActive]) => isActive)
@@ -493,23 +424,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                   </>
                 )}
               </Button>
-              
-              {/* PWA Install Button - shows on Safari or when install prompt available */}
-              {showInstallButton && (
-                <Button
-                  size="sm"
-                  onClick={handleInstallApp}
-                  variant="outline"
-                  className="flex items-center gap-2 backdrop-blur-xl bg-white/60 border border-gray-300/50 hover:bg-white/80 text-gray-700 shadow-lg transition-all duration-300"
-                  title={isSafari ? "Инструкции по добавлению на главный экран" : "Установить app"}
-                >
-                  <Download className="h-4 w-4" />
-                  <span className="font-medium hidden sm:inline">
-                    {isSafari ? "Добавить app" : "Установить app"}
-                  </span>
-                  <span className="font-medium sm:hidden">🏠</span>
-                </Button>
-              )}
             </div>
           </div>
         </div>
