@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useChat, useRoomContext } from "@livekit/components-react";
+import { useChat, useRoomContext, useParticipants } from "@livekit/components-react";
 import { Button } from "@/components/ui/button";
 import { X, Send, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,11 +11,13 @@ interface ChatPanelProps {
   onClose?: () => void;
   isClosing?: boolean;
   roomName: string;
+  isTutor: boolean; // Whether current user is teacher or student
 }
 
-export default function ChatPanel({ onClose, isClosing: externalIsClosing = false, roomName }: ChatPanelProps) {
+export default function ChatPanel({ onClose, isClosing: externalIsClosing = false, roomName, isTutor }: ChatPanelProps) {
   const room = useRoomContext();
   const { chatMessages: livekitMessages, send } = useChat();
+  const participants = useParticipants(); // Get current room participants
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -29,17 +31,27 @@ export default function ChatPanel({ onClose, isClosing: externalIsClosing = fals
   // Use external or internal closing state
   const isClosing = externalIsClosing || internalIsClosing;
 
+  // Get set of current participant identities for filtering
+  const activeParticipantIdentities = useMemo(() => {
+    const identities = new Set<string>();
+    participants.forEach(p => {
+      identities.add(p.identity);
+    });
+    console.log("👥 Active participants in chat:", Array.from(identities));
+    return identities;
+  }, [participants]);
+
   // Load chat history from Firebase on mount
   useEffect(() => {
     const loadHistory = async () => {
-      if (!roomName) {
+      if (!roomName || !localParticipantName) {
         setIsLoadingHistory(false);
         return;
       }
       
       try {
-        console.log("📚 Loading chat history for room:", roomName);
-        const history = await loadChatHistory(roomName);
+        console.log("📚 Loading chat history for room:", roomName, "User:", localParticipantName, "IsTutor:", isTutor);
+        const history = await loadChatHistory(roomName, localParticipantName, isTutor);
         setFirebaseMessages(history);
         console.log(`✅ Loaded ${history.length} messages from history`);
       } catch (error) {
@@ -50,13 +62,16 @@ export default function ChatPanel({ onClose, isClosing: externalIsClosing = fals
     };
 
     loadHistory();
-  }, [roomName]);
+  }, [roomName, localParticipantName, isTutor]);
 
   // Save LiveKit messages to Firebase when they arrive
   useEffect(() => {
     const saveNewMessages = async () => {
       if (!roomName || livekitMessages.length === 0) return;
 
+      // Get current recipient list (all active participants)
+      const recipients = Array.from(activeParticipantIdentities);
+      
       // Save new messages that haven't been saved yet
       for (const msg of livekitMessages) {
         const messageId = `${msg.from?.identity}-${msg.timestamp}`;
@@ -67,9 +82,11 @@ export default function ChatPanel({ onClose, isClosing: externalIsClosing = fals
               roomName,
               msg.from?.identity || msg.from?.name || "Unknown",
               msg.message,
-              msg.timestamp
+              msg.timestamp,
+              recipients // Pass all current participants as recipients
             );
             savedMessageIdsRef.current.add(messageId);
+            console.log(`💾 Saved message to ${recipients.length} recipients:`, recipients);
           } catch (error) {
             console.error("❌ Failed to save message to Firebase:", error);
           }
@@ -78,13 +95,14 @@ export default function ChatPanel({ onClose, isClosing: externalIsClosing = fals
     };
 
     saveNewMessages();
-  }, [livekitMessages, roomName]);
+  }, [livekitMessages, roomName, activeParticipantIdentities]);
 
-  // Merge Firebase history with LiveKit messages, removing duplicates
+  // Merge Firebase history with LiveKit messages, remove duplicates
+  // Firebase messages are already filtered by recipient on load
   const allMessages = useMemo(() => {
     const messagesMap = new Map();
 
-    // Add Firebase messages first (older messages)
+    // Add Firebase messages first (already filtered by recipient)
     firebaseMessages.forEach((msg) => {
       const key = `${msg.from}-${msg.timestamp}`;
       messagesMap.set(key, {
@@ -94,11 +112,12 @@ export default function ChatPanel({ onClose, isClosing: externalIsClosing = fals
         from: {
           identity: msg.from,
           name: msg.from
-        }
+        },
+        isGroupMessage: msg.isGroupMessage
       });
     });
 
-    // Add LiveKit messages (real-time messages)
+    // Add LiveKit messages (real-time messages) - all participants see real-time
     livekitMessages.forEach((msg) => {
       const key = `${msg.from?.identity}-${msg.timestamp}`;
       // Only add if not already in map (prevents duplicates)
@@ -110,6 +129,7 @@ export default function ChatPanel({ onClose, isClosing: externalIsClosing = fals
     // Convert to array and sort by timestamp
     const merged = Array.from(messagesMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     
+    console.log(`💬 Displaying ${merged.length} messages`);
     return merged;
   }, [firebaseMessages, livekitMessages]);
 

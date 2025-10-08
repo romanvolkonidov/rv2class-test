@@ -374,6 +374,8 @@ export interface ChatMessage {
   message: string;
   timestamp: number;
   createdAt?: any; // Firestore timestamp
+  recipients: string[]; // Array of participant identities who should see this message
+  isGroupMessage: boolean; // True if sent when 2+ students were present
 }
 
 // Save a chat message to Firebase
@@ -381,27 +383,41 @@ export const saveChatMessage = async (
   roomName: string,
   from: string,
   message: string,
-  timestamp: number
+  timestamp: number,
+  recipients: string[] // All participants who should see this message
 ): Promise<void> => {
   try {
+    const isGroupMessage = recipients.length > 2; // More than just sender + teacher = group
+    
     const chatData: ChatMessage = {
       roomName,
       from,
       message,
       timestamp,
+      recipients, // Store who should see this message
+      isGroupMessage,
       createdAt: serverTimestamp()
     };
 
     await addDoc(collection(db, "chatMessages"), chatData);
-    console.log("💬 Chat message saved to Firebase:", { roomName, from });
+    console.log("💬 Chat message saved to Firebase:", { 
+      roomName, 
+      from, 
+      recipients: recipients.length,
+      isGroup: isGroupMessage 
+    });
   } catch (error) {
     console.error("❌ Error saving chat message:", error);
     throw error;
   }
 };
 
-// Load chat history for a room
-export const loadChatHistory = async (roomName: string): Promise<ChatMessage[]> => {
+// Load chat history for a room, filtered by participant identity
+export const loadChatHistory = async (
+  roomName: string,
+  userIdentity: string,
+  isTutor: boolean
+): Promise<ChatMessage[]> => {
   try {
     const q = query(
       collection(db, "chatMessages"),
@@ -413,20 +429,27 @@ export const loadChatHistory = async (roomName: string): Promise<ChatMessage[]> 
     
     snapshot.forEach((doc) => {
       const data = doc.data();
-      messages.push({
-        id: doc.id,
-        roomName: data.roomName,
-        from: data.from,
-        message: data.message,
-        timestamp: data.timestamp,
-        createdAt: data.createdAt
-      });
+      
+      // Teachers see all messages
+      // Students only see messages where they are in recipients array
+      if (isTutor || (data.recipients && data.recipients.includes(userIdentity))) {
+        messages.push({
+          id: doc.id,
+          roomName: data.roomName,
+          from: data.from,
+          message: data.message,
+          timestamp: data.timestamp,
+          recipients: data.recipients || [],
+          isGroupMessage: data.isGroupMessage || false,
+          createdAt: data.createdAt
+        });
+      }
     });
 
     // Sort by timestamp (oldest first)
     messages.sort((a, b) => a.timestamp - b.timestamp);
     
-    console.log(`💬 Loaded ${messages.length} chat messages for room: ${roomName}`);
+    console.log(`💬 Loaded ${messages.length} chat messages for ${isTutor ? 'teacher' : 'student'} ${userIdentity} in room: ${roomName}`);
     return messages;
   } catch (error) {
     console.error("❌ Error loading chat history:", error);

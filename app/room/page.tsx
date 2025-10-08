@@ -752,6 +752,7 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
             onClose={toggleChat}
             isClosing={chatClosing}
             roomName={roomName}
+            isTutor={isTutor}
           />
         )}
 
