@@ -179,27 +179,28 @@ export async function getProcessedMicrophoneAudio(
       return stream;
     }
 
-    // Get RAW microphone audio with minimal processing
+    // Get RAW microphone audio - CRITICAL: Must be 48kHz for RNNoise
     const rawStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         deviceId: deviceId ? { exact: deviceId } : undefined,
-        // Disable browser processing - let RNNoise do everything
+        // CRITICAL: RNNoise REQUIRES 48kHz sample rate
+        sampleRate: 48000,
+        // Use MONO for better noise cancellation
+        channelCount: 1,
+        // Disable browser processing - let RNNoise handle everything
         echoCancellation: false,
         noiseSuppression: false,
         autoGainControl: false,
-        // High quality settings
-        sampleRate: 48000,
-        channelCount: 1, // Mono for RNNoise
       }
     });
 
-    console.log('✅ Got raw microphone stream');
+    console.log('✅ Got raw microphone stream (48kHz)');
 
-    // Apply RNNoise processing
+    // Apply RNNoise processing - this returns a NEW stream from AudioContext
     const processedStream = await applyNoiseSuppression(rawStream);
     
-    // Stop the raw track since we're using the processed one
-    rawStream.getTracks().forEach(track => track.stop());
+    // DON'T stop the raw stream - the AudioWorkletNode needs it to keep processing!
+    // The raw stream is still active and feeding the AudioWorkletNode
     
     console.log('✅ RNNoise processing applied successfully');
     return processedStream;
