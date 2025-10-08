@@ -134,12 +134,22 @@ const CompactParticipant = memo(function CompactParticipant({
         </div>
       )}
 
-      {/* Name overlay */}
-      <div className="absolute bottom-1 left-1 right-1 px-2 py-0.5 rounded bg-black/40 backdrop-blur-sm border border-white/10">
+      {/* Name overlay - adjusted positioning to avoid overlap with mic indicator */}
+      <div className={cn(
+        "absolute bottom-1 px-2 py-0.5 rounded bg-black/40 backdrop-blur-sm border border-white/10",
+        !participant.isMicrophoneEnabled ? "left-10 right-1" : "left-1 right-1"
+      )}>
         <p className="text-xs font-medium text-white truncate">
           {participant.identity} {isLocal && "(You)"}
         </p>
       </div>
+
+      {/* Microphone muted indicator - bottom left with better icon */}
+      {!participant.isMicrophoneEnabled && (
+        <div className="absolute bottom-1 left-1 p-1.5 rounded-md bg-red-500/80 backdrop-blur-sm border border-red-400/50 shadow-lg">
+          <MicOff className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+        </div>
+      )}
     </div>
   );
 }, (prevProps, nextProps) => {
