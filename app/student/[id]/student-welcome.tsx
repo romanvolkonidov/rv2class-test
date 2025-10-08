@@ -40,11 +40,23 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     const hasSeenPopup = localStorage.getItem(`welcome-popup-${student.id}`);
     if (!hasSeenPopup) {
       setTimeout(() => {
-        alert("🎓 Добро пожаловать на урок!\n\n" +
-              "Для подключения к уроку нужно разрешить доступ:\n" +
-              "📹 К камере\n" +
-              "🎤 К микрофону\n\n" +
-              "Когда браузер спросит разрешение - нажмите 'Разрешить'.");
+        const isAndroid = /android/i.test(navigator.userAgent);
+        
+        if (isAndroid) {
+          alert("🎓 Добро пожаловать на урок!\n\n" +
+                "Для подключения нужно разрешить доступ:\n" +
+                "📹 К камере\n" +
+                "🎤 К микрофону\n\n" +
+                "⚠️ На Android оба разрешения запрашиваются вместе.\n" +
+                "Когда браузер спросит - нажмите 'Разрешить' для обоих.");
+        } else {
+          alert("🎓 Добро пожаловать на урок!\n\n" +
+                "Для подключения к уроку нужно разрешить доступ:\n" +
+                "📹 К камере\n" +
+                "🎤 К микрофону\n\n" +
+                "Когда браузер спросит разрешение - нажмите 'Разрешить'.");
+        }
+        
         localStorage.setItem(`welcome-popup-${student.id}`, 'true');
         setHasShownWelcomePopup(true);
       }, 500);
@@ -135,29 +147,62 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const requestMicPermission = async () => {
     try {
       setMicPermission("checking");
-      // Request with proper echo cancellation and audio processing
+      
+      // ANDROID FIX: Request both audio AND video together
+      // Android Chrome requires both in one call to show proper permission UI
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
           sampleRate: 48000,
-        }
+        },
+        video: videoPermission !== "granted" ? {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 },
+        } : false // Don't request video if already granted
       });
-      setMicStream(stream);
-      setMicPermission("granted");
+      
+      // Separate audio and video tracks
+      const audioTracks = stream.getAudioTracks();
+      const videoTracks = stream.getVideoTracks();
+      
+      if (audioTracks.length > 0) {
+        const audioStream = new MediaStream(audioTracks);
+        setMicStream(audioStream);
+        setMicPermission("granted");
+      }
+      
+      if (videoTracks.length > 0 && videoPermission !== "granted") {
+        const videoStream = new MediaStream(videoTracks);
+        setVideoStream(videoStream);
+        setVideoPermission("granted");
+      }
     } catch (error) {
       console.error("Microphone permission denied:", error);
       setMicPermission("denied");
       
+      // Detect if on Android
+      const isAndroid = /android/i.test(navigator.userAgent);
+      
       // Show helpful alert in Russian
       setTimeout(() => {
-        alert("🎤 Доступ к микрофону заблокирован!\n\n" +
-              "Чтобы включить:\n" +
-              "1. Нажмите на иконку 🔒 замка в адресной строке браузера\n" +
-              "2. Найдите 'Микрофон' в списке разрешений\n" +
-              "3. Выберите 'Разрешить'\n" +
-              "4. Обновите страницу (F5) и попробуйте снова");
+        if (isAndroid) {
+          alert("🎤 Доступ к микрофону заблокирован!\n\n" +
+                "На Android:\n" +
+                "1. Нажмите на 🔒 рядом с адресом сайта\n" +
+                "2. Нажмите 'Разрешения' или 'Permissions'\n" +
+                "3. Включите 'Микрофон' и 'Камера'\n" +
+                "4. Обновите страницу");
+        } else {
+          alert("🎤 Доступ к микрофону заблокирован!\n\n" +
+                "Чтобы включить:\n" +
+                "1. Нажмите на иконку 🔒 замка в адресной строке браузера\n" +
+                "2. Найдите 'Микрофон' в списке разрешений\n" +
+                "3. Выберите 'Разрешить'\n" +
+                "4. Обновите страницу (F5) и попробуйте снова");
+        }
       }, 500);
     }
   };
@@ -165,27 +210,62 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const requestVideoPermission = async () => {
     try {
       setVideoPermission("checking");
+      
+      // ANDROID FIX: Request both audio AND video together
+      // Android Chrome requires both in one call to show proper permission UI
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
           frameRate: { ideal: 30 },
-        }
+        },
+        audio: micPermission !== "granted" ? {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+        } : false // Don't request audio if already granted
       });
-      setVideoStream(stream);
-      setVideoPermission("granted");
+      
+      // Separate audio and video tracks
+      const audioTracks = stream.getAudioTracks();
+      const videoTracks = stream.getVideoTracks();
+      
+      if (videoTracks.length > 0) {
+        const videoStream = new MediaStream(videoTracks);
+        setVideoStream(videoStream);
+        setVideoPermission("granted");
+      }
+      
+      if (audioTracks.length > 0 && micPermission !== "granted") {
+        const audioStream = new MediaStream(audioTracks);
+        setMicStream(audioStream);
+        setMicPermission("granted");
+      }
     } catch (error) {
       console.error("Camera permission denied:", error);
       setVideoPermission("denied");
       
+      // Detect if on Android
+      const isAndroid = /android/i.test(navigator.userAgent);
+      
       // Show helpful alert in Russian
       setTimeout(() => {
-        alert("📹 Доступ к камере заблокирован!\n\n" +
-              "Чтобы включить:\n" +
-              "1. Нажмите на иконку 🔒 замка в адресной строке браузера\n" +
-              "2. Найдите 'Камера' в списке разрешений\n" +
-              "3. Выберите 'Разрешить'\n" +
-              "4. Обновите страницу (F5) и попробуйте снова");
+        if (isAndroid) {
+          alert("📹 Доступ к камере заблокирован!\n\n" +
+                "На Android:\n" +
+                "1. Нажмите на 🔒 рядом с адресом сайта\n" +
+                "2. Нажмите 'Разрешения' или 'Permissions'\n" +
+                "3. Включите 'Камера' и 'Микрофон'\n" +
+                "4. Обновите страницу");
+        } else {
+          alert("📹 Доступ к камере заблокирован!\n\n" +
+                "Чтобы включить:\n" +
+                "1. Нажмите на иконку 🔒 замка в адресной строке браузера\n" +
+                "2. Найдите 'Камера' в списке разрешений\n" +
+                "3. Выберите 'Разрешить'\n" +
+                "4. Обновите страницу (F5) и попробуйте снова");
+        }
       }, 500);
     }
   };
