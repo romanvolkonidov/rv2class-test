@@ -81,7 +81,7 @@ export default function AnnotationOverlay({
   const [remoteActions, setRemoteActions] = useState<AnnotationAction[]>([]); // Separate array for remote actions
   const [startPoint, setStartPoint] = useState<RelativePoint | null>(null);
   const [screenShareElement, setScreenShareElement] = useState<HTMLVideoElement | null>(null);
-  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(true); // Start minimized by default
   const [textInput, setTextInput] = useState("");
   const [textInputPosition, setTextInputPosition] = useState<RelativePoint | null>(null);
   const [isTextInputVisible, setIsTextInputVisible] = useState(false);
@@ -104,6 +104,9 @@ export default function AnnotationOverlay({
   const [isToolbarPositioned, setIsToolbarPositioned] = useState(false);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [showDragHint, setShowDragHint] = useState(false);
+  const [toolbarOrientation, setToolbarOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
+  const lastOrientationChangeRef = useRef<number>(0);
+  const orientationDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Zoom detection
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -516,6 +519,56 @@ export default function AnnotationOverlay({
   useEffect(() => {
     if (!isDraggingToolbar) return;
 
+    const updateOrientationBasedOnPosition = (x: number, y: number) => {
+      // Debounce: prevent orientation changes within 200ms of the last change
+      const now = Date.now();
+      if (now - lastOrientationChangeRef.current < 200) {
+        return;
+      }
+
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const toolbar = toolbarRef.current;
+      const toolbarWidth = toolbar?.offsetWidth || 0;
+      const toolbarHeight = toolbar?.offsetHeight || 0;
+      
+      // Hysteresis: different thresholds for entering vs leaving edge state
+      const enterEdgeThreshold = 5; // Touch edge to activate
+      const leaveEdgeThreshold = 30; // Move 30px away to deactivate
+      
+      // Use different threshold based on current orientation
+      const useEnterThreshold = (
+        (toolbarOrientation === 'horizontal' && (x <= enterEdgeThreshold || x >= screenWidth - toolbarWidth - enterEdgeThreshold)) ||
+        (toolbarOrientation === 'vertical' && (y <= enterEdgeThreshold || y >= screenHeight - toolbarHeight - enterEdgeThreshold))
+      );
+      
+      const threshold = useEnterThreshold ? enterEdgeThreshold : leaveEdgeThreshold;
+      
+      // Check if toolbar is touching edges
+      const touchingLeft = x <= threshold;
+      const touchingRight = x >= screenWidth - toolbarWidth - threshold;
+      const touchingTop = y <= threshold;
+      const touchingBottom = y >= screenHeight - toolbarHeight - threshold;
+      
+      let newOrientation = toolbarOrientation;
+      
+      // Priority 1: Check if touching top or bottom edges -> Horizontal
+      if (touchingTop || touchingBottom) {
+        newOrientation = 'horizontal';
+      }
+      // Priority 2: Check if touching left or right edges -> Vertical
+      else if (touchingLeft || touchingRight) {
+        newOrientation = 'vertical';
+      }
+      // Not touching any edge: keep current orientation
+      
+      // Only update if orientation actually changed
+      if (newOrientation !== toolbarOrientation) {
+        lastOrientationChangeRef.current = now;
+        setToolbarOrientation(newOrientation);
+      }
+    };
+
     const handleMouseMove = (e: MouseEvent) => {
       e.preventDefault();
       const newX = e.clientX - dragStart.x;
@@ -527,10 +580,15 @@ export default function AnnotationOverlay({
         const maxX = window.innerWidth - toolbar.offsetWidth;
         const maxY = window.innerHeight - toolbar.offsetHeight;
         
+        const finalX = Math.max(0, Math.min(newX, maxX));
+        const finalY = Math.max(0, Math.min(newY, maxY));
+        
         setToolbarPosition({
-          x: Math.max(0, Math.min(newX, maxX)),
-          y: Math.max(0, Math.min(newY, maxY)),
+          x: finalX,
+          y: finalY,
         });
+        
+        updateOrientationBasedOnPosition(finalX, finalY);
       }
     };
 
@@ -546,10 +604,15 @@ export default function AnnotationOverlay({
         const maxX = window.innerWidth - toolbar.offsetWidth;
         const maxY = window.innerHeight - toolbar.offsetHeight;
         
+        const finalX = Math.max(0, Math.min(newX, maxX));
+        const finalY = Math.max(0, Math.min(newY, maxY));
+        
         setToolbarPosition({
-          x: Math.max(0, Math.min(newX, maxX)),
-          y: Math.max(0, Math.min(newY, maxY)),
+          x: finalX,
+          y: finalY,
         });
+        
+        updateOrientationBasedOnPosition(finalX, finalY);
       }
     };
 
@@ -578,6 +641,74 @@ export default function AnnotationOverlay({
       }
     };
   }, [isDraggingToolbar, dragStart, toolbarPosition]);
+
+  // Update orientation based on toolbar position (runs whenever position changes)
+  useEffect(() => {
+    const toolbar = toolbarRef.current;
+    if (!toolbar || isDraggingToolbar) return; // Skip if already dragging (handled by drag effect)
+
+    const updateOrientation = () => {
+      // Debounce: prevent orientation changes within 200ms of the last change
+      const now = Date.now();
+      if (now - lastOrientationChangeRef.current < 200) {
+        return;
+      }
+
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const toolbarWidth = toolbar.offsetWidth;
+      const toolbarHeight = toolbar.offsetHeight;
+      
+      // Hysteresis: different thresholds for entering vs leaving edge state
+      const enterEdgeThreshold = 5; // Touch edge to activate
+      const leaveEdgeThreshold = 30; // Move 30px away to deactivate
+      
+      // Use different threshold based on current orientation
+      const useEnterThreshold = (
+        (toolbarOrientation === 'horizontal' && (toolbarPosition.x <= enterEdgeThreshold || toolbarPosition.x >= screenWidth - toolbarWidth - enterEdgeThreshold)) ||
+        (toolbarOrientation === 'vertical' && (toolbarPosition.y <= enterEdgeThreshold || toolbarPosition.y >= screenHeight - toolbarHeight - enterEdgeThreshold))
+      );
+      
+      const threshold = useEnterThreshold ? enterEdgeThreshold : leaveEdgeThreshold;
+      
+      // Check if toolbar is touching edges
+      const touchingLeft = toolbarPosition.x <= threshold;
+      const touchingRight = toolbarPosition.x >= screenWidth - toolbarWidth - threshold;
+      const touchingTop = toolbarPosition.y <= threshold;
+      const touchingBottom = toolbarPosition.y >= screenHeight - toolbarHeight - threshold;
+      
+      let newOrientation = toolbarOrientation;
+      
+      // Priority 1: Check if touching top or bottom edges -> Horizontal
+      if (touchingTop || touchingBottom) {
+        newOrientation = 'horizontal';
+      }
+      // Priority 2: Check if touching left or right edges -> Vertical
+      else if (touchingLeft || touchingRight) {
+        newOrientation = 'vertical';
+      }
+      // Not touching any edge: keep current orientation
+      
+      // Only update if orientation actually changed
+      if (newOrientation !== toolbarOrientation) {
+        lastOrientationChangeRef.current = now;
+        setToolbarOrientation(newOrientation);
+      }
+    };
+
+    // Use a small delay to allow toolbar to settle after position change
+    if (orientationDebounceTimeoutRef.current) {
+      clearTimeout(orientationDebounceTimeoutRef.current);
+    }
+    
+    orientationDebounceTimeoutRef.current = setTimeout(updateOrientation, 50);
+    
+    return () => {
+      if (orientationDebounceTimeoutRef.current) {
+        clearTimeout(orientationDebounceTimeoutRef.current);
+      }
+    };
+  }, [toolbarPosition, isToolbarPositioned, isDraggingToolbar, toolbarOrientation]);
 
   // Convert absolute pixel coordinates to relative (0-1 range)
   const toRelative = (x: number, y: number): RelativePoint => {
@@ -1253,8 +1384,8 @@ export default function AnnotationOverlay({
       {/* Positioned container that matches screen share video */}
       <div 
         ref={containerRef}
-        className="fixed z-50"
-        style={{ pointerEvents: viewOnly ? 'none' : 'none' }}
+        className="fixed z-30"
+        style={{ pointerEvents: 'none' }}
       >
         {/* Annotation Canvas - transparent background to see screen share */}
         <canvas
@@ -1277,7 +1408,7 @@ export default function AnnotationOverlay({
       {/* Text Control Circles Overlay */}
       {!viewOnly && containerRef.current && (
         <div 
-          className="fixed z-[55] pointer-events-none"
+          className="fixed z-[35] pointer-events-none"
           style={{
             left: containerRef.current.style.left,
             top: containerRef.current.style.top,
@@ -1435,7 +1566,7 @@ export default function AnnotationOverlay({
       {/* Text Input Overlay - Direct on-screen typing */}
       {isTextInputVisible && textInputPosition && !viewOnly && (
         <div 
-          className="fixed z-[65]"
+          className="fixed z-[45]"
           style={{
             left: `${toAbsolute(textInputPosition).x}px`,
             top: `${toAbsolute(textInputPosition).y}px`,
@@ -1505,7 +1636,7 @@ export default function AnnotationOverlay({
       <div 
         ref={toolbarRef}
         className={cn(
-          "fixed z-[60] transition-opacity duration-300 touch-manipulation",
+          "fixed z-[60] transition-opacity duration-300 touch-manipulation pointer-events-auto",
           isClosing ? "animate-slide-up-out" : "animate-slide-down"
         )}
         style={{
@@ -1527,25 +1658,39 @@ export default function AnnotationOverlay({
         {/* Drag Handle - Always show, students can drag too */}
         <div 
           className={cn(
-            "drag-handle absolute -top-6 left-1/2 transform -translate-x-1/2 px-4 py-1.5 rounded-t-lg bg-black/40 backdrop-blur-xl border border-white/20 border-b-0 flex items-center gap-2 transition-colors pointer-events-auto",
-            isDraggingToolbar ? "cursor-grabbing bg-black/60" : "cursor-grab hover:bg-black/50"
+            "drag-handle absolute px-4 py-1.5 bg-black/40 backdrop-blur-xl border border-white/20 flex items-center gap-2 transition-colors pointer-events-auto",
+            isDraggingToolbar ? "cursor-grabbing bg-black/60" : "cursor-grab hover:bg-black/50",
+            toolbarOrientation === 'horizontal' 
+              ? "-top-6 left-1/2 transform -translate-x-1/2 rounded-t-lg border-b-0" 
+              : "-left-6 top-1/2 transform -translate-y-1/2 rounded-l-lg border-r-0 flex-col"
           )}
         >
-          <GripVertical className="h-4 w-4 text-white/60" />
-          <span className="text-xs text-white/70 font-medium select-none">Drag Here or Between Buttons</span>
+          <GripVertical className={cn(
+            "h-4 w-4 text-white/60",
+            toolbarOrientation === 'vertical' && "rotate-90"
+          )} />
+          <span className={cn(
+            "text-xs text-white/70 font-medium select-none",
+            toolbarOrientation === 'vertical' && "writing-mode-vertical transform rotate-180"
+          )}>
+            {toolbarOrientation === 'horizontal' ? 'Drag Here or Between Buttons' : 'Drag'}
+          </span>
         </div>
 
           {/* Main Toolbar with glass morphism */}
           <div 
-            className={`
-              backdrop-blur-xl bg-black/30 border border-white/15 rounded-xl shadow-2xl
-              transition-all duration-300 ease-in-out
-              ${toolbarCollapsed ? 'p-1.5' : 'p-2'}
-            `}
+            className={cn(
+              "backdrop-blur-xl bg-black/30 border border-white/15 rounded-xl shadow-2xl transition-all duration-300 ease-in-out",
+              toolbarCollapsed ? 'p-1.5' : 'p-2'
+            )}
           >
             {toolbarCollapsed ? (
               /* Collapsed View - Essential drawing tools + utilities */
-              <div className="flex items-center gap-1.5">
+              <div className={cn(
+                "flex items-center gap-1.5",
+                toolbarOrientation === 'vertical' && "flex-col",
+                toolbarOrientation === 'horizontal' && ""
+              )}>
                 <Button
                   size="icon"
                   variant="ghost"
@@ -1558,7 +1703,10 @@ export default function AnnotationOverlay({
                 
                 {!viewOnly && (
                   <>
-                    <div className="w-px h-6 bg-white/20" />
+                    <div className={cn(
+                      "bg-white/20",
+                      toolbarOrientation === 'horizontal' ? "w-px h-6" : "h-px w-6"
+                    )} />
                     
                     {/* Quick Drawing Tools */}
                     <Button
@@ -1603,7 +1751,10 @@ export default function AnnotationOverlay({
                       <Eraser className="h-5 w-5 stroke-[2.5]" />
                     </Button>
                     
-                    <div className="w-px h-6 bg-white/20" />
+                    <div className={cn(
+                      "bg-white/20",
+                      toolbarOrientation === 'horizontal' ? "w-px h-6" : "h-px w-6"
+                    )} />
                     
                     {isTutor ? (
                       <div className="relative clear-options-container">
@@ -1661,7 +1812,10 @@ export default function AnnotationOverlay({
                 )}
                 {onClose && (
                   <>
-                    <div className="w-px h-6 bg-white/20" />
+                    <div className={cn(
+                      "bg-white/20",
+                      toolbarOrientation === 'horizontal' ? "w-px h-6" : "h-px w-6"
+                    )} />
                     <Button
                       size="icon"
                       variant="ghost"
@@ -1676,7 +1830,10 @@ export default function AnnotationOverlay({
               </div>
             ) : (
               /* Expanded View - Full toolbar */
-              <div className="flex items-center gap-2 flex-wrap justify-center">
+              <div className={cn(
+                "flex items-center gap-2 justify-center",
+                toolbarOrientation === 'vertical' && "flex-col"
+              )}>
                 {/* Collapse Button */}
                 <Button
                   size="icon"
@@ -1688,10 +1845,16 @@ export default function AnnotationOverlay({
                   <ChevronUp className="h-5 w-5 stroke-[2.5]" />
                 </Button>
 
-                <div className="w-px h-8 bg-white/20" />
+                <div className={cn(
+                  "bg-white/20",
+                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+                )} />
 
                 {/* Drawing Tools */}
-                <div className="flex gap-1.5">
+                <div className={cn(
+                  "flex gap-1.5",
+                  toolbarOrientation === 'vertical' && "flex-col"
+                )}>
                   <Button
                     size="icon"
                     variant={tool === "pointer" ? "default" : "ghost"}
@@ -1772,10 +1935,16 @@ export default function AnnotationOverlay({
                   </Button>
                 </div>
 
-                <div className="w-px h-8 bg-white/20" />
+                <div className={cn(
+                  "bg-white/20",
+                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+                )} />
 
                 {/* Color Picker */}
-                <div className="flex items-center gap-1.5">
+                <div className={cn(
+                  "flex items-center gap-1.5",
+                  toolbarOrientation === 'vertical' && "flex-col"
+                )}>
                   <input
                     type="color"
                     value={color}
@@ -1783,7 +1952,10 @@ export default function AnnotationOverlay({
                     className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg cursor-pointer border border-white/20 hover:border-white/40 transition-colors bg-white/10 touch-manipulation"
                     title="Pick Color"
                   />
-                  <div className="flex gap-1">
+                  <div className={cn(
+                    "flex gap-1",
+                    toolbarOrientation === 'vertical' && "flex-col"
+                  )}>
                     {["#FF0000", "#0000FF", "#00FF00", "#FFFF00", "#FF00FF", "#FFFFFF"].map((c) => (
                       <button
                         key={c}
@@ -1798,11 +1970,17 @@ export default function AnnotationOverlay({
                   </div>
                 </div>
 
-                <div className="w-px h-8 bg-white/20" />
+                <div className={cn(
+                  "bg-white/20",
+                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+                )} />
 
                 {/* Line Width or Font Size based on tool */}
                 {tool === "text" ? (
-                  <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/20">
+                  <div className={cn(
+                    "flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/20",
+                    toolbarOrientation === 'vertical' && "flex-col py-2"
+                  )}>
                     <span className="text-xs font-semibold text-white">Size:</span>
                     <input
                       type="range"
@@ -1810,30 +1988,53 @@ export default function AnnotationOverlay({
                       max="72"
                       value={fontSize}
                       onChange={(e) => setFontSize(Number(e.target.value))}
-                      className="w-20 accent-blue-400"
+                      className={cn(
+                        "accent-blue-400",
+                        toolbarOrientation === 'horizontal' ? "w-20" : "w-8 h-20"
+                      )}
+                      style={toolbarOrientation === 'vertical' ? {
+                        transform: 'rotate(-90deg)',
+                        transformOrigin: 'center'
+                      } : {}}
                       title="Font Size"
                     />
                     <span className="text-xs font-bold text-white w-8 text-center">{fontSize}px</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/20">
+                  <div className={cn(
+                    "flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/20",
+                    toolbarOrientation === 'vertical' && "flex-col py-2"
+                  )}>
                     <input
                       type="range"
                       min="1"
                       max="20"
                       value={lineWidth}
                       onChange={(e) => setLineWidth(Number(e.target.value))}
-                      className="w-20 accent-blue-400"
+                      className={cn(
+                        "accent-blue-400",
+                        toolbarOrientation === 'horizontal' ? "w-20" : "w-6 h-20"
+                      )}
+                      style={toolbarOrientation === 'vertical' ? {
+                        transform: 'rotate(-90deg)',
+                        transformOrigin: 'center'
+                      } : {}}
                       title="Line Width"
                     />
                     <span className="text-xs font-bold text-white w-6 text-center">{lineWidth}</span>
                   </div>
                 )}
 
-                <div className="w-px h-8 bg-white/20" />
+                <div className={cn(
+                  "bg-white/20",
+                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+                )} />
 
                 {/* History Controls */}
-                <div className="flex gap-1.5">
+                <div className={cn(
+                  "flex gap-1.5",
+                  toolbarOrientation === 'vertical' && "flex-col"
+                )}>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -1856,7 +2057,10 @@ export default function AnnotationOverlay({
                   </Button>
                 </div>
 
-                <div className="w-px h-8 bg-white/20" />
+                <div className={cn(
+                  "bg-white/20",
+                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+                )} />
 
                 {/* Clear - Teachers get options, students get simple clear */}
                 {isTutor ? (
@@ -1917,7 +2121,10 @@ export default function AnnotationOverlay({
                 {/* Close Button */}
                 {onClose && (
                   <>
-                    <div className="w-px h-8 bg-white/20" />
+                    <div className={cn(
+                      "bg-white/20",
+                      toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+                    )} />
                     <Button
                       size="icon"
                       variant="ghost"
@@ -1975,6 +2182,11 @@ export default function AnnotationOverlay({
         
         .animate-slide-up-out {
           animation: slideUpOut 0.3s ease-out;
+        }
+        
+        .writing-mode-vertical {
+          writing-mode: vertical-rl;
+          text-orientation: mixed;
         }
       `}</style>
     </>

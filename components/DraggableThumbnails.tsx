@@ -33,9 +33,11 @@ export const ParticipantView = memo(function ParticipantView({
   isThumbnail,
 }: ParticipantViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     const videoEl = videoRef.current;
+    const audioEl = audioRef.current;
     
     if (!trackRef?.publication?.track) return;
 
@@ -43,14 +45,18 @@ export const ParticipantView = memo(function ParticipantView({
     
     if (track.kind === Track.Kind.Video && videoEl) {
       track.attach(videoEl);
+    } else if (track.kind === Track.Kind.Audio && audioEl && !isLocal) {
+      track.attach(audioEl);
     }
 
     return () => {
       if (track.kind === Track.Kind.Video && videoEl) {
         track.detach(videoEl);
+      } else if (track.kind === Track.Kind.Audio && audioEl && !isLocal) {
+        track.detach(audioEl);
       }
     };
-  }, [trackRef?.publication?.track]);
+  }, [trackRef?.publication?.track, isLocal]);
 
   const isSpeaking = participant.isSpeaking;
   const isCameraEnabled = participant.isCameraEnabled;
@@ -81,6 +87,9 @@ export const ParticipantView = memo(function ParticipantView({
             isLocal && "scale-x-[-1]"
             )}
         />
+        {/* Audio element for remote participants */}
+        {!isLocal && <audio ref={audioRef} autoPlay />}
+        
         {!isCameraEnabled && (
             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
             <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
