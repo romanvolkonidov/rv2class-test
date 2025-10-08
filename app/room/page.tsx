@@ -84,30 +84,56 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
 
     const enableMediaOnConnect = async () => {
       try {
-        console.log('🎥 Ensuring camera and microphone are enabled...');
+        console.log('🎥 Room connected! Enabling camera and microphone...');
         
         // Small delay to ensure LiveKitRoom has finished its initial setup
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Enable microphone only if not already enabled
+        // Enable microphone first (less likely to fail)
         if (!room.localParticipant.isMicrophoneEnabled) {
           console.log('🎤 Microphone not enabled, enabling now...');
-          await room.localParticipant.setMicrophoneEnabled(true);
-          console.log('✅ Microphone enabled');
+          try {
+            await room.localParticipant.setMicrophoneEnabled(true);
+            console.log('✅ Microphone enabled successfully');
+          } catch (micError) {
+            console.error('❌ Failed to enable microphone:', micError);
+          }
         } else {
           console.log('✅ Microphone already enabled');
         }
         
-        // Enable camera only if not already enabled
+        // Enable camera (more likely to fail, so try with retry)
         if (!room.localParticipant.isCameraEnabled) {
           console.log('📹 Camera not enabled, enabling now...');
-          await room.localParticipant.setCameraEnabled(true);
-          console.log('✅ Camera enabled');
+          let retries = 3;
+          let cameraEnabled = false;
+          
+          while (retries > 0 && !cameraEnabled) {
+            try {
+              await room.localParticipant.setCameraEnabled(true);
+              console.log('✅ Camera enabled successfully');
+              cameraEnabled = true;
+            } catch (camError: any) {
+              retries--;
+              console.error(`❌ Camera enable attempt failed (${3 - retries}/3):`, camError);
+              
+              if (retries > 0) {
+                console.log(`⏳ Retrying in 1 second... (${retries} attempts left)`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              } else {
+                // All retries failed - show helpful message
+                console.error('❌ All camera enable attempts failed');
+                alert("⚠️ Не удалось включить камеру автоматически!\n\n" +
+                      "Пожалуйста, нажмите кнопку камеры 📹 внизу экрана, чтобы включить её вручную.\n\n" +
+                      "Микрофон работает нормально ✓");
+              }
+            }
+          }
         } else {
           console.log('✅ Camera already enabled');
         }
       } catch (error) {
-        console.error('❌ Error enabling media:', error);
+        console.error('❌ Error in enableMediaOnConnect:', error);
       }
     };
 
@@ -122,7 +148,7 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     return () => {
       room.off('connected', enableMediaOnConnect);
     };
-  }, [room]);
+  }, [room, room?.state]); // Re-run when room state changes
 
   // Debug: Log room participants
   useEffect(() => {
@@ -622,14 +648,35 @@ function RoomPage() {
 
   return (
     <LiveKitRoom
-      video={true} // Enable video for everyone to ensure proper WebRTC setup
-      audio={true} // Enable audio for everyone - ensures proper audio receiving
+      video={false} // DON'T auto-start video - we'll enable manually after connection
+      audio={true} // Enable audio immediately - audio rarely has conflicts
       token={token}
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
       className="h-full"
       connect={true}
       connectOptions={{
         autoSubscribe: true,
+      }}
+      onError={(error) => {
+        console.error('❌ LiveKit Room Error:', error);
+        
+        // Check if it's a camera access error
+        if (error.message?.includes('Could not start video source') || 
+            error.message?.includes('NotReadableError')) {
+          // Show user-friendly alert
+          setTimeout(() => {
+            alert("⚠️ Не удалось включить камеру!\n\n" +
+                  "Возможные причины:\n" +
+                  "1. Камера используется другим приложением (Zoom, Teams, Skype)\n" +
+                  "2. Камера используется другой вкладкой браузера\n" +
+                  "3. Камера не подключена или неисправна\n\n" +
+                  "Решение:\n" +
+                  "• Закройте все программы, использующие камеру\n" +
+                  "• Закройте другие вкладки с видеозвонками\n" +
+                  "• Обновите страницу (F5) и попробуйте снова\n\n" +
+                  "Микрофон и чат работают без камеры!");
+          }, 1000);
+        }
       }}
       options={{
         audioCaptureDefaults: {

@@ -41,8 +41,17 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     if (!hasSeenPopup) {
       setTimeout(() => {
         const isAndroid = /android/i.test(navigator.userAgent);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         
-        if (isAndroid) {
+        if (isIOS) {
+          alert("🎓 Добро пожаловать на урок!\n\n" +
+                "Для подключения нужно разрешить доступ:\n" +
+                "📹 К камере\n" +
+                "🎤 К микрофону\n\n" +
+                "⚠️ На iPhone/iPad оба разрешения запрашиваются вместе.\n" +
+                "Когда Safari спросит - нажмите 'Разрешить' для обоих.\n\n" +
+                "Если не работает - проверьте Настройки → Safari → Камера/Микрофон");
+        } else if (isAndroid) {
           alert("🎓 Добро пожаловать на урок!\n\n" +
                 "Для подключения нужно разрешить доступ:\n" +
                 "📹 К камере\n" +
@@ -125,15 +134,24 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
 
   const checkPermissions = async () => {
     try {
-      // Check microphone permission
-      if (navigator.permissions) {
-        const micPerm = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-        setMicPermission(micPerm.state);
-        
-        const cameraPerm = await navigator.permissions.query({ name: 'camera' as PermissionName });
-        setVideoPermission(cameraPerm.state);
+      // Safari (especially iOS) doesn't support navigator.permissions.query()
+      // Check if API is available before using
+      if (navigator.permissions && navigator.permissions.query) {
+        try {
+          const micPerm = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+          setMicPermission(micPerm.state);
+          
+          const cameraPerm = await navigator.permissions.query({ name: 'camera' as PermissionName });
+          setVideoPermission(cameraPerm.state);
+        } catch (permError) {
+          // Safari might throw error even if API exists
+          console.log('⚠️ Permissions API not fully supported (likely Safari), using fallback');
+          setMicPermission("prompt");
+          setVideoPermission("prompt");
+        }
       } else {
-        // Fallback: try to get access to check
+        // Fallback for Safari iOS and older browsers
+        console.log('⚠️ Permissions API not available (Safari iOS?), using fallback');
         setMicPermission("prompt");
         setVideoPermission("prompt");
       }
@@ -148,21 +166,29 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     try {
       setMicPermission("checking");
       
-      // ANDROID FIX: Request both audio AND video together
-      // Android Chrome requires both in one call to show proper permission UI
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      // Detect browser type
+      const isAndroid = /android/i.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
+      // ANDROID/iOS FIX: Request both audio AND video together
+      // Both Android Chrome and iOS Safari require both in one call
+      const constraints: MediaStreamConstraints = {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 48000,
+          // Safari iOS doesn't support sampleRate constraint
+          ...(!(isSafari || isIOS) && { sampleRate: 48000 })
         },
         video: videoPermission !== "granted" ? {
           width: { ideal: 1280 },
           height: { ideal: 720 },
           frameRate: { ideal: 30 },
-        } : false // Don't request video if already granted
-      });
+        } : false
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       
       // Separate audio and video tracks
       const audioTracks = stream.getAudioTracks();
@@ -183,12 +209,21 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       console.error("Microphone permission denied:", error);
       setMicPermission("denied");
       
-      // Detect if on Android
+      // Detect browser
       const isAndroid = /android/i.test(navigator.userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       
       // Show helpful alert in Russian
       setTimeout(() => {
-        if (isAndroid) {
+        if (isIOS) {
+          alert("🎤 Доступ к микрофону заблокирован!\n\n" +
+                "На iPhone/iPad:\n" +
+                "1. Откройте Настройки iOS\n" +
+                "2. Прокрутите вниз до Safari\n" +
+                "3. Найдите 'Камера' и 'Микрофон'\n" +
+                "4. Выберите 'Разрешить'\n" +
+                "5. Закройте и заново откройте Safari");
+        } else if (isAndroid) {
           alert("🎤 Доступ к микрофону заблокирован!\n\n" +
                 "На Android:\n" +
                 "1. Нажмите на 🔒 рядом с адресом сайта\n" +
@@ -211,9 +246,14 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     try {
       setVideoPermission("checking");
       
-      // ANDROID FIX: Request both audio AND video together
-      // Android Chrome requires both in one call to show proper permission UI
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      // Detect browser type
+      const isAndroid = /android/i.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
+      // ANDROID/iOS FIX: Request both audio AND video together
+      // Both Android Chrome and iOS Safari require both in one call
+      const constraints: MediaStreamConstraints = {
         video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
@@ -223,9 +263,12 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 48000,
-        } : false // Don't request audio if already granted
-      });
+          // Safari iOS doesn't support sampleRate constraint
+          ...(!(isSafari || isIOS) && { sampleRate: 48000 })
+        } : false
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       
       // Separate audio and video tracks
       const audioTracks = stream.getAudioTracks();
@@ -246,12 +289,21 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       console.error("Camera permission denied:", error);
       setVideoPermission("denied");
       
-      // Detect if on Android
+      // Detect browser
       const isAndroid = /android/i.test(navigator.userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       
       // Show helpful alert in Russian
       setTimeout(() => {
-        if (isAndroid) {
+        if (isIOS) {
+          alert("📹 Доступ к камере заблокирован!\n\n" +
+                "На iPhone/iPad:\n" +
+                "1. Откройте Настройки iOS\n" +
+                "2. Прокрутите вниз до Safari\n" +
+                "3. Найдите 'Камера' и 'Микрофон'\n" +
+                "4. Выберите 'Разрешить'\n" +
+                "5. Закройте и заново откройте Safari");
+        } else if (isAndroid) {
           alert("📹 Доступ к камере заблокирован!\n\n" +
                 "На Android:\n" +
                 "1. Нажмите на 🔒 рядом с адресом сайта\n" +
