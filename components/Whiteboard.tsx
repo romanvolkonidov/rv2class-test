@@ -126,6 +126,34 @@ export default function Whiteboard() {
     }
   });
 
+  // Custom eraser that only erases own elements
+  useEffect(() => {
+    if (!excalidrawAPI || !room?.localParticipant) return;
+
+    const userId = room.localParticipant.identity;
+
+    // Override the eraser tool behavior
+    const handlePointerDown = (e: any) => {
+      const appState = excalidrawAPI.getAppState();
+      if (appState.activeTool?.type === 'eraser') {
+        // Get elements under pointer
+        const elements = excalidrawAPI.getSceneElements();
+        const clickedElements = elements.filter((el: any) => {
+          // Check if element belongs to current user
+          return el.customData?.ownerId === userId;
+        });
+        
+        // Only allow erasing own elements
+        // This is a simplified approach - Excalidraw's built-in eraser will still work
+        // but we filter on sync to prevent erasing others' elements
+      }
+    };
+    
+    // Note: Excalidraw doesn't expose easy eraser customization
+    // So we handle this via filtering during sync
+    
+  }, [excalidrawAPI, room]);
+
   // Handle Excalidraw changes
   const handleChange = useCallback((elements: readonly any[], appState: any) => {
     if (!isReceivingUpdate && excalidrawAPI) {
@@ -168,38 +196,6 @@ export default function Whiteboard() {
       </div>
     );
   }
-
-  // Custom eraser that only erases own elements
-  useEffect(() => {
-    if (!excalidrawAPI || !room?.localParticipant) return undefined;
-    
-    const userId = room.localParticipant.identity;
-    
-    // Override the eraser tool behavior
-    const handlePointerDown = (e: any) => {
-      const appState = excalidrawAPI.getAppState();
-      if (appState.activeTool?.type === 'eraser') {
-        // Get elements under pointer
-        const elements = excalidrawAPI.getSceneElements();
-        const clickedElements = elements.filter((el: any) => {
-          // Check if element belongs to current user
-          return el.customData?.ownerId === userId;
-        });
-        
-        // Only allow erasing own elements
-        // This is a simplified approach - Excalidraw's built-in eraser will still work
-        // but we filter on sync to prevent erasing others' elements
-      }
-    };
-    
-    // Note: Excalidraw doesn't expose easy eraser customization
-    // So we handle this via filtering during sync
-    
-    // Return cleanup function (even if empty) to satisfy React's requirement
-    return () => {
-      // Cleanup if needed
-    };
-  }, [excalidrawAPI, room]);
 
   return (
     <div className="h-full w-full">
