@@ -111,8 +111,24 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
           while (retries > 0 && !cameraEnabled) {
             try {
               await room.localParticipant.setCameraEnabled(true);
-              console.log('✅ Camera enabled successfully');
-              cameraEnabled = true;
+              
+              // CRITICAL: Verify camera is actually published to the room
+              await new Promise(resolve => setTimeout(resolve, 500));
+              const cameraTrack = room.localParticipant.getTrackPublication(Track.Source.Camera);
+              
+              if (cameraTrack && cameraTrack.track) {
+                console.log('✅ Camera enabled and published successfully');
+                console.log('📹 Camera track details:', {
+                  sid: cameraTrack.trackSid,
+                  name: cameraTrack.trackName,
+                  muted: cameraTrack.isMuted,
+                  enabled: cameraTrack.track.mediaStreamTrack?.enabled,
+                  deviceId: cameraTrack.track.mediaStreamTrack?.getSettings().deviceId,
+                });
+                cameraEnabled = true;
+              } else {
+                throw new Error('Camera track not published after enabling');
+              }
             } catch (camError: any) {
               retries--;
               console.error(`❌ Camera enable attempt failed (${3 - retries}/3):`, camError);
@@ -121,16 +137,52 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
                 console.log(`⏳ Retrying in 1 second... (${retries} attempts left)`);
                 await new Promise(resolve => setTimeout(resolve, 1000));
               } else {
-                // All retries failed - show helpful message
+                // All retries failed - show helpful message with troubleshooting steps
                 console.error('❌ All camera enable attempts failed');
-                alert("⚠️ Не удалось включить камеру автоматически!\n\n" +
-                      "Пожалуйста, нажмите кнопку камеры 📹 внизу экрана, чтобы включить её вручную.\n\n" +
-                      "Микрофон работает нормально ✓");
+                
+                const errorMessage = camError.name === 'NotAllowedError' 
+                  ? "⚠️ Доступ к камере заблокирован!\n\n" +
+                    "1. Нажмите на значок 🔒 или 🎥 в адресной строке\n" +
+                    "2. Разрешите доступ к камере\n" +
+                    "3. Обновите страницу\n\n" +
+                    "Или нажмите кнопку камеры 📹 внизу и выберите другую камеру из выпадающего меню."
+                  : camError.name === 'NotFoundError'
+                  ? "⚠️ Камера не найдена!\n\n" +
+                    "1. Проверьте, подключена ли камера\n" +
+                    "2. Закройте другие программы, использующие камеру\n" +
+                    "3. Попробуйте выбрать другую камеру из меню 📹\n\n" +
+                    "Микрофон работает нормально ✓"
+                  : "⚠️ Не удалось включить камеру автоматически!\n\n" +
+                    "Возможные решения:\n" +
+                    "1. Нажмите кнопку камеры 📹 внизу экрана\n" +
+                    "2. Нажмите стрелку ▼ рядом с кнопкой камеры\n" +
+                    "3. Выберите другую камеру из списка\n" +
+                    "4. Проверьте, не используется ли камера другой программой\n\n" +
+                    "Микрофон работает нормально ✓";
+                
+                alert(errorMessage);
               }
             }
           }
         } else {
           console.log('✅ Camera already enabled');
+          
+          // Still verify it's published
+          const cameraTrack = room.localParticipant.getTrackPublication(Track.Source.Camera);
+          if (cameraTrack && cameraTrack.track) {
+            console.log('✅ Camera track verified and published');
+          } else {
+            console.warn('⚠️ Camera shows enabled but track not published - attempting to republish...');
+            try {
+              // Try toggling camera to force republish
+              await room.localParticipant.setCameraEnabled(false);
+              await new Promise(resolve => setTimeout(resolve, 300));
+              await room.localParticipant.setCameraEnabled(true);
+              console.log('✅ Camera republished successfully');
+            } catch (err) {
+              console.error('❌ Failed to republish camera:', err);
+            }
+          }
         }
       } catch (error) {
         console.error('❌ Error in enableMediaOnConnect:', error);

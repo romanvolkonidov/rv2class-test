@@ -270,7 +270,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
 
   // Initialize toolbar position - bottom-right corner, more discreet
   useEffect(() => {
-    if (!isToolbarPositioned && toolbarRef.current && !viewOnly) {
+    if (!isToolbarPositioned && toolbarRef.current) {
       const toolbar = toolbarRef.current;
       const toolbarRect = toolbar.getBoundingClientRect();
       
@@ -281,7 +281,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
       setToolbarPosition({ x, y });
       setIsToolbarPositioned(true);
     }
-  }, [isToolbarPositioned, viewOnly]);
+  }, [isToolbarPositioned]);
 
   // Handle toolbar dragging - Mouse events
   const handleToolbarMouseDown = (e: React.MouseEvent) => {
@@ -906,31 +906,30 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
         </div>
       )}
 
-      {/* Toolbar - Only show for teachers, not in view-only mode */}
-      {!viewOnly && (
-        <div 
-          ref={toolbarRef}
-          className={cn(
-            "fixed z-[60] transition-opacity duration-300 touch-manipulation",
-            isDraggingToolbar ? "cursor-grabbing" : "cursor-grab",
-            isClosing ? "animate-slide-up-out" : "animate-slide-down"
-          )}
-          style={{
-            left: `${toolbarPosition.x}px`,
-            top: `${toolbarPosition.y}px`,
-          }}
-          onMouseDown={handleToolbarMouseDown}
-          onTouchStart={handleToolbarTouchStart}
-        >
-          {/* Drag Handle */}
-          <div className="drag-handle absolute -top-6 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-t-lg bg-black/30 backdrop-blur-xl border border-white/10 border-b-0 cursor-grab active:cursor-grabbing flex items-center gap-2">
-            <div className="flex gap-0.5">
-              <div className="w-1 h-1 rounded-full bg-white/40"></div>
-              <div className="w-1 h-1 rounded-full bg-white/40"></div>
-              <div className="w-1 h-1 rounded-full bg-white/40"></div>
-            </div>
-            <span className="text-xs text-white/60 font-medium select-none">Drag</span>
+      {/* Toolbar - Show for both teachers and students, but students get view-only version */}
+      <div 
+        ref={toolbarRef}
+        className={cn(
+          "fixed z-[60] transition-opacity duration-300 touch-manipulation",
+          isDraggingToolbar ? "cursor-grabbing" : "cursor-grab",
+          isClosing ? "animate-slide-up-out" : "animate-slide-down"
+        )}
+        style={{
+          left: `${toolbarPosition.x}px`,
+          top: `${toolbarPosition.y}px`,
+        }}
+        onMouseDown={handleToolbarMouseDown}
+        onTouchStart={handleToolbarTouchStart}
+      >
+        {/* Drag Handle - Always show, students can drag too */}
+        <div className="drag-handle absolute -top-6 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-t-lg bg-black/30 backdrop-blur-xl border border-white/10 border-b-0 cursor-grab active:cursor-grabbing flex items-center gap-2">
+          <div className="flex gap-0.5">
+            <div className="w-1 h-1 rounded-full bg-white/40"></div>
+            <div className="w-1 h-1 rounded-full bg-white/40"></div>
+            <div className="w-1 h-1 rounded-full bg-white/40"></div>
           </div>
+          <span className="text-xs text-white/60 font-medium select-none">Drag</span>
+        </div>
 
           {/* Main Toolbar with glass morphism */}
           <div 
@@ -952,16 +951,20 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
                 >
                   <ChevronDown className="h-5 w-5 stroke-[2.5]" />
                 </Button>
-                <div className="w-px h-6 bg-white/20" />
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={clearAndBroadcast}
-                  title="Clear All"
-                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                >
-                  <Trash2 className="h-5 w-5 stroke-[2.5]" />
-                </Button>
+                {!viewOnly && (
+                  <>
+                    <div className="w-px h-6 bg-white/20" />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={clearAndBroadcast}
+                      title="Clear All"
+                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
+                    >
+                      <Trash2 className="h-5 w-5 stroke-[2.5]" />
+                    </Button>
+                  </>
+                )}
                 {onClose && (
                   <>
                     <div className="w-px h-6 bg-white/20" />
@@ -1178,7 +1181,6 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
             )}
           </div>
         </div>
-      )}
       
       {/* Add animation styles */}
       <style jsx>{`

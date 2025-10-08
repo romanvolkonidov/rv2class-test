@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
 import { Track, VideoPresets } from "livekit-client";
-import { Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, PhoneOff, Pencil, Square } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, PhoneOff, Pencil, Square, ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
@@ -35,10 +35,84 @@ export default function CustomControlBar({
   const [hasScreenShare, setHasScreenShare] = useState(false);
   const [isControlBarVisible, setIsControlBarVisible] = useState(true);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Device selection state
+  const [showCameraMenu, setShowCameraMenu] = useState(false);
+  const [showMicMenu, setShowMicMenu] = useState(false);
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [currentCameraId, setCurrentCameraId] = useState<string>("");
+  const [currentMicId, setCurrentMicId] = useState<string>("");
 
   // Sync with actual participant state
   const isMuted = localParticipant ? !localParticipant.isMicrophoneEnabled : true;
   const isCameraOff = localParticipant ? !localParticipant.isCameraEnabled : true;
+
+  // Enumerate media devices
+  useEffect(() => {
+    const enumerateDevices = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameras = devices.filter(d => d.kind === 'videoinput');
+        const mics = devices.filter(d => d.kind === 'audioinput');
+        
+        setVideoDevices(cameras);
+        setAudioDevices(mics);
+        
+        console.log('📹 Available cameras:', cameras.length, cameras.map(c => c.label));
+        console.log('🎤 Available microphones:', mics.length, mics.map(m => m.label));
+        
+        // Get current devices from room
+        if (localParticipant) {
+          const cameraTrack = localParticipant.getTrackPublication(Track.Source.Camera);
+          const micTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
+          
+          if (cameraTrack?.track) {
+            const settings = (cameraTrack.track as any).mediaStreamTrack?.getSettings();
+            if (settings?.deviceId) {
+              setCurrentCameraId(settings.deviceId);
+              console.log('📹 Current camera:', settings.deviceId);
+            }
+          }
+          
+          if (micTrack?.track) {
+            const settings = (micTrack.track as any).mediaStreamTrack?.getSettings();
+            if (settings?.deviceId) {
+              setCurrentMicId(settings.deviceId);
+              console.log('🎤 Current microphone:', settings.deviceId);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('❌ Failed to enumerate devices:', error);
+      }
+    };
+
+    enumerateDevices();
+    
+    // Re-enumerate when devices change
+    navigator.mediaDevices.addEventListener('devicechange', enumerateDevices);
+    
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', enumerateDevices);
+    };
+  }, [localParticipant]);
+
+  // Close device menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.device-menu')) {
+        setShowCameraMenu(false);
+        setShowMicMenu(false);
+      }
+    };
+
+    if (showCameraMenu || showMicMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showCameraMenu, showMicMenu]);
 
   // Check if anyone (local or remote) is screen sharing
   useEffect(() => {
@@ -190,6 +264,91 @@ export default function CustomControlBar({
     if (localParticipant) {
       const enabled = localParticipant.isCameraEnabled;
       await localParticipant.setCameraEnabled(!enabled);
+      
+      // Update current camera ID after toggling
+      setTimeout(async () => {
+        const cameraTrack = localParticipant.getTrackPublication(Track.Source.Camera);
+        if (cameraTrack?.track) {
+          const settings = (cameraTrack.track as any).mediaStreamTrack?.getSettings();
+          if (settings?.deviceId) {
+            setCurrentCameraId(settings.deviceId);
+          }
+        }
+      }, 500);
+    }
+  };
+
+  const switchCamera = async (deviceId: string) => {
+    if (!localParticipant || !room) return;
+    
+    try {
+      console.log('📹 Switching camera to:', deviceId);
+      setShowCameraMenu(false);
+      
+      // Get new camera stream
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: deviceId } }
+      });
+      
+      const videoTrack = stream.getVideoTracks()[0];
+      
+      if (videoTrack) {
+        // Stop and unpublish old camera track
+        const oldCameraTrack = localParticipant.getTrackPublication(Track.Source.Camera);
+        if (oldCameraTrack?.track) {
+          oldCameraTrack.track.stop();
+          await localParticipant.unpublishTrack(oldCameraTrack.track);
+        }
+        
+        // Publish new camera track
+        await localParticipant.publishTrack(videoTrack, {
+          name: 'camera',
+          source: Track.Source.Camera,
+        });
+        
+        setCurrentCameraId(deviceId);
+        console.log('✅ Camera switched successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to switch camera:', error);
+      alert('Не удалось переключить камеру. Пожалуйста, проверьте разрешения.');
+    }
+  };
+
+  const switchMicrophone = async (deviceId: string) => {
+    if (!localParticipant || !room) return;
+    
+    try {
+      console.log('🎤 Switching microphone to:', deviceId);
+      setShowMicMenu(false);
+      
+      // Get new microphone stream
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { deviceId: { exact: deviceId } }
+      });
+      
+      const audioTrack = stream.getAudioTracks()[0];
+      
+      if (audioTrack) {
+        // Stop and unpublish old microphone track
+        const oldMicTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
+        if (oldMicTrack?.track) {
+          oldMicTrack.track.stop();
+          await localParticipant.unpublishTrack(oldMicTrack.track);
+        }
+        
+        // Publish new microphone track
+        await localParticipant.publishTrack(audioTrack, {
+          name: 'microphone',
+          source: Track.Source.Microphone,
+        });
+        
+        setCurrentMicId(deviceId);
+        console.log('✅ Microphone switched successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to switch microphone:', error);
+      alert('Не удалось переключить микрофон. Пожалуйста, проверьте разрешения.');
     }
   };
 
@@ -478,21 +637,117 @@ export default function CustomControlBar({
         "snap-x snap-mandatory"
       )}>
         {/* Basic controls - always visible */}
-        <GlassButton
-          onClick={toggleMicrophone}
-          active={!isMuted}
-          title={isMuted ? "Unmute" : "Mute"}
-        >
-          {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-        </GlassButton>
+        <div className="relative flex items-center gap-1 device-menu">
+          <GlassButton
+            onClick={toggleMicrophone}
+            active={!isMuted}
+            title={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+          </GlassButton>
+          
+          {/* Microphone device selector */}
+          {audioDevices.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMicMenu(!showMicMenu);
+                setShowCameraMenu(false);
+              }}
+              className={cn(
+                "w-8 h-12 flex items-center justify-center rounded-lg",
+                "bg-white/10 backdrop-blur-md border border-white/20",
+                "hover:bg-white/20 hover:border-white/30",
+                "transition-all duration-200",
+                "touch-manipulation select-none",
+                showMicMenu && "bg-white/25 border-white/40"
+              )}
+              title="Select Microphone"
+            >
+              <ChevronDown className="w-4 h-4 text-white" />
+            </button>
+          )}
+          
+          {/* Microphone menu dropdown */}
+          {showMicMenu && audioDevices.length > 1 && (
+            <div className="absolute bottom-full left-0 mb-2 w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-50">
+              <div className="p-2 border-b border-white/10">
+                <p className="text-xs font-semibold text-white/70 uppercase tracking-wide px-2">Select Microphone</p>
+              </div>
+              {audioDevices.map((device) => (
+                <button
+                  key={device.deviceId}
+                  onClick={() => switchMicrophone(device.deviceId)}
+                  className={cn(
+                    "w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between gap-2",
+                    device.deviceId === currentMicId && "bg-blue-500/20"
+                  )}
+                >
+                  <span className="truncate">{device.label || `Microphone ${audioDevices.indexOf(device) + 1}`}</span>
+                  {device.deviceId === currentMicId && (
+                    <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
-        <GlassButton
-          onClick={toggleCamera}
-          active={!isCameraOff}
-          title={isCameraOff ? "Turn Camera On" : "Turn Camera Off"}
-        >
-          {isCameraOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
-        </GlassButton>
+        <div className="relative flex items-center gap-1 device-menu">
+          <GlassButton
+            onClick={toggleCamera}
+            active={!isCameraOff}
+            title={isCameraOff ? "Turn Camera On" : "Turn Camera Off"}
+          >
+            {isCameraOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+          </GlassButton>
+          
+          {/* Camera device selector */}
+          {videoDevices.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowCameraMenu(!showCameraMenu);
+                setShowMicMenu(false);
+              }}
+              className={cn(
+                "w-8 h-12 flex items-center justify-center rounded-lg",
+                "bg-white/10 backdrop-blur-md border border-white/20",
+                "hover:bg-white/20 hover:border-white/30",
+                "transition-all duration-200",
+                "touch-manipulation select-none",
+                showCameraMenu && "bg-white/25 border-white/40"
+              )}
+              title="Select Camera"
+            >
+              <ChevronDown className="w-4 h-4 text-white" />
+            </button>
+          )}
+          
+          {/* Camera menu dropdown */}
+          {showCameraMenu && videoDevices.length > 1 && (
+            <div className="absolute bottom-full left-0 mb-2 w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-50">
+              <div className="p-2 border-b border-white/10">
+                <p className="text-xs font-semibold text-white/70 uppercase tracking-wide px-2">Select Camera</p>
+              </div>
+              {videoDevices.map((device) => (
+                <button
+                  key={device.deviceId}
+                  onClick={() => switchCamera(device.deviceId)}
+                  className={cn(
+                    "w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between gap-2",
+                    device.deviceId === currentCameraId && "bg-blue-500/20"
+                  )}
+                >
+                  <span className="truncate">{device.label || `Camera ${videoDevices.indexOf(device) + 1}`}</span>
+                  {device.deviceId === currentCameraId && (
+                    <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <GlassButton
           onClick={toggleScreenShare}
