@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle, XCircle } from "lucide-react";
-import { useState, useEffect } from "react";
-import WaitingRoom from "@/components/WaitingRoom";
+import { useState, useEffect, useRef } from "react";
+import WaitingRoom, { WaitingRoomHandle } from "@/components/WaitingRoom";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 
@@ -20,6 +20,7 @@ interface StudentData {
 
 export default function StudentWelcome({ student }: { student: StudentData }) {
   const router = useRouter();
+  const waitingRoomRef = useRef<WaitingRoomHandle>(null);
   const [isJoining, setIsJoining] = useState(false);
   const [micPermission, setMicPermission] = useState<"granted" | "denied" | "prompt" | "checking">("checking");
   const [videoPermission, setVideoPermission] = useState<"granted" | "denied" | "prompt" | "checking">("checking");
@@ -242,6 +243,14 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     // CRITICAL: Stop all preview streams before joining to prevent echo
     // The room will request fresh streams with proper settings
     console.log("🛑 Stopping preview streams to prevent echo...");
+    
+    // Stop WaitingRoom preview stream
+    if (waitingRoomRef.current) {
+      console.log("🛑 Stopping WaitingRoom preview via ref...");
+      waitingRoomRef.current.stopPreview();
+    }
+    
+    // Stop local preview streams
     if (micStream) {
       micStream.getTracks().forEach(track => {
         track.stop();
@@ -306,6 +315,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   if (isWaitingForTeacher) {
     return (
       <WaitingRoom 
+        ref={waitingRoomRef}
         studentName={student.name}
         teacherName={teacherName}
       />

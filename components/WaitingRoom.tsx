@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { Loader2, Clock, UserCheck, Sparkles, Video, Mic } from "lucide-react";
 
 interface WaitingRoomProps {
   studentName: string;
   teacherName: string;
   onApproved?: () => void;
+}
+
+export interface WaitingRoomHandle {
+  stopPreview: () => void;
 }
 
 const motivationalQuotes = [
@@ -60,21 +64,38 @@ const motivationalQuotes = [
   }
 ];
 
-export default function WaitingRoom({ studentName, teacherName, onApproved }: WaitingRoomProps) {
+const WaitingRoom = forwardRef<WaitingRoomHandle, WaitingRoomProps>(({ studentName, teacherName, onApproved }, ref) => {
   const [currentQuote, setCurrentQuote] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
   const [hasAudio, setHasAudio] = useState(false);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Expose stopPreview function to parent
+  useImperativeHandle(ref, () => ({
+    stopPreview: () => {
+      console.log('🛑 Stopping waiting room preview via ref...');
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+          console.log(`🛑 Stopped ${track.kind} track`);
+        });
+        streamRef.current = null;
+        setPreviewStream(null);
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+        }
+      }
+    }
+  }));
 
   // Start preview stream
   useEffect(() => {
-    let stream: MediaStream | null = null;
-
     const startPreview = async () => {
       try {
         console.log('🎥 Starting waiting room preview...');
-        stream = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: { ideal: 1280 },
             height: { ideal: 720 },
@@ -87,6 +108,7 @@ export default function WaitingRoom({ studentName, teacherName, onApproved }: Wa
           }
         });
 
+        streamRef.current = stream;
         setPreviewStream(stream);
         setHasVideo(stream.getVideoTracks().length > 0);
         setHasAudio(stream.getAudioTracks().length > 0);
@@ -106,9 +128,10 @@ export default function WaitingRoom({ studentName, teacherName, onApproved }: Wa
 
     // Cleanup function
     return () => {
-      if (stream) {
-        console.log('🛑 Stopping waiting room preview...');
-        stream.getTracks().forEach(track => track.stop());
+      if (streamRef.current) {
+        console.log('🛑 Stopping waiting room preview (cleanup)...');
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
       }
     };
   }, []);
@@ -304,4 +327,8 @@ export default function WaitingRoom({ studentName, teacherName, onApproved }: Wa
       `}</style>
     </div>
   );
-}
+});
+
+WaitingRoom.displayName = 'WaitingRoom';
+
+export default WaitingRoom;
