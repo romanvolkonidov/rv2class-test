@@ -671,7 +671,7 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
           </>
         ) : (
           <>
-            <CustomVideoConference />
+            <CustomVideoConference isTutor={isTutor} />
             <CustomControlBar 
               isTutor={isTutor}
               showWhiteboard={showWhiteboard}

@@ -5,6 +5,7 @@ import {
   useTracks,
   useParticipants,
   TrackReferenceOrPlaceholder,
+  useRoomContext,
 } from "@livekit/components-react";
 import { Track, Participant, RemoteParticipant } from "livekit-client";
 import { cn } from "@/lib/utils";
@@ -207,9 +208,19 @@ interface ParticipantViewProps {
   participant: Participant;
   trackRef?: TrackReferenceOrPlaceholder;
   isLocal?: boolean;
+  isTutor?: boolean;
+  onRemoveStudent?: (participantIdentity: string) => void;
+  onStopScreenShare?: (participantIdentity: string) => void;
 }
 
-const ParticipantView = memo(function ParticipantView({ participant, trackRef, isLocal }: ParticipantViewProps) {
+const ParticipantView = memo(function ParticipantView({ 
+  participant, 
+  trackRef, 
+  isLocal, 
+  isTutor,
+  onRemoveStudent,
+  onStopScreenShare 
+}: ParticipantViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -262,16 +273,24 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
   const isSpeaking = participant.isSpeaking;
   const isCameraEnabled = participant.isCameraEnabled;
   const isScreenShare = trackRef?.source === Track.Source.ScreenShare;
+  const [showControls, setShowControls] = useState(false);
+
+  // Check if participant has screen share
+  const hasScreenShare = participant.getTrackPublications().some(
+    (pub) => pub.source === Track.Source.ScreenShare
+  );
 
   return (
     <div
       className={cn(
-        "relative transition-all duration-200 w-full h-full",
+        "relative transition-all duration-200 w-full h-full group",
         // NO rounded corners or borders for screen share - shows full content
         isScreenShare ? "overflow-visible bg-black flex items-center justify-center" : "overflow-hidden bg-black/20 backdrop-blur-md rounded-xl",
         !isScreenShare && "border",
         !isScreenShare && (isSpeaking ? "border-blue-400 ring-2 ring-blue-400/50" : "border-white/10")
       )}
+      onMouseEnter={() => isTutor && !isLocal && setShowControls(true)}
+      onMouseLeave={() => setShowControls(false)}
     >
       {/* Video */}
       <video
@@ -332,6 +351,62 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
           </svg>
         </div>
       )}
+
+      {/* Tutor Controls - Show on hover for remote participants when user is tutor */}
+      {isTutor && !isLocal && (showControls || isScreenShare) && (
+        <div className={cn(
+          "absolute flex gap-2 z-20",
+          isScreenShare ? "top-4 right-4" : "top-2 right-2"
+        )}>
+          {/* Stop Screen Share Button - Only show if this participant has screen share */}
+          {hasScreenShare && onStopScreenShare && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onStopScreenShare(participant.identity);
+              }}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-lg transition-all",
+                "bg-orange-500/90 hover:bg-orange-600 text-white",
+                "backdrop-blur-md border border-orange-400/50",
+                "shadow-lg hover:shadow-xl",
+                isScreenShare ? "text-base" : "text-sm"
+              )}
+              title="Stop their screen share"
+            >
+              <svg className={cn(isScreenShare ? "w-5 h-5" : "w-4 h-4")} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {isScreenShare && <span className="font-medium">Stop Screen Share</span>}
+            </button>
+          )}
+          
+          {/* Remove Student Button */}
+          {onRemoveStudent && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm(`Remove ${participant.identity} from the room? They can rejoin using their link.`)) {
+                  onRemoveStudent(participant.identity);
+                }
+              }}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-lg transition-all",
+                "bg-red-500/90 hover:bg-red-600 text-white",
+                "backdrop-blur-md border border-red-400/50",
+                "shadow-lg hover:shadow-xl",
+                isScreenShare ? "text-base" : "text-sm"
+              )}
+              title="Remove from room"
+            >
+              <svg className={cn(isScreenShare ? "w-5 h-5" : "w-4 h-4")} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+              </svg>
+              {isScreenShare && <span className="font-medium">Remove Student</span>}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }, (prevProps, nextProps) => {
@@ -346,8 +421,13 @@ const ParticipantView = memo(function ParticipantView({ participant, trackRef, i
   );
 });
 
-export default function CustomVideoConference() {
+interface CustomVideoConferenceProps {
+  isTutor?: boolean;
+}
+
+export default function CustomVideoConference({ isTutor = false }: CustomVideoConferenceProps) {
   const participants = useParticipants();
+  const room = useRoomContext();
   
   // State for thumbnail controls
   const [isMinimized, setIsMinimized] = useState(false);
@@ -368,6 +448,40 @@ export default function CustomVideoConference() {
     (track) => track.publication?.source === Track.Source.ScreenShare
   );
 
+  // Handler to remove a student (tutor only)
+  const handleRemoveStudent = useCallback((participantIdentity: string) => {
+    if (!isTutor || !room) return;
+
+    console.log('🚫 Tutor removing student:', participantIdentity);
+    
+    // Send data channel message to target participant
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify({
+      type: "removeStudent",
+      targetIdentity: participantIdentity,
+      from: room.localParticipant?.identity
+    }));
+
+    room.localParticipant?.publishData(data, { reliable: true });
+  }, [isTutor, room]);
+
+  // Handler to stop a student's screen share (tutor only)
+  const handleStopScreenShare = useCallback((participantIdentity: string) => {
+    if (!isTutor || !room) return;
+
+    console.log('🛑 Tutor stopping screen share for:', participantIdentity);
+    
+    // Send data channel message to target participant
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify({
+      type: "stopScreenShare",
+      targetIdentity: participantIdentity,
+      from: room.localParticipant?.identity
+    }));
+
+    room.localParticipant?.publishData(data, { reliable: true });
+  }, [isTutor, room]);
+
   return (
     <div className="w-full h-full relative bg-transparent">
       {/* Screen share view (if active) - FULL SCREEN with smooth fade-in */}
@@ -384,6 +498,10 @@ export default function CustomVideoConference() {
               <ParticipantView
                 participant={screenShareTrack.participant}
                 trackRef={screenShareTrack}
+                isLocal={screenShareTrack.participant.isLocal}
+                isTutor={isTutor}
+                onRemoveStudent={handleRemoveStudent}
+                onStopScreenShare={handleStopScreenShare}
               />
             </div>
           </div>
@@ -405,6 +523,9 @@ export default function CustomVideoConference() {
                     (t) => t.participant === localParticipant && t.source === Track.Source.Camera
                   )}
                   isLocal
+                  isTutor={isTutor}
+                  onRemoveStudent={handleRemoveStudent}
+                  onStopScreenShare={handleStopScreenShare}
                 />
               </div>
             )}
@@ -422,6 +543,9 @@ export default function CustomVideoConference() {
                   <ParticipantView
                     participant={participant}
                     trackRef={trackRef}
+                    isTutor={isTutor}
+                    onRemoveStudent={handleRemoveStudent}
+                    onStopScreenShare={handleStopScreenShare}
                   />
                 </div>
               );
@@ -451,6 +575,9 @@ export default function CustomVideoConference() {
                   (t) => t.participant === localParticipant && t.source === Track.Source.Camera
                 )}
                 isLocal
+                isTutor={isTutor}
+                onRemoveStudent={handleRemoveStudent}
+                onStopScreenShare={handleStopScreenShare}
               />
             )}
 
@@ -464,6 +591,9 @@ export default function CustomVideoConference() {
                   key={participant.identity}
                   participant={participant}
                   trackRef={trackRef}
+                  isTutor={isTutor}
+                  onRemoveStudent={handleRemoveStudent}
+                  onStopScreenShare={handleStopScreenShare}
                 />
               );
             })}
