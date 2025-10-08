@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, ChevronUp, Type, MousePointer2 } from "lucide-react";
+import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, ChevronUp, Type, MousePointer2, Edit, GripVertical } from "lucide-react";
 import { useRoomContext, useDataChannel } from "@livekit/components-react";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +25,21 @@ interface AnnotationAction {
   fontSize?: number; // Relative font size (0-1 range)
   author?: string; // Identity of the participant who created this annotation
   id?: string; // Unique ID for this annotation (useful for editing)
+}
+
+interface TextBounds {
+  id: string;
+  bounds: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  controlCirclePos: {
+    x: number;
+    y: number;
+  };
+  action: AnnotationAction;
 }
 
 interface VideoMetrics {
@@ -74,6 +89,11 @@ export default function AnnotationOverlay({
   const [internalIsClosing, setInternalIsClosing] = useState(false);
   const [editingTextId, setEditingTextId] = useState<string | null>(null); // ID of text being edited
   const [showClearOptions, setShowClearOptions] = useState(false); // For clear options modal
+  const [textBounds, setTextBounds] = useState<TextBounds[]>([]); // Store bounds of all text annotations
+  const [hoveredControlId, setHoveredControlId] = useState<string | null>(null); // ID of hovered control circle
+  const [expandedControlId, setExpandedControlId] = useState<string | null>(null); // ID of expanded control menu
+  const [draggingTextId, setDraggingTextId] = useState<string | null>(null); // ID of text being dragged
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
   const room = useRoomContext();
   
   // Toolbar dragging state
@@ -88,6 +108,66 @@ export default function AnnotationOverlay({
   
   // Use external or internal closing state
   const isClosing = externalIsClosing || internalIsClosing;
+
+  // Handle text dragging
+  useEffect(() => {
+    if (!draggingTextId || !dragOffset) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const newX = e.clientX - rect.left - dragOffset.x;
+      const newY = e.clientY - rect.top - dragOffset.y;
+      
+      // Convert to relative coordinates
+      const relativePoint = toRelative(newX, newY);
+      
+      // Update the text action's position
+      const allActions = [...history, ...remoteActions];
+      const actionIndex = history.findIndex(a => a.id === draggingTextId);
+      
+      if (actionIndex !== -1) {
+        const updatedHistory = [...history];
+        updatedHistory[actionIndex] = {
+          ...updatedHistory[actionIndex],
+          startPoint: relativePoint,
+        };
+        setHistory(updatedHistory);
+        
+        // Broadcast the update
+        sendAnnotationData(updatedHistory[actionIndex]);
+      } else {
+        // It's in remote actions
+        const remoteIndex = remoteActions.findIndex(a => a.id === draggingTextId);
+        if (remoteIndex !== -1) {
+          const updatedRemote = [...remoteActions];
+          updatedRemote[remoteIndex] = {
+            ...updatedRemote[remoteIndex],
+            startPoint: relativePoint,
+          };
+          setRemoteActions(updatedRemote);
+          
+          // Broadcast the update
+          sendAnnotationData(updatedRemote[remoteIndex]);
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setDraggingTextId(null);
+      setDragOffset(null);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingTextId, dragOffset, history, remoteActions]);
 
   // Click outside to close clear options
   useEffect(() => {
@@ -496,6 +576,12 @@ export default function AnnotationOverlay({
         setHistory(data.history || []);
         setHistoryStep(data.historyStep || 0);
         setRemoteActions([]); // Clear remote actions when syncing
+      } else if (data.type === "deleteAnnotation") {
+        // Handle single annotation deletion
+        const { id } = data;
+        setHistory(prev => prev.filter(a => a.id !== id));
+        setRemoteActions(prev => prev.filter(a => a.id !== id));
+        setTextBounds(prev => prev.filter(tb => tb.id !== id));
       }
     } catch (error) {
       console.error("Error processing annotation message:", error);
@@ -573,6 +659,39 @@ export default function AnnotationOverlay({
       lines.forEach((line, index) => {
         ctx.fillText(line, pos.x, pos.y + (index * absoluteFontSize * 1.2));
       });
+      
+      // Calculate and store text bounds for control circles
+      if (action.id) {
+        let maxWidth = 0;
+        lines.forEach(line => {
+          const width = ctx.measureText(line).width;
+          if (width > maxWidth) maxWidth = width;
+        });
+        
+        const textHeight = lines.length * absoluteFontSize * 1.2;
+        const controlCircleRadius = 8;
+        
+        const bounds: TextBounds = {
+          id: action.id,
+          bounds: {
+            x: pos.x,
+            y: pos.y,
+            width: maxWidth,
+            height: textHeight,
+          },
+          controlCirclePos: {
+            x: pos.x + maxWidth + controlCircleRadius,
+            y: pos.y - controlCircleRadius,
+          },
+          action,
+        };
+        
+        // Update text bounds state
+        setTextBounds(prev => {
+          const filtered = prev.filter(tb => tb.id !== action.id);
+          return [...filtered, bounds];
+        });
+      }
     }
   };
 
@@ -932,6 +1051,7 @@ export default function AnnotationOverlay({
     setHistory([]);
     setHistoryStep(0);
     setRemoteActions([]); // Clear remote actions too
+    setTextBounds([]); // Clear text bounds
   };
 
   const clearAndBroadcast = () => {
@@ -968,6 +1088,11 @@ export default function AnnotationOverlay({
     setHistory(filteredHistory);
     setHistoryStep(filteredHistory.length);
     setRemoteActions(filteredRemote);
+    
+    // Update text bounds to match filtered actions
+    const allRemainingActions = [...filteredHistory, ...filteredRemote];
+    const remainingTextIds = allRemainingActions.map(a => a.id).filter(Boolean);
+    setTextBounds(prev => prev.filter(tb => remainingTextIds.includes(tb.id)));
 
     // Broadcast the selective clear
     const encoder = new TextEncoder();
@@ -1048,6 +1173,160 @@ export default function AnnotationOverlay({
           }}
         />
       </div>
+
+      {/* Text Control Circles Overlay */}
+      {!viewOnly && containerRef.current && (
+        <div 
+          className="fixed z-[55] pointer-events-none"
+          style={{
+            left: containerRef.current.style.left,
+            top: containerRef.current.style.top,
+            width: containerRef.current.style.width,
+            height: containerRef.current.style.height,
+          }}
+        >
+          {textBounds.map((textBound) => {
+            const canEdit = isTutor || textBound.action.author === room.localParticipant.identity;
+            if (!canEdit) return null; // Only show controls for editable text
+            
+            const isExpanded = expandedControlId === textBound.id;
+            const controlSize = 16; // Diameter of main control circle
+            
+            return (
+              <div key={textBound.id}>
+                {/* Main control circle */}
+                <div
+                  className="absolute pointer-events-auto cursor-pointer transition-all duration-200"
+                  style={{
+                    left: `${textBound.controlCirclePos.x - controlSize / 2}px`,
+                    top: `${textBound.controlCirclePos.y - controlSize / 2}px`,
+                    width: `${controlSize}px`,
+                    height: `${controlSize}px`,
+                  }}
+                  onMouseEnter={() => setExpandedControlId(textBound.id)}
+                  onMouseLeave={() => {
+                    // Delay hiding to allow moving to sub-circles
+                    setTimeout(() => {
+                      setExpandedControlId(prev => prev === textBound.id ? null : prev);
+                    }, 100);
+                  }}
+                  onTouchStart={() => setExpandedControlId(textBound.id)}
+                >
+                  <div
+                    className="w-full h-full rounded-full bg-blue-500/80 hover:bg-blue-600/90 border-2 border-white/50 shadow-lg backdrop-blur-sm transition-all"
+                    style={{
+                      transform: isExpanded ? 'scale(1.2)' : 'scale(1)',
+                    }}
+                  />
+                </div>
+                
+                {/* Expanded menu circles */}
+                {isExpanded && (
+                  <div
+                    className="absolute pointer-events-auto"
+                    style={{
+                      left: `${textBound.controlCirclePos.x}px`,
+                      top: `${textBound.controlCirclePos.y}px`,
+                    }}
+                    onMouseLeave={() => setExpandedControlId(null)}
+                  >
+                    {/* Edit button */}
+                    <div
+                      className="absolute cursor-pointer group"
+                      style={{
+                        left: `${-45}px`,
+                        top: `${-5}px`,
+                        width: '32px',
+                        height: '32px',
+                        animation: 'slideIn 0.2s ease-out',
+                      }}
+                      onClick={() => {
+                        const clickedText = textBound.action;
+                        setTextInputPosition(clickedText.startPoint!);
+                        setTextInput(clickedText.text || "");
+                        const metrics = metricsRef.current;
+                        const effectiveWidth = metrics.contentWidth || metrics.cssWidth || 1;
+                        setFontSize(clickedText.fontSize ? clickedText.fontSize * effectiveWidth : 24);
+                        setColor(clickedText.color);
+                        setIsTextInputVisible(true);
+                        setEditingTextId(clickedText.id || null);
+                        setExpandedControlId(null);
+                      }}
+                      title="Edit Text"
+                    >
+                      <div className="w-full h-full rounded-full bg-green-500/80 hover:bg-green-600/90 border-2 border-white/50 shadow-lg backdrop-blur-sm flex items-center justify-center transition-all group-hover:scale-110">
+                        <Edit className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                    
+                    {/* Delete button */}
+                    <div
+                      className="absolute cursor-pointer group"
+                      style={{
+                        left: `${5}px`,
+                        top: `${-45}px`,
+                        width: '32px',
+                        height: '32px',
+                        animation: 'slideIn 0.25s ease-out',
+                      }}
+                      onClick={() => {
+                        // Remove from history or remote actions
+                        setHistory(prev => prev.filter(a => a.id !== textBound.id));
+                        setRemoteActions(prev => prev.filter(a => a.id !== textBound.id));
+                        setTextBounds(prev => prev.filter(tb => tb.id !== textBound.id));
+                        setExpandedControlId(null);
+                        
+                        // Broadcast deletion
+                        const encoder = new TextEncoder();
+                        const data = encoder.encode(JSON.stringify({ 
+                          type: "deleteAnnotation", 
+                          id: textBound.id 
+                        }));
+                        room.localParticipant.publishData(data, { reliable: true });
+                      }}
+                      title="Delete Text"
+                    >
+                      <div className="w-full h-full rounded-full bg-red-500/80 hover:bg-red-600/90 border-2 border-white/50 shadow-lg backdrop-blur-sm flex items-center justify-center transition-all group-hover:scale-110">
+                        <Trash2 className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                    
+                    {/* Drag button */}
+                    <div
+                      className="absolute cursor-move group"
+                      style={{
+                        left: `${15}px`,
+                        top: `${25}px`,
+                        width: '32px',
+                        height: '32px',
+                        animation: 'slideIn 0.3s ease-out',
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        setDraggingTextId(textBound.id);
+                        const canvas = canvasRef.current;
+                        if (canvas) {
+                          const rect = canvas.getBoundingClientRect();
+                          setDragOffset({
+                            x: e.clientX - rect.left - textBound.bounds.x,
+                            y: e.clientY - rect.top - textBound.bounds.y,
+                          });
+                        }
+                        setExpandedControlId(null);
+                      }}
+                      title="Drag Text"
+                    >
+                      <div className="w-full h-full rounded-full bg-purple-500/80 hover:bg-purple-600/90 border-2 border-white/50 shadow-lg backdrop-blur-sm flex items-center justify-center transition-all group-hover:scale-110">
+                        <GripVertical className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Text Input Overlay - Direct on-screen typing */}
       {isTextInputVisible && textInputPosition && !viewOnly && (
@@ -1516,6 +1795,17 @@ export default function AnnotationOverlay({
           to {
             opacity: 0;
             transform: translate(-50%, -10px);
+          }
+        }
+        
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: scale(0.5);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
           }
         }
         
