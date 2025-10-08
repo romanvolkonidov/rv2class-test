@@ -623,8 +623,9 @@ export default function CustomControlBar({
     <div 
       className={cn(
         "fixed bottom-4 left-1/2 -translate-x-1/2 transition-all duration-300",
-        // Increase z-index when annotations are active to stay above canvas (z-50) and toolbar (z-60)
-        showAnnotations ? "z-[61]" : "z-20",
+        // Increase z-index when annotations or whiteboard are active to ensure device menus are always visible
+        // Annotation overlay uses up to z-[70], so we use z-[100] to ensure device menus stay on top
+        (showAnnotations || showWhiteboard) ? "z-[100]" : "z-20",
         // Mobile: full width with padding, Desktop: auto width
         "w-full max-w-[95vw] md:max-w-none md:w-auto px-2 md:px-0",
         isControlBarVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16 pointer-events-none"
