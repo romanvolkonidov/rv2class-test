@@ -44,7 +44,7 @@ export async function initializeNoiseSuppressor(): Promise<void> {
     // Load the RNNoise WASM binary
     wasmBinary = await loadRnnoise({
       url: 'https://cdn.jsdelivr.net/npm/@sapphi-red/web-noise-suppressor@0.3.5/dist/rnnoise.wasm',
-      simdUrl: 'https://cdn.jsdelivr.net/npm/@sapphi-red/web-noise-suppressor@0.3.5/dist/rnnoise-simd.wasm',
+      simdUrl: 'https://cdn.jsdelivr.net/npm/@sapphi-red/web-noise-suppressor@0.3.5/dist/rnnoise_simd.wasm',
     });
     
     isInitialized = true;
@@ -88,18 +88,28 @@ export async function applyNoiseSuppression(
     // after the user has interacted with the page (e.g., joining a room)
     if (!audioContext) {
       try {
-        audioContext = new AudioContext();
+        audioContext = new AudioContext({ sampleRate: 48000 }); // RNNoise requires 48kHz
         // Resume context if it's suspended (required by browser autoplay policy)
         if (audioContext.state === 'suspended') {
           await audioContext.resume();
         }
-        console.log('✅ AudioContext created and resumed');
+        console.log('✅ AudioContext created (48kHz) and resumed');
       } catch (audioContextError) {
         console.error('❌ Failed to create AudioContext:', audioContextError);
         console.warn('⚠️ This usually means the page needs a user interaction first');
         throw audioContextError;
       }
     }
+
+    // Load AudioWorklet module
+    // The library exports the worklet path, we need to load it manually
+    console.log('📦 Loading RNNoise AudioWorklet module...');
+    const workletPath = new URL(
+      '@sapphi-red/web-noise-suppressor/rnnoiseWorklet.js',
+      import.meta.url
+    ).href;
+    await audioContext.audioWorklet.addModule(workletPath);
+    console.log('✅ AudioWorklet module loaded');
 
     // Get the audio track
     const audioTrack = audioStream.getAudioTracks()[0];
@@ -112,9 +122,10 @@ export async function applyNoiseSuppression(
     const source = audioContext.createMediaStreamSource(audioStream);
     
     // Create RNNoise worklet node
+    console.log('🎛️ Creating RNNoise worklet node...');
     const rnnoiseNode = new RnnoiseWorkletNode(audioContext, {
       maxChannels: 1, // Mono audio for voice
-      wasmBinary: wasmBinary,
+      wasmBinary: wasmBinary!,
     });
 
     // Connect: source -> rnnoise -> destination
