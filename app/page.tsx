@@ -1,13 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Video, Users, UserCheck } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
-  const origin = typeof window === "undefined" ? "https://online.rv2class.com" : window.location.origin;
+  const [origin, setOrigin] = useState("https://online.rv2class.com"); // Default for SSR
+  
+  // Update origin on client side only
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+  
   const tutors = [
     { name: "Roman", room: "roman-room", studentPath: "/roman" },
     { name: "Violet", room: "violet-room", studentPath: "/violet" },
