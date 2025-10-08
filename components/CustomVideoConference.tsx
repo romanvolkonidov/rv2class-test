@@ -28,19 +28,17 @@ function DraggableThumbnailContainer({
   const [position, setPosition] = useState({ x: 10, y: 10 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [size, setSize] = useState({ width: 0, height: 0 }); // Auto size initially
+  const [scale, setScale] = useState(1.0); // Scale factor for proportional resizing
   const [isResizing, setIsResizing] = useState(false);
-  const [resizeMode, setResizeMode] = useState<string | null>(null); // 'e', 'w', 'n', 's', 'ne', 'nw', 'se', 'sw'
-  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0, posX: 0, posY: 0 });
+  const [resizeMode, setResizeMode] = useState<string | null>(null); // Only corner modes: 'ne', 'nw', 'se', 'sw'
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, scale: 1.0, posX: 0, posY: 0, width: 0, height: 0 });
   const [isHovered, setIsHovered] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
   const dragHandleRef = useRef<HTMLDivElement>(null);
 
-  // Minimum and maximum sizes
-  const MIN_WIDTH = 200;
-  const MIN_HEIGHT = 150;
-  const MAX_WIDTH = window.innerWidth - 40;
-  const MAX_HEIGHT = window.innerHeight - 40;
+  // Scale constraints (0.5x to 3x)
+  const MIN_SCALE = 0.5;
+  const MAX_SCALE = 3.0;
 
   // Handle resize start
   const handleResizeStart = (e: React.MouseEvent, mode: string) => {
@@ -54,10 +52,11 @@ function DraggableThumbnailContainer({
     setResizeStart({
       x: e.clientX,
       y: e.clientY,
-      width: element.offsetWidth,
-      height: element.offsetHeight,
+      scale: scale,
       posX: position.x,
       posY: position.y,
+      width: element.offsetWidth,
+      height: element.offsetHeight,
     });
   };
 
@@ -161,78 +160,58 @@ function DraggableThumbnailContainer({
       const deltaX = e.clientX - resizeStart.x;
       const deltaY = e.clientY - resizeStart.y;
       
-      let newWidth = resizeStart.width;
-      let newHeight = resizeStart.height;
+      let newScale = resizeStart.scale;
       let newX = resizeStart.posX;
       let newY = resizeStart.posY;
 
-      // Calculate aspect ratio from the starting size
-      const aspectRatio = resizeStart.width / resizeStart.height;
-
-      // Calculate new dimensions based on resize mode
-      // For corner resize modes (se, ne, sw, nw), maintain aspect ratio
-      if (resizeMode === 'se') { // Southeast (bottom-right corner) - proportional resize
-        // Use the larger delta to determine scale, maintaining aspect ratio
-        const scale = Math.max(
-          (resizeStart.width + deltaX) / resizeStart.width,
-          (resizeStart.height + deltaY) / resizeStart.height
-        );
-        newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width * scale));
-        newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height * scale));
+      // Calculate scale based on resize mode
+      // All corner modes maintain aspect ratio by scaling proportionally
+      if (resizeMode === 'se') { // Southeast (bottom-right corner) - scale from origin
+        // Use the larger delta to determine scale
+        const scaleX = (resizeStart.width + deltaX) / resizeStart.width;
+        const scaleY = (resizeStart.height + deltaY) / resizeStart.height;
+        const scaleFactor = Math.max(scaleX, scaleY);
+        newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, resizeStart.scale * scaleFactor));
       } else if (resizeMode === 'ne') { // Northeast (top-right corner)
-        const scale = Math.max(
-          (resizeStart.width + deltaX) / resizeStart.width,
-          (resizeStart.height - deltaY) / resizeStart.height
-        );
-        newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width * scale));
-        newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height * scale));
-        newY = resizeStart.posY - (newHeight - resizeStart.height);
+        const scaleX = (resizeStart.width + deltaX) / resizeStart.width;
+        const scaleY = (resizeStart.height - deltaY) / resizeStart.height;
+        const scaleFactor = Math.max(scaleX, scaleY);
+        newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, resizeStart.scale * scaleFactor));
+        // Adjust position for top anchor
+        const heightDiff = (resizeStart.height * newScale / resizeStart.scale) - resizeStart.height;
+        newY = resizeStart.posY - heightDiff;
       } else if (resizeMode === 'sw') { // Southwest (bottom-left corner)
-        const scale = Math.max(
-          (resizeStart.width - deltaX) / resizeStart.width,
-          (resizeStart.height + deltaY) / resizeStart.height
-        );
-        newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width * scale));
-        newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height * scale));
-        newX = resizeStart.posX - (newWidth - resizeStart.width);
+        const scaleX = (resizeStart.width - deltaX) / resizeStart.width;
+        const scaleY = (resizeStart.height + deltaY) / resizeStart.height;
+        const scaleFactor = Math.max(scaleX, scaleY);
+        newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, resizeStart.scale * scaleFactor));
+        // Adjust position for left anchor
+        const widthDiff = (resizeStart.width * newScale / resizeStart.scale) - resizeStart.width;
+        newX = resizeStart.posX - widthDiff;
       } else if (resizeMode === 'nw') { // Northwest (top-left corner)
-        const scale = Math.max(
-          (resizeStart.width - deltaX) / resizeStart.width,
-          (resizeStart.height - deltaY) / resizeStart.height
-        );
-        newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width * scale));
-        newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height * scale));
-        newX = resizeStart.posX - (newWidth - resizeStart.width);
-        newY = resizeStart.posY - (newHeight - resizeStart.height);
-      } else {
-        // Edge-only resizing (non-proportional)
-        if (resizeMode.includes('e')) { // East (right edge)
-          newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width + deltaX));
-        }
-        if (resizeMode.includes('w')) { // West (left edge)
-          const proposedWidth = resizeStart.width - deltaX;
-          if (proposedWidth >= MIN_WIDTH && proposedWidth <= MAX_WIDTH) {
-            newWidth = proposedWidth;
-            newX = resizeStart.posX + deltaX;
-          }
-        }
-        if (resizeMode.includes('s')) { // South (bottom edge)
-          newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height + deltaY));
-        }
-        if (resizeMode.includes('n')) { // North (top edge)
-          const proposedHeight = resizeStart.height - deltaY;
-          if (proposedHeight >= MIN_HEIGHT && proposedHeight <= MAX_HEIGHT) {
-            newHeight = proposedHeight;
-            newY = resizeStart.posY + deltaY;
-          }
-        }
+        const scaleX = (resizeStart.width - deltaX) / resizeStart.width;
+        const scaleY = (resizeStart.height - deltaY) / resizeStart.height;
+        const scaleFactor = Math.max(scaleX, scaleY);
+        newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, resizeStart.scale * scaleFactor));
+        // Adjust position for both top and left anchors
+        const widthDiff = (resizeStart.width * newScale / resizeStart.scale) - resizeStart.width;
+        const heightDiff = (resizeStart.height * newScale / resizeStart.scale) - resizeStart.height;
+        newX = resizeStart.posX - widthDiff;
+        newY = resizeStart.posY - heightDiff;
       }
 
-      // Ensure position stays within bounds
-      newX = Math.max(10, Math.min(newX, window.innerWidth - newWidth - 10));
-      newY = Math.max(10, Math.min(newY, window.innerHeight - newHeight - 10));
+      // Calculate new dimensions based on scale
+      const element = elementRef.current;
+      if (element) {
+        const newWidth = resizeStart.width * (newScale / resizeStart.scale);
+        const newHeight = resizeStart.height * (newScale / resizeStart.scale);
+        
+        // Ensure position stays within bounds
+        newX = Math.max(10, Math.min(newX, window.innerWidth - newWidth - 10));
+        newY = Math.max(10, Math.min(newY, window.innerHeight - newHeight - 10));
+      }
 
-      setSize({ width: newWidth, height: newHeight });
+      setScale(newScale);
       setPosition({ x: newX, y: newY });
     };
 
@@ -265,39 +244,17 @@ function DraggableThumbnailContainer({
         position: 'fixed',
         left: 0,
         top: 0,
-        transform: `translate(${position.x}px, ${position.y}px)`,
-        width: size.width > 0 ? `${size.width}px` : 'auto',
-        height: size.height > 0 ? `${size.height}px` : 'auto',
+        transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+        transformOrigin: 'top left',
         willChange: isDragging || isResizing ? 'transform' : 'auto',
         WebkitUserSelect: 'none',
         userSelect: 'none',
       }}
     >
       {/* Resize handles - only visible on hover (desktop) */}
+      {/* Only corner handles for proportional resizing */}
       {(isHovered || isResizing) && !isDragging && !isMinimized && (
         <>
-          {/* Edge handles */}
-          <div
-            className="absolute top-0 left-0 right-0 h-2 cursor-n-resize hover:bg-blue-500/30 transition-colors"
-            onMouseDown={(e) => handleResizeStart(e, 'n')}
-            style={{ zIndex: 1000 }}
-          />
-          <div
-            className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize hover:bg-blue-500/30 transition-colors"
-            onMouseDown={(e) => handleResizeStart(e, 's')}
-            style={{ zIndex: 1000 }}
-          />
-          <div
-            className="absolute top-0 bottom-0 left-0 w-2 cursor-w-resize hover:bg-blue-500/30 transition-colors"
-            onMouseDown={(e) => handleResizeStart(e, 'w')}
-            style={{ zIndex: 1000 }}
-          />
-          <div
-            className="absolute top-0 bottom-0 right-0 w-2 cursor-e-resize hover:bg-blue-500/30 transition-colors"
-            onMouseDown={(e) => handleResizeStart(e, 'e')}
-            style={{ zIndex: 1000 }}
-          />
-          
           {/* Corner handles - larger hit area */}
           <div
             className="absolute top-0 left-0 w-4 h-4 cursor-nw-resize hover:bg-blue-500/50 transition-colors rounded-tl-lg"
@@ -320,9 +277,7 @@ function DraggableThumbnailContainer({
             style={{ zIndex: 1001 }}
           />
         </>
-      )}
-
-      {/* Control bar with buttons */}
+      )}      {/* Control bar with buttons */}
       <div className="bg-black/60 backdrop-blur-md rounded-t-lg border border-white/20 border-b-0 px-2 py-1 flex items-center gap-2">
         {/* Drag handle */}
         <div 
@@ -382,7 +337,6 @@ function DraggableThumbnailContainer({
           className="bg-black/40 backdrop-blur-md rounded-b-lg border border-white/20 p-2 flex gap-2 items-start overflow-auto"
           style={{
             maxWidth: '100%',
-            maxHeight: size.height > 0 ? `${size.height - 50}px` : 'none', // Account for control bar height
           }}
         >
           {children}
