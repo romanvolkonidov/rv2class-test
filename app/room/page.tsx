@@ -751,6 +751,7 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
           <ChatPanel 
             onClose={toggleChat}
             isClosing={chatClosing}
+            roomName={roomName}
           />
         )}
 

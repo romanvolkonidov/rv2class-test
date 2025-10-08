@@ -1,28 +1,122 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useChat, useRoomContext } from "@livekit/components-react";
 import { Button } from "@/components/ui/button";
 import { X, Send, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { loadChatHistory, saveChatMessage, ChatMessage } from "@/lib/firebase";
 
-export default function ChatPanel({ onClose, isClosing: externalIsClosing = false }: { onClose?: () => void; isClosing?: boolean }) {
+interface ChatPanelProps {
+  onClose?: () => void;
+  isClosing?: boolean;
+  roomName: string;
+}
+
+export default function ChatPanel({ onClose, isClosing: externalIsClosing = false, roomName }: ChatPanelProps) {
   const room = useRoomContext();
-  const { chatMessages, send } = useChat();
+  const { chatMessages: livekitMessages, send } = useChat();
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [internalIsClosing, setInternalIsClosing] = useState(false);
+  const [firebaseMessages, setFirebaseMessages] = useState<ChatMessage[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const savedMessageIdsRef = useRef<Set<string>>(new Set());
 
   const localParticipantName = room.localParticipant?.identity || "You";
   
   // Use external or internal closing state
   const isClosing = externalIsClosing || internalIsClosing;
 
+  // Load chat history from Firebase on mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!roomName) {
+        setIsLoadingHistory(false);
+        return;
+      }
+      
+      try {
+        console.log("📚 Loading chat history for room:", roomName);
+        const history = await loadChatHistory(roomName);
+        setFirebaseMessages(history);
+        console.log(`✅ Loaded ${history.length} messages from history`);
+      } catch (error) {
+        console.error("❌ Failed to load chat history:", error);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    loadHistory();
+  }, [roomName]);
+
+  // Save LiveKit messages to Firebase when they arrive
+  useEffect(() => {
+    const saveNewMessages = async () => {
+      if (!roomName || livekitMessages.length === 0) return;
+
+      // Save new messages that haven't been saved yet
+      for (const msg of livekitMessages) {
+        const messageId = `${msg.from?.identity}-${msg.timestamp}`;
+        
+        if (!savedMessageIdsRef.current.has(messageId)) {
+          try {
+            await saveChatMessage(
+              roomName,
+              msg.from?.identity || msg.from?.name || "Unknown",
+              msg.message,
+              msg.timestamp
+            );
+            savedMessageIdsRef.current.add(messageId);
+          } catch (error) {
+            console.error("❌ Failed to save message to Firebase:", error);
+          }
+        }
+      }
+    };
+
+    saveNewMessages();
+  }, [livekitMessages, roomName]);
+
+  // Merge Firebase history with LiveKit messages, removing duplicates
+  const allMessages = useMemo(() => {
+    const messagesMap = new Map();
+
+    // Add Firebase messages first (older messages)
+    firebaseMessages.forEach((msg) => {
+      const key = `${msg.from}-${msg.timestamp}`;
+      messagesMap.set(key, {
+        id: msg.id || key,
+        message: msg.message,
+        timestamp: msg.timestamp,
+        from: {
+          identity: msg.from,
+          name: msg.from
+        }
+      });
+    });
+
+    // Add LiveKit messages (real-time messages)
+    livekitMessages.forEach((msg) => {
+      const key = `${msg.from?.identity}-${msg.timestamp}`;
+      // Only add if not already in map (prevents duplicates)
+      if (!messagesMap.has(key)) {
+        messagesMap.set(key, msg);
+      }
+    });
+
+    // Convert to array and sort by timestamp
+    const merged = Array.from(messagesMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    
+    return merged;
+  }, [firebaseMessages, livekitMessages]);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
+  }, [allMessages]);
 
   // Focus input when chat opens
   useEffect(() => {
@@ -95,14 +189,19 @@ export default function ChatPanel({ onClose, isClosing: externalIsClosing = fals
         <div className="flex flex-col h-[50vh] md:h-96 max-h-[600px]">
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 overscroll-contain">
-            {chatMessages.length === 0 ? (
+            {isLoadingHistory ? (
+              <div className="text-center text-gray-300/60 py-8">
+                <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50 animate-pulse" />
+                <p className="text-sm">Loading chat history...</p>
+              </div>
+            ) : allMessages.length === 0 ? (
               <div className="text-center text-gray-300/60 py-8">
                 <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No messages yet</p>
                 <p className="text-xs mt-1">Start the conversation!</p>
               </div>
             ) : (
-              chatMessages.map((msg) => {
+              allMessages.map((msg) => {
                 const isLocal = msg.from?.identity === room.localParticipant?.identity;
                 const senderName = msg.from?.identity || msg.from?.name || "Unknown";
                 

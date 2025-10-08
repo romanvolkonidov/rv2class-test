@@ -366,4 +366,72 @@ export const completeHomework = async (
   }
 };
 
+// Chat Message interface
+export interface ChatMessage {
+  id?: string;
+  roomName: string; // Tutor's room
+  from: string; // Sender's identity (name)
+  message: string;
+  timestamp: number;
+  createdAt?: any; // Firestore timestamp
+}
+
+// Save a chat message to Firebase
+export const saveChatMessage = async (
+  roomName: string,
+  from: string,
+  message: string,
+  timestamp: number
+): Promise<void> => {
+  try {
+    const chatData: ChatMessage = {
+      roomName,
+      from,
+      message,
+      timestamp,
+      createdAt: serverTimestamp()
+    };
+
+    await addDoc(collection(db, "chatMessages"), chatData);
+    console.log("💬 Chat message saved to Firebase:", { roomName, from });
+  } catch (error) {
+    console.error("❌ Error saving chat message:", error);
+    throw error;
+  }
+};
+
+// Load chat history for a room
+export const loadChatHistory = async (roomName: string): Promise<ChatMessage[]> => {
+  try {
+    const q = query(
+      collection(db, "chatMessages"),
+      where("roomName", "==", roomName)
+    );
+    
+    const snapshot = await getDocs(q);
+    const messages: ChatMessage[] = [];
+    
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      messages.push({
+        id: doc.id,
+        roomName: data.roomName,
+        from: data.from,
+        message: data.message,
+        timestamp: data.timestamp,
+        createdAt: data.createdAt
+      });
+    });
+
+    // Sort by timestamp (oldest first)
+    messages.sort((a, b) => a.timestamp - b.timestamp);
+    
+    console.log(`💬 Loaded ${messages.length} chat messages for room: ${roomName}`);
+    return messages;
+  } catch (error) {
+    console.error("❌ Error loading chat history:", error);
+    return [];
+  }
+};
+
 export { app, auth, db };
