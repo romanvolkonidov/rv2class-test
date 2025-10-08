@@ -28,8 +28,38 @@ function DraggableThumbnailContainer({
   const [position, setPosition] = useState({ x: 10, y: 10 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [size, setSize] = useState({ width: 0, height: 0 }); // Auto size initially
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeMode, setResizeMode] = useState<string | null>(null); // 'e', 'w', 'n', 's', 'ne', 'nw', 'se', 'sw'
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0, posX: 0, posY: 0 });
+  const [isHovered, setIsHovered] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
   const dragHandleRef = useRef<HTMLDivElement>(null);
+
+  // Minimum and maximum sizes
+  const MIN_WIDTH = 200;
+  const MIN_HEIGHT = 150;
+  const MAX_WIDTH = window.innerWidth - 40;
+  const MAX_HEIGHT = window.innerHeight - 40;
+
+  // Handle resize start
+  const handleResizeStart = (e: React.MouseEvent, mode: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const element = elementRef.current;
+    if (!element) return;
+
+    setIsResizing(true);
+    setResizeMode(mode);
+    setResizeStart({
+      x: e.clientX,
+      y: e.clientY,
+      width: element.offsetWidth,
+      height: element.offsetHeight,
+      posX: position.x,
+      posY: position.y,
+    });
+  };
 
   // Mouse drag handlers - only drag handle is draggable
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -121,11 +151,72 @@ function DraggableThumbnailContainer({
     };
   }, [isDragging, dragStart, updatePosition]);
 
+  // Handle resizing
+  useEffect(() => {
+    if (!isResizing || !resizeMode) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      e.preventDefault();
+      
+      const deltaX = e.clientX - resizeStart.x;
+      const deltaY = e.clientY - resizeStart.y;
+      
+      let newWidth = resizeStart.width;
+      let newHeight = resizeStart.height;
+      let newX = resizeStart.posX;
+      let newY = resizeStart.posY;
+
+      // Calculate new dimensions based on resize mode
+      if (resizeMode.includes('e')) { // East (right edge)
+        newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width + deltaX));
+      }
+      if (resizeMode.includes('w')) { // West (left edge)
+        const proposedWidth = resizeStart.width - deltaX;
+        if (proposedWidth >= MIN_WIDTH && proposedWidth <= MAX_WIDTH) {
+          newWidth = proposedWidth;
+          newX = resizeStart.posX + deltaX;
+        }
+      }
+      if (resizeMode.includes('s')) { // South (bottom edge)
+        newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height + deltaY));
+      }
+      if (resizeMode.includes('n')) { // North (top edge)
+        const proposedHeight = resizeStart.height - deltaY;
+        if (proposedHeight >= MIN_HEIGHT && proposedHeight <= MAX_HEIGHT) {
+          newHeight = proposedHeight;
+          newY = resizeStart.posY + deltaY;
+        }
+      }
+
+      // Ensure position stays within bounds
+      newX = Math.max(10, Math.min(newX, window.innerWidth - newWidth - 10));
+      newY = Math.max(10, Math.min(newY, window.innerHeight - newHeight - 10));
+
+      setSize({ width: newWidth, height: newHeight });
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      setResizeMode(null);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, resizeMode, resizeStart]);
+
   return (
     <div
       ref={elementRef}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => !isResizing && setIsHovered(false)}
       className={cn(
         "select-none",
         isDragging ? "z-[100]" : "z-10"
@@ -135,11 +226,62 @@ function DraggableThumbnailContainer({
         left: 0,
         top: 0,
         transform: `translate(${position.x}px, ${position.y}px)`,
-        willChange: isDragging ? 'transform' : 'auto',
+        width: size.width > 0 ? `${size.width}px` : 'auto',
+        height: size.height > 0 ? `${size.height}px` : 'auto',
+        willChange: isDragging || isResizing ? 'transform' : 'auto',
         WebkitUserSelect: 'none',
         userSelect: 'none',
       }}
     >
+      {/* Resize handles - only visible on hover (desktop) */}
+      {(isHovered || isResizing) && !isDragging && !isMinimized && (
+        <>
+          {/* Edge handles */}
+          <div
+            className="absolute top-0 left-0 right-0 h-2 cursor-n-resize hover:bg-blue-500/30 transition-colors"
+            onMouseDown={(e) => handleResizeStart(e, 'n')}
+            style={{ zIndex: 1000 }}
+          />
+          <div
+            className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize hover:bg-blue-500/30 transition-colors"
+            onMouseDown={(e) => handleResizeStart(e, 's')}
+            style={{ zIndex: 1000 }}
+          />
+          <div
+            className="absolute top-0 bottom-0 left-0 w-2 cursor-w-resize hover:bg-blue-500/30 transition-colors"
+            onMouseDown={(e) => handleResizeStart(e, 'w')}
+            style={{ zIndex: 1000 }}
+          />
+          <div
+            className="absolute top-0 bottom-0 right-0 w-2 cursor-e-resize hover:bg-blue-500/30 transition-colors"
+            onMouseDown={(e) => handleResizeStart(e, 'e')}
+            style={{ zIndex: 1000 }}
+          />
+          
+          {/* Corner handles - larger hit area */}
+          <div
+            className="absolute top-0 left-0 w-4 h-4 cursor-nw-resize hover:bg-blue-500/50 transition-colors rounded-tl-lg"
+            onMouseDown={(e) => handleResizeStart(e, 'nw')}
+            style={{ zIndex: 1001 }}
+          />
+          <div
+            className="absolute top-0 right-0 w-4 h-4 cursor-ne-resize hover:bg-blue-500/50 transition-colors rounded-tr-lg"
+            onMouseDown={(e) => handleResizeStart(e, 'ne')}
+            style={{ zIndex: 1001 }}
+          />
+          <div
+            className="absolute bottom-0 left-0 w-4 h-4 cursor-sw-resize hover:bg-blue-500/50 transition-colors rounded-bl-lg"
+            onMouseDown={(e) => handleResizeStart(e, 'sw')}
+            style={{ zIndex: 1001 }}
+          />
+          <div
+            className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize hover:bg-blue-500/50 transition-colors rounded-br-lg"
+            onMouseDown={(e) => handleResizeStart(e, 'se')}
+            style={{ zIndex: 1001 }}
+          />
+        </>
+      )}
+
       {/* Control bar with buttons */}
       <div className="bg-black/60 backdrop-blur-md rounded-t-lg border border-white/20 border-b-0 px-2 py-1 flex items-center gap-2">
         {/* Drag handle */}
@@ -196,7 +338,13 @@ function DraggableThumbnailContainer({
 
       {/* Thumbnails container - hidden when minimized */}
       {!isMinimized && (
-        <div className="bg-black/40 backdrop-blur-md rounded-b-lg border border-white/20 p-2 flex gap-2 items-start">
+        <div 
+          className="bg-black/40 backdrop-blur-md rounded-b-lg border border-white/20 p-2 flex gap-2 items-start overflow-auto"
+          style={{
+            maxWidth: '100%',
+            maxHeight: size.height > 0 ? `${size.height - 50}px` : 'none', // Account for control bar height
+          }}
+        >
           {children}
         </div>
       )}

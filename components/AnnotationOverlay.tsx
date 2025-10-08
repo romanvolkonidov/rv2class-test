@@ -1194,134 +1194,138 @@ export default function AnnotationOverlay({
             
             return (
               <div key={textBound.id}>
-                {/* Main control circle */}
+                {/* Hover detection area - larger invisible area that encompasses all circles */}
                 <div
-                  className="absolute pointer-events-auto cursor-pointer transition-all duration-200"
+                  className="absolute pointer-events-auto"
                   style={{
-                    left: `${textBound.controlCirclePos.x - controlSize / 2}px`,
-                    top: `${textBound.controlCirclePos.y - controlSize / 2}px`,
-                    width: `${controlSize}px`,
-                    height: `${controlSize}px`,
+                    left: `${textBound.controlCirclePos.x - 60}px`,
+                    top: `${textBound.controlCirclePos.y - 60}px`,
+                    width: '120px',
+                    height: '120px',
                   }}
                   onMouseEnter={() => setExpandedControlId(textBound.id)}
-                  onMouseLeave={() => {
-                    // Delay hiding to allow moving to sub-circles
-                    setTimeout(() => {
-                      setExpandedControlId(prev => prev === textBound.id ? null : prev);
-                    }, 100);
+                  onMouseLeave={() => setExpandedControlId(null)}
+                  onTouchStart={(e) => {
+                    e.stopPropagation();
+                    setExpandedControlId(textBound.id);
                   }}
-                  onTouchStart={() => setExpandedControlId(textBound.id)}
                 >
+                  {/* Main control circle */}
                   <div
-                    className="w-full h-full rounded-full bg-blue-500/80 hover:bg-blue-600/90 border-2 border-white/50 shadow-lg backdrop-blur-sm transition-all"
+                    className="absolute cursor-pointer transition-all duration-200"
                     style={{
-                      transform: isExpanded ? 'scale(1.2)' : 'scale(1)',
+                      left: `${60 - controlSize / 2}px`,
+                      top: `${60 - controlSize / 2}px`,
+                      width: `${controlSize}px`,
+                      height: `${controlSize}px`,
                     }}
-                  />
-                </div>
-                
-                {/* Expanded menu circles */}
-                {isExpanded && (
-                  <div
-                    className="absolute pointer-events-auto"
-                    style={{
-                      left: `${textBound.controlCirclePos.x}px`,
-                      top: `${textBound.controlCirclePos.y}px`,
-                    }}
-                    onMouseLeave={() => setExpandedControlId(null)}
                   >
-                    {/* Edit button */}
                     <div
-                      className="absolute cursor-pointer group"
+                      className="w-full h-full rounded-full bg-blue-500/80 hover:bg-blue-600/90 border-2 border-white/50 shadow-lg backdrop-blur-sm transition-all"
                       style={{
-                        left: `${-45}px`,
-                        top: `${-5}px`,
-                        width: '32px',
-                        height: '32px',
-                        animation: 'slideIn 0.2s ease-out',
+                        transform: isExpanded ? 'scale(1.2)' : 'scale(1)',
                       }}
-                      onClick={() => {
-                        const clickedText = textBound.action;
-                        setTextInputPosition(clickedText.startPoint!);
-                        setTextInput(clickedText.text || "");
-                        const metrics = metricsRef.current;
-                        const effectiveWidth = metrics.contentWidth || metrics.cssWidth || 1;
-                        setFontSize(clickedText.fontSize ? clickedText.fontSize * effectiveWidth : 24);
-                        setColor(clickedText.color);
-                        setIsTextInputVisible(true);
-                        setEditingTextId(clickedText.id || null);
-                        setExpandedControlId(null);
-                      }}
-                      title="Edit Text"
-                    >
-                      <div className="w-full h-full rounded-full bg-green-500/80 hover:bg-green-600/90 border-2 border-white/50 shadow-lg backdrop-blur-sm flex items-center justify-center transition-all group-hover:scale-110">
-                        <Edit className="w-4 h-4 text-white" />
-                      </div>
-                    </div>
-                    
-                    {/* Delete button */}
-                    <div
-                      className="absolute cursor-pointer group"
-                      style={{
-                        left: `${5}px`,
-                        top: `${-45}px`,
-                        width: '32px',
-                        height: '32px',
-                        animation: 'slideIn 0.25s ease-out',
-                      }}
-                      onClick={() => {
-                        // Remove from history or remote actions
-                        setHistory(prev => prev.filter(a => a.id !== textBound.id));
-                        setRemoteActions(prev => prev.filter(a => a.id !== textBound.id));
-                        setTextBounds(prev => prev.filter(tb => tb.id !== textBound.id));
-                        setExpandedControlId(null);
-                        
-                        // Broadcast deletion
-                        const encoder = new TextEncoder();
-                        const data = encoder.encode(JSON.stringify({ 
-                          type: "deleteAnnotation", 
-                          id: textBound.id 
-                        }));
-                        room.localParticipant.publishData(data, { reliable: true });
-                      }}
-                      title="Delete Text"
-                    >
-                      <div className="w-full h-full rounded-full bg-red-500/80 hover:bg-red-600/90 border-2 border-white/50 shadow-lg backdrop-blur-sm flex items-center justify-center transition-all group-hover:scale-110">
-                        <Trash2 className="w-4 h-4 text-white" />
-                      </div>
-                    </div>
-                    
-                    {/* Drag button */}
-                    <div
-                      className="absolute cursor-move group"
-                      style={{
-                        left: `${15}px`,
-                        top: `${25}px`,
-                        width: '32px',
-                        height: '32px',
-                        animation: 'slideIn 0.3s ease-out',
-                      }}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        setDraggingTextId(textBound.id);
-                        const canvas = canvasRef.current;
-                        if (canvas) {
-                          const rect = canvas.getBoundingClientRect();
-                          setDragOffset({
-                            x: e.clientX - rect.left - textBound.bounds.x,
-                            y: e.clientY - rect.top - textBound.bounds.y,
-                          });
-                        }
-                        setExpandedControlId(null);
-                      }}
-                      title="Drag Text"
-                    >
-                      <div className="w-full h-full rounded-full bg-purple-500/80 hover:bg-purple-600/90 border-2 border-white/50 shadow-lg backdrop-blur-sm flex items-center justify-center transition-all group-hover:scale-110">
-                        <GripVertical className="w-4 h-4 text-white" />
-                      </div>
-                    </div>
+                    />
                   </div>
-                )}
+                  
+                  {/* Expanded menu circles */}
+                  {isExpanded && (
+                    <>
+                      {/* Edit button */}
+                      <div
+                        className="absolute cursor-pointer group"
+                        style={{
+                          left: `${60 - 45}px`,
+                          top: `${60 - 5}px`,
+                          width: '32px',
+                          height: '32px',
+                          animation: 'slideIn 0.2s ease-out',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const clickedText = textBound.action;
+                          setTextInputPosition(clickedText.startPoint!);
+                          setTextInput(clickedText.text || "");
+                          const metrics = metricsRef.current;
+                          const effectiveWidth = metrics.contentWidth || metrics.cssWidth || 1;
+                          setFontSize(clickedText.fontSize ? clickedText.fontSize * effectiveWidth : 24);
+                          setColor(clickedText.color);
+                          setIsTextInputVisible(true);
+                          setEditingTextId(clickedText.id || null);
+                          setExpandedControlId(null);
+                        }}
+                        title="Edit Text"
+                      >
+                        <div className="w-full h-full rounded-full bg-green-500/80 hover:bg-green-600/90 border-2 border-white/50 shadow-lg backdrop-blur-sm flex items-center justify-center transition-all group-hover:scale-110">
+                          <Edit className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      
+                      {/* Delete button */}
+                      <div
+                        className="absolute cursor-pointer group"
+                        style={{
+                          left: `${60 + 5}px`,
+                          top: `${60 - 45}px`,
+                          width: '32px',
+                          height: '32px',
+                          animation: 'slideIn 0.25s ease-out',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Remove from history or remote actions
+                          setHistory(prev => prev.filter(a => a.id !== textBound.id));
+                          setRemoteActions(prev => prev.filter(a => a.id !== textBound.id));
+                          setTextBounds(prev => prev.filter(tb => tb.id !== textBound.id));
+                          setExpandedControlId(null);
+                          
+                          // Broadcast deletion
+                          const encoder = new TextEncoder();
+                          const data = encoder.encode(JSON.stringify({ 
+                            type: "deleteAnnotation", 
+                            id: textBound.id 
+                          }));
+                          room.localParticipant.publishData(data, { reliable: true });
+                        }}
+                        title="Delete Text"
+                      >
+                        <div className="w-full h-full rounded-full bg-red-500/80 hover:bg-red-600/90 border-2 border-white/50 shadow-lg backdrop-blur-sm flex items-center justify-center transition-all group-hover:scale-110">
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      
+                      {/* Drag button */}
+                      <div
+                        className="absolute cursor-move group"
+                        style={{
+                          left: `${60 + 15}px`,
+                          top: `${60 + 25}px`,
+                          width: '32px',
+                          height: '32px',
+                          animation: 'slideIn 0.3s ease-out',
+                        }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          setDraggingTextId(textBound.id);
+                          const canvas = canvasRef.current;
+                          if (canvas) {
+                            const rect = canvas.getBoundingClientRect();
+                            setDragOffset({
+                              x: e.clientX - rect.left - textBound.bounds.x,
+                              y: e.clientY - rect.top - textBound.bounds.y,
+                            });
+                          }
+                          setExpandedControlId(null);
+                        }}
+                        title="Drag Text"
+                      >
+                        <div className="w-full h-full rounded-full bg-purple-500/80 hover:bg-purple-600/90 border-2 border-white/50 shadow-lg backdrop-blur-sm flex items-center justify-center transition-all group-hover:scale-110">
+                          <GripVertical className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}
