@@ -98,23 +98,34 @@ export default function ChatPanel({ onClose, isClosing: externalIsClosing = fals
   }, [livekitMessages, roomName, activeParticipantIdentities]);
 
   // Merge Firebase history with LiveKit messages, remove duplicates
-  // Firebase messages are already filtered by recipient on load
+  // Filter to only show messages where all participants are currently present
   const allMessages = useMemo(() => {
     const messagesMap = new Map();
 
-    // Add Firebase messages first (already filtered by recipient)
+    // Add Firebase messages first, but only if all recipients are currently active
     firebaseMessages.forEach((msg) => {
-      const key = `${msg.from}-${msg.timestamp}`;
-      messagesMap.set(key, {
-        id: msg.id || key,
-        message: msg.message,
-        timestamp: msg.timestamp,
-        from: {
-          identity: msg.from,
-          name: msg.from
-        },
-        isGroupMessage: msg.isGroupMessage
-      });
+      // Check if all recipients from this message are currently in the room
+      const allRecipientsPresent = msg.recipients?.every(recipient => 
+        activeParticipantIdentities.has(recipient)
+      ) ?? false;
+
+      // Also check if the sender is present (unless it's the teacher)
+      const senderPresent = activeParticipantIdentities.has(msg.from);
+
+      // Only show message if all involved parties are currently present
+      if (allRecipientsPresent && senderPresent) {
+        const key = `${msg.from}-${msg.timestamp}`;
+        messagesMap.set(key, {
+          id: msg.id || key,
+          message: msg.message,
+          timestamp: msg.timestamp,
+          from: {
+            identity: msg.from,
+            name: msg.from
+          },
+          isGroupMessage: msg.isGroupMessage
+        });
+      }
     });
 
     // Add LiveKit messages (real-time messages) - all participants see real-time
@@ -129,9 +140,9 @@ export default function ChatPanel({ onClose, isClosing: externalIsClosing = fals
     // Convert to array and sort by timestamp
     const merged = Array.from(messagesMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     
-    console.log(`💬 Displaying ${merged.length} messages`);
+    console.log(`💬 Displaying ${merged.length} messages (filtered by active participants)`);
     return merged;
-  }, [firebaseMessages, livekitMessages]);
+  }, [firebaseMessages, livekitMessages, activeParticipantIdentities]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
