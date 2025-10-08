@@ -634,8 +634,9 @@ export default function CustomControlBar({
       <div className={cn(
         "flex items-center gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4",
         "rounded-2xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl",
-        // Make it scrollable on very small screens
-        "overflow-x-auto overflow-y-visible scrollbar-hide",
+        // CRITICAL: Allow overflow-y-visible so dropdowns can appear above without clipping
+        // Only enable horizontal scroll on very small screens
+        "overflow-x-auto scrollbar-hide",
         // Smooth scrolling on mobile
         "snap-x snap-mandatory"
       )}>
@@ -675,7 +676,7 @@ export default function CustomControlBar({
           
           {/* Microphone menu dropdown */}
           {showMicMenu && audioDevices.length > 1 && (
-            <div className="absolute bottom-full left-0 mb-2 w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-[9999]">
+            <div className="absolute bottom-full left-0 mb-3 w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-200">
               <div className="p-2 border-b border-white/10">
                 <p className="text-xs font-semibold text-white/70 uppercase tracking-wide px-2">Select Microphone</p>
               </div>
@@ -733,7 +734,7 @@ export default function CustomControlBar({
           
           {/* Camera menu dropdown */}
           {showCameraMenu && videoDevices.length > 1 && (
-            <div className="absolute bottom-full left-0 mb-2 w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-[9999]">
+            <div className="absolute bottom-full left-0 mb-3 w-64 max-h-60 overflow-y-auto bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-200">
               <div className="p-2 border-b border-white/10">
                 <p className="text-xs font-semibold text-white/70 uppercase tracking-wide px-2">Select Camera</p>
               </div>
