@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Loader2, Clock, UserCheck, Sparkles } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Loader2, Clock, UserCheck, Sparkles, Video, Mic } from "lucide-react";
 
 interface WaitingRoomProps {
   studentName: string;
@@ -63,6 +63,63 @@ const motivationalQuotes = [
 export default function WaitingRoom({ studentName, teacherName, onApproved }: WaitingRoomProps) {
   const [currentQuote, setCurrentQuote] = useState(0);
   const [dots, setDots] = useState("");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
+  const [hasVideo, setHasVideo] = useState(false);
+  const [hasAudio, setHasAudio] = useState(false);
+
+  // Start preview stream
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+
+    const startPreview = async () => {
+      try {
+        console.log('🎥 Starting waiting room preview...');
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30 },
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          }
+        });
+
+        setPreviewStream(stream);
+        setHasVideo(stream.getVideoTracks().length > 0);
+        setHasAudio(stream.getAudioTracks().length > 0);
+
+        // Attach to video element
+        if (videoRef.current && stream) {
+          videoRef.current.srcObject = stream;
+          console.log('✅ Preview stream attached to video element');
+        }
+      } catch (error) {
+        console.error('❌ Error starting preview:', error);
+        // Continue without preview - user already granted permissions earlier
+      }
+    };
+
+    startPreview();
+
+    // Cleanup function
+    return () => {
+      if (stream) {
+        console.log('🛑 Stopping waiting room preview...');
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  // Update video element when stream changes
+  useEffect(() => {
+    if (videoRef.current && previewStream) {
+      videoRef.current.srcObject = previewStream;
+    }
+  }, [previewStream]);
 
   // Rotate quotes every 8 seconds
   useEffect(() => {
@@ -97,23 +154,69 @@ export default function WaitingRoom({ studentName, teacherName, onApproved }: Wa
       </div>
 
       {/* Glass morphism card */}
-      <div className="max-w-2xl w-full backdrop-blur-2xl bg-white/60 border border-gray-200/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] rounded-3xl overflow-hidden relative z-10">
+      <div className="max-w-4xl w-full backdrop-blur-2xl bg-white/60 border border-gray-200/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] rounded-3xl overflow-hidden relative z-10">
         <div className="pt-12 pb-12 space-y-8 px-6">
-          {/* Animated Icon */}
-          <div className="flex justify-center">
-            <div className="relative">
-              {/* Outer spinning ring */}
-              <div className="absolute inset-0 animate-spin-slow">
-                <div className="h-32 w-32 rounded-full border-4 border-blue-200/40 border-t-blue-500"></div>
-              </div>
-              
-              {/* Inner pulsing circle */}
-              <div className="relative h-32 w-32 flex items-center justify-center">
-                <div className="absolute inset-4 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-sm rounded-full animate-pulse"></div>
-                <Clock className="relative h-16 w-16 text-blue-600 z-10 animate-bounce-slow" />
+          
+          {/* Video Preview Section */}
+          {previewStream && (
+            <div className="flex justify-center">
+              <div className="relative w-full max-w-md">
+                {/* Video preview with mirror effect */}
+                <div className="relative rounded-2xl overflow-hidden border-4 border-blue-200/50 shadow-xl">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-auto scale-x-[-1]"
+                    style={{ maxHeight: '360px', objectFit: 'cover' }}
+                  />
+                  
+                  {/* Student name overlay */}
+                  <div className="absolute bottom-3 left-3 px-4 py-2 rounded-lg bg-black/50 backdrop-blur-md border border-white/20">
+                    <p className="text-sm font-medium text-white">{studentName}</p>
+                  </div>
+                  
+                  {/* Status indicators */}
+                  <div className="absolute top-3 right-3 flex gap-2">
+                    {hasVideo && (
+                      <div className="p-2 rounded-lg bg-green-500/90 backdrop-blur-md border border-green-400/30">
+                        <Video className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                    {hasAudio && (
+                      <div className="p-2 rounded-lg bg-green-500/90 backdrop-blur-md border border-green-400/30">
+                        <Mic className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Preview label */}
+                <p className="text-center text-sm text-gray-600 mt-2">
+                  Так вас будет видеть учитель
+                </p>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Animated Icon - show only if no preview */}
+          {!previewStream && (
+            <div className="flex justify-center">
+              <div className="relative">
+                {/* Outer spinning ring */}
+                <div className="absolute inset-0 animate-spin-slow">
+                  <div className="h-32 w-32 rounded-full border-4 border-blue-200/40 border-t-blue-500"></div>
+                </div>
+                
+                {/* Inner pulsing circle */}
+                <div className="relative h-32 w-32 flex items-center justify-center">
+                  <div className="absolute inset-4 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-sm rounded-full animate-pulse"></div>
+                  <Clock className="relative h-16 w-16 text-blue-600 z-10 animate-bounce-slow" />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Status Text */}
           <div className="text-center space-y-4">

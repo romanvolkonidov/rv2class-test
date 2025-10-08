@@ -26,6 +26,47 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   const [chatClosing, setChatClosing] = useState(false);
   const [hasScreenShare, setHasScreenShare] = useState(false);
 
+  // CRITICAL: Ensure camera and microphone are enabled on room connection
+  useEffect(() => {
+    if (!room || !room.localParticipant) return;
+
+    const enableMediaOnConnect = async () => {
+      try {
+        console.log('🎥 Ensuring camera and microphone are enabled...');
+        
+        // Enable microphone
+        if (!room.localParticipant.isMicrophoneEnabled) {
+          await room.localParticipant.setMicrophoneEnabled(true);
+          console.log('✅ Microphone enabled');
+        } else {
+          console.log('✅ Microphone already enabled');
+        }
+        
+        // Enable camera
+        if (!room.localParticipant.isCameraEnabled) {
+          await room.localParticipant.setCameraEnabled(true);
+          console.log('✅ Camera enabled');
+        } else {
+          console.log('✅ Camera already enabled');
+        }
+      } catch (error) {
+        console.error('❌ Error enabling media:', error);
+      }
+    };
+
+    // Enable media when room is connected
+    if (room.state === 'connected') {
+      enableMediaOnConnect();
+    }
+
+    // Also enable when connection state changes to connected
+    room.on('connected', enableMediaOnConnect);
+
+    return () => {
+      room.off('connected', enableMediaOnConnect);
+    };
+  }, [room]);
+
   // Debug: Log room participants
   useEffect(() => {
     if (!room) return;
@@ -507,6 +548,8 @@ function RoomPage() {
           simulcast: false,
           // CRITICAL: Force constant bitrate (no adaptive reduction)
           stopMicTrackOnMute: false,
+          // CRITICAL: Ensure audio and video are published immediately
+          dtx: false,
         },
         videoCaptureDefaults: {
           resolution: VideoPresets.h720.resolution,
@@ -524,7 +567,7 @@ function RoomPage() {
         }
       }}
       onConnected={() => {
-        console.log('✅ Successfully connected to room - audio should work');
+        console.log('✅ Successfully connected to room - audio and video should be enabled');
       }}
       onDisconnected={() => {
         console.log('❌ Disconnected from room');
