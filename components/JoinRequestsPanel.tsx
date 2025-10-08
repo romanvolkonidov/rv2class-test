@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, X, Users, ChevronUp, ChevronDown } from "lucide-react";
 import { db } from "@/lib/firebase";
@@ -18,7 +18,24 @@ export default function JoinRequestsPanel({ roomName }: { roomName: string }) {
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [isExpanded, setIsExpanded] = useState(true);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previousRequestCountRef = useRef(0);
 
+  // Initialize audio element
+  useEffect(() => {
+    // Create audio element for notification sound
+    // Using a pleasant notification sound (you can replace with custom sound file)
+    audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi77eeeTRAMUKfj8LZjHAY4ktfzzHgrBSF1x/DhkD8KFF604+yqVRIKRp/g8r9sIAUsgs/y2Ik2CBlou+3mnk0QDFCn4/C2YxwGOJLX88x5KwUhdsfw4ZA/ChRftOPsqlUSCkWf4PK/bCAFLYLP8tmJNwgZaLvt5p5MEAxQp+PwtmMcBjiS1/PMeSsFIXbH8OGQP'); // notification beep
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Listen for join requests
   useEffect(() => {
     if (!roomName) return;
 
@@ -34,6 +51,18 @@ export default function JoinRequestsPanel({ roomName }: { roomName: string }) {
         ...doc.data(),
       })) as JoinRequest[];
 
+      // Play notification sound if new requests arrived (and not initial load)
+      if (newRequests.length > previousRequestCountRef.current && previousRequestCountRef.current > 0) {
+        console.log('🔔 New join request! Playing notification sound');
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(err => {
+            console.log('Audio play failed (may need user interaction):', err);
+          });
+        }
+      }
+      
+      previousRequestCountRef.current = newRequests.length;
       setRequests(newRequests);
 
       // Auto-expand if there are new requests
