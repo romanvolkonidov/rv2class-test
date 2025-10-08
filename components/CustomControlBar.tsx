@@ -493,34 +493,32 @@ export default function CustomControlBar({
           </GlassButton>
         )}
 
-        {/* Tutor-only controls */}
-        {isTutor && (
+        {/* Annotation button - Available to tutor always, or to student when they're screen sharing */}
+        {(isTutor || isScreenSharing) && !showWhiteboard && onToggleAnnotations && (
           <>
             <div className="w-px h-10 bg-white/20 mx-2" />
-            
-            {!showWhiteboard && onToggleAnnotations && (
-              <>
-                {console.log('🔴 Rendering annotate button with:', { hasScreenShare, showAnnotations, success: hasScreenShare })}
-                <GlassButton
-                  onClick={onToggleAnnotations}
-                  active={showAnnotations}
-                  success={hasScreenShare}
-                  title={showAnnotations ? "Hide Annotations" : "Annotate Screen"}
-                >
-                  <Pencil className="w-5 h-5" />
-                </GlassButton>
-              </>
-            )}
+            <GlassButton
+              onClick={onToggleAnnotations}
+              active={showAnnotations}
+              success={hasScreenShare}
+              title={showAnnotations ? "Hide Annotations" : "Annotate Screen"}
+            >
+              <Pencil className="w-5 h-5" />
+            </GlassButton>
+          </>
+        )}
 
-            {onToggleWhiteboard && (
-              <GlassButton
-                onClick={onToggleWhiteboard}
-                active={showWhiteboard}
-                title={showWhiteboard ? "Show Video" : "Open Whiteboard"}
-              >
-                <Square className="w-5 h-5" />
-              </GlassButton>
-            )}
+        {/* Whiteboard button - Tutor-only */}
+        {isTutor && onToggleWhiteboard && (
+          <>
+            <div className="w-px h-10 bg-white/20 mx-2" />
+            <GlassButton
+              onClick={onToggleWhiteboard}
+              active={showWhiteboard}
+              title={showWhiteboard ? "Show Video" : "Open Whiteboard"}
+            >
+              <Square className="w-5 h-5" />
+            </GlassButton>
           </>
         )}
 
