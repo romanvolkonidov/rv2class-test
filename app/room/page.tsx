@@ -659,10 +659,16 @@ function RoomPage() {
       }}
       onError={(error) => {
         console.error('❌ LiveKit Room Error:', error);
-        
+
+        const message = typeof error === 'string' ? error : (error as Error)?.message ?? '';
+
+        // Audio troubleshooting handlers
+        if (message.includes('audio') || message.includes('microphone')) {
+          alert('⚠️ Audio error detected. Please check microphone permissions and try refreshing.');
+        }
+
         // Check if it's a camera access error
-        if (error.message?.includes('Could not start video source') || 
-            error.message?.includes('NotReadableError')) {
+        if (message.includes('Could not start video source') || message.includes('NotReadableError')) {
           // Show user-friendly alert
           setTimeout(() => {
             alert("⚠️ Не удалось включить камеру!\n\n" +
@@ -708,13 +714,6 @@ function RoomPage() {
         adaptiveStream: false,
         // CRITICAL: Disable dynacast to maintain constant quality
         dynacast: false,
-      }}
-      // Audio troubleshooting handlers
-      onError={(error) => {
-        console.error('❌ LiveKit Room Error:', error);
-        if (error.message.includes('audio') || error.message.includes('microphone')) {
-          alert('⚠️ Audio error detected. Please check microphone permissions and try refreshing.');
-        }
       }}
       onConnected={() => {
         console.log('✅ Successfully connected to room - audio and video should be enabled');

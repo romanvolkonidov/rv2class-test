@@ -647,7 +647,7 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               placeholder="Type here..."
-              className="bg-white/10 backdrop-blur-sm border-2 border-blue-400 text-white placeholder-white/60 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none shadow-lg"
+              className="bg-white/90 backdrop-blur-sm border-2 border-blue-400 text-gray-900 placeholder-gray-500 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none shadow-lg"
               style={{
                 fontSize: `${fontSize}px`,
                 fontFamily: 'Arial, sans-serif',
@@ -665,14 +665,14 @@ export default function AnnotationOverlay({ onClose, viewOnly = false, isClosing
             />
             
             {/* Small control buttons below the input */}
-            <div className="absolute top-full left-0 mt-2 flex items-center gap-2 bg-black/30 backdrop-blur-xl rounded-lg p-2 border border-white/15">
+            <div className="absolute top-full left-0 mt-2 flex items-center gap-2 bg-black/70 backdrop-blur-xl rounded-lg p-2 border border-white/15">
               <input
                 type="number"
                 min="12"
                 max="72"
                 value={fontSize}
                 onChange={(e) => setFontSize(Number(e.target.value))}
-                className="w-14 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="w-14 px-2 py-1 bg-white/90 border border-white/20 rounded text-gray-900 text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-blue-400"
                 title="Font Size"
               />
               <Button
