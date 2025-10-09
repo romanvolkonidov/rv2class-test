@@ -7,6 +7,22 @@ import { Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, PhoneOff, Pencil,
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
+// Electron API type declarations
+declare global {
+  interface Window {
+    electronAPI?: {
+      isElectron: boolean;
+      getScreenSources: () => Promise<Array<{
+        id: string;
+        name: string;
+        thumbnail: string;
+        appIcon: string | null;
+      }>>;
+      getScreenStream: (sourceId: string, includeAudio: boolean) => Promise<any>;
+    };
+  }
+}
+
 interface CustomControlBarProps {
   isTutor?: boolean;
   showWhiteboard?: boolean;
@@ -396,20 +412,59 @@ export default function CustomControlBar({
       await localParticipant.setScreenShareEnabled(false);
     } else {
       try {
-        console.log('🖥️ Requesting ULTRA quality screen share (up to 4K @ 60fps with VP9)...');
+        let stream: MediaStream;
         
-        // Manual high-quality capture with explicit constraints
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: {
-            width: { ideal: 3840, max: 3840 },      // Request 4K
-            height: { ideal: 2160, max: 2160 },     // Request 4K height
-            frameRate: { ideal: 30, max: 60 },      // Up to 60fps
-            // Important: request the full resolution without any restrictions
-            aspectRatio: { ideal: 16/9 },           // Prefer widescreen but allow any
-          },
-          audio: true, // Capture system audio if available
-          // Note: preferCurrentTab is removed - let user choose naturally
-        } as any);
+        // Check if running in Electron desktop app
+        const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
+        
+        if (isElectron) {
+          // ELECTRON PATH - Enhanced screen capture with SYSTEM AUDIO support!
+          console.log('🖥️ Electron detected - using enhanced screen capture with system audio...');
+          
+          // Get available screen/window sources from Electron
+          const sources = await window.electronAPI!.getScreenSources();
+          console.log(`📺 Found ${sources.length} screen sources`);
+          
+          // Auto-select first screen source (prefer "Entire Screen" or "Screen 1")
+          const screenSource = sources.find(s => 
+            s.name.includes('Entire Screen') || 
+            s.name.includes('Screen 1') ||
+            s.name.toLowerCase().includes('screen')
+          ) || sources[0];
+          
+          if (!screenSource) {
+            throw new Error('No screen sources available');
+          }
+          
+          console.log(`✅ Selected source: ${screenSource.name}`);
+          
+          // Get stream constraints from Electron (includes system audio support!)
+          const constraints = await window.electronAPI!.getScreenStream(screenSource.id, true);
+          
+          // Use getUserMedia with Electron's special constraints to get REAL system audio
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          
+          console.log('✅ Electron screen share with SYSTEM AUDIO obtained!');
+          console.log('🎉 You can now share audio from ANY window or application!');
+        } else {
+          // BROWSER PATH - Standard screen share (limited audio support)
+          console.log('🖥️ Browser mode - Requesting ULTRA quality screen share (up to 4K @ 60fps with VP9)...');
+          
+          // Manual high-quality capture with explicit constraints
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+              width: { ideal: 3840, max: 3840 },      // Request 4K
+              height: { ideal: 2160, max: 2160 },     // Request 4K height
+              frameRate: { ideal: 30, max: 60 },      // Up to 60fps
+              // Important: request the full resolution without any restrictions
+              aspectRatio: { ideal: 16/9 },           // Prefer widescreen but allow any
+            },
+            audio: true, // Capture system audio if available (browser limitation: tab audio only)
+            // Note: preferCurrentTab is removed - let user choose naturally
+          } as any);
+          
+          console.log('✅ Browser screen share obtained (note: window audio limited to tabs)');
+        }
         
         console.log('✅ Successfully obtained display media stream');
 
