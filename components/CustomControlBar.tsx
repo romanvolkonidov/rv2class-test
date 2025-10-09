@@ -52,6 +52,16 @@ export default function CustomControlBar({
   const [isControlBarVisible, setIsControlBarVisible] = useState(true);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Source picker state for Electron only
+  const [showSourcePicker, setShowSourcePicker] = useState(false);
+  const [availableSources, setAvailableSources] = useState<Array<{
+    id: string;
+    name: string;
+    thumbnail: string;
+    appIcon: string | null;
+  }>>([]);
+  const [includeAudio, setIncludeAudio] = useState(true); // Default to ON
+  
   const micButtonRef = useRef<HTMLButtonElement>(null);
   const cameraButtonRef = useRef<HTMLButtonElement>(null);
   const micMenuRef = useRef<HTMLDivElement>(null);
@@ -381,6 +391,91 @@ export default function CustomControlBar({
     }
   };
 
+  // Function to start sharing after source is selected (Electron only)
+  const startSharingWithSource = async (sourceId: string) => {
+    if (!localParticipant || !room) return;
+    
+    try {
+      console.log(`✅ Selected source: ${sourceId}, Audio: ${includeAudio ? 'ON' : 'OFF'}`);
+      
+      // Close the picker modal
+      setShowSourcePicker(false);
+      
+      // Get stream constraints from Electron (includes system audio support!)
+      const constraints = await window.electronAPI!.getScreenStream(sourceId, includeAudio);
+      
+      // Use getUserMedia with Electron's special constraints to get REAL system audio
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      console.log('✅ Electron screen share obtained!');
+      if (includeAudio) {
+        console.log('🎉 System audio capture ENABLED - can share audio from ANY window or application!');
+      }
+      
+      // Get the video track
+      const videoTrack = stream.getVideoTracks()[0];
+      const audioTrack = stream.getAudioTracks()[0];
+
+      if (videoTrack) {
+        // Set contentHint for sharp text
+        if ('contentHint' in videoTrack) {
+          (videoTrack as any).contentHint = 'detail';
+          console.log('✅ Set contentHint="detail" for ultra-sharp text');
+        }
+
+        const settings = videoTrack.getSettings();
+        console.log(`✅ Captured screen at: ${settings.width}x${settings.height} @ ${settings.frameRate}fps`);
+
+        // Publish video track
+        const publishOptions: any = {
+          name: 'screen_share',
+          source: Track.Source.ScreenShare,
+          simulcast: false,
+          videoCodec: 'vp9',
+          videoEncoding: {
+            maxBitrate: 15_000_000,
+            maxFramerate: 60,
+            priority: 'high',
+          },
+          dtx: false,
+          red: false,
+        };
+        
+        if (publishOptions.videoEncoding) {
+          publishOptions.videoEncoding.scalabilityMode = 'L1T1';
+        }
+        
+        await localParticipant.publishTrack(videoTrack, publishOptions);
+        console.log('✅ Screen share video track published!');
+
+        // Publish audio track if available
+        if (audioTrack && includeAudio) {
+          await localParticipant.publishTrack(audioTrack, {
+            name: 'screen_share_audio',
+            source: Track.Source.ScreenShareAudio,
+          });
+          console.log('✅ Screen share AUDIO track published! 🎵');
+        }
+
+        // Update state
+        setIsScreenSharing(true);
+        setHasScreenShare(true);
+
+        // Handle track ended (user stops sharing)
+        videoTrack.onended = async () => {
+          console.log('📺 Screen share track ended by user');
+          await localParticipant.setScreenShareEnabled(false);
+          setIsScreenSharing(false);
+          setHasScreenShare(false);
+        };
+      }
+    } catch (error) {
+      console.error('❌ Failed to start Electron screen share:', error);
+      alert('Не удалось начать демонстрацию экрана. Пожалуйста, попробуйте еще раз.');
+      setShowSourcePicker(false);
+    }
+  };
+
   const toggleScreenShare = async () => {
     if (!localParticipant || !room) return;
 
@@ -418,36 +513,26 @@ export default function CustomControlBar({
         const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
         
         if (isElectron) {
-          // ELECTRON PATH - Enhanced screen capture with SYSTEM AUDIO support!
-          console.log('🖥️ Electron detected - using enhanced screen capture with system audio...');
+          // ELECTRON PATH - Show custom source picker with audio toggle
+          console.log('🖥️ Electron detected - loading source picker...');
           
           // Get available screen/window sources from Electron
           const sources = await window.electronAPI!.getScreenSources();
           console.log(`📺 Found ${sources.length} screen sources`);
           
-          // Auto-select first screen source (prefer "Entire Screen" or "Screen 1")
-          const screenSource = sources.find(s => 
-            s.name.includes('Entire Screen') || 
-            s.name.includes('Screen 1') ||
-            s.name.toLowerCase().includes('screen')
-          ) || sources[0];
-          
-          if (!screenSource) {
+          if (!sources || sources.length === 0) {
             throw new Error('No screen sources available');
           }
           
-          console.log(`✅ Selected source: ${screenSource.name}`);
+          // Show custom Electron source picker modal (won't interfere with browser picker)
+          setAvailableSources(sources);
+          setShowSourcePicker(true);
           
-          // Get stream constraints from Electron (includes system audio support!)
-          const constraints = await window.electronAPI!.getScreenStream(screenSource.id, true);
-          
-          // Use getUserMedia with Electron's special constraints to get REAL system audio
-          stream = await navigator.mediaDevices.getUserMedia(constraints);
-          
-          console.log('✅ Electron screen share with SYSTEM AUDIO obtained!');
-          console.log('🎉 You can now share audio from ANY window or application!');
+          // Return early - actual sharing will happen when user selects a source
+          return;
         } else {
-          // BROWSER PATH - Standard screen share (limited audio support)
+          // BROWSER PATH - Use native browser picker (getDisplayMedia)
+          console.log('🖥️ Browser mode - Using native browser picker...');
           console.log('🖥️ Browser mode - Requesting ULTRA quality screen share (up to 4K @ 60fps with VP9)...');
           
           // Manual high-quality capture with explicit constraints
@@ -889,6 +974,100 @@ export default function CustomControlBar({
               )}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Electron Source Picker Modal */}
+      {showSourcePicker && availableSources.length > 0 && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[10000] flex items-center justify-center p-4"
+          onClick={() => setShowSourcePicker(false)}
+        >
+          <div 
+            className="bg-gradient-to-br from-gray-900 to-black border border-white/20 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="p-6 border-b border-white/10">
+              <h2 className="text-2xl font-bold text-white mb-2">Choose what to share</h2>
+              <p className="text-sm text-white/60">Select a screen or window to share</p>
+              
+              {/* Audio Toggle */}
+              <div className="mt-4 flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                <input
+                  type="checkbox"
+                  id="audioToggle"
+                  checked={includeAudio}
+                  onChange={(e) => setIncludeAudio(e.target.checked)}
+                  className="w-5 h-5 rounded border-white/20 bg-white/10 text-blue-500 focus:ring-2 focus:ring-blue-500"
+                />
+                <label htmlFor="audioToggle" className="text-white font-medium cursor-pointer flex-1">
+                  Share system audio
+                  <span className="block text-xs text-white/60 mt-0.5">
+                    {includeAudio ? '🎵 Audio from this window/screen will be shared' : '🔇 No audio will be shared'}
+                  </span>
+                </label>
+              </div>
+            </div>
+            
+            {/* Source Grid */}
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-200px)]">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {availableSources.map((source) => {
+                  const isScreen = source.name.toLowerCase().includes('screen') || 
+                                  source.name.toLowerCase().includes('entire') ||
+                                  source.name.toLowerCase().includes('desktop');
+                  
+                  return (
+                    <button
+                      key={source.id}
+                      onClick={() => startSharingWithSource(source.id)}
+                      className="group relative flex flex-col items-center p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-500/50 rounded-xl transition-all duration-200 hover:scale-105"
+                    >
+                      {/* Thumbnail */}
+                      <div className="w-full aspect-video bg-black/50 rounded-lg overflow-hidden mb-3 border border-white/10">
+                        <img 
+                          src={source.thumbnail} 
+                          alt={source.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* Icon and Name */}
+                      <div className="flex items-center gap-2 w-full">
+                        {source.appIcon && !isScreen && (
+                          <img 
+                            src={source.appIcon} 
+                            alt=""
+                            className="w-6 h-6 flex-shrink-0"
+                          />
+                        )}
+                        {isScreen && (
+                          <Monitor className="w-6 h-6 text-blue-400 flex-shrink-0" />
+                        )}
+                        <span className="text-sm text-white font-medium truncate">
+                          {source.name}
+                        </span>
+                      </div>
+                      
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 rounded-xl transition-colors pointer-events-none" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="p-4 border-t border-white/10 flex justify-end">
+              <button
+                onClick={() => setShowSourcePicker(false)}
+                className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white font-medium transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>

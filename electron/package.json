@@ -13,7 +13,8 @@
     "build": "electron-builder --windows --x64",
     "build:portable": "electron-builder --windows portable",
     "build:linux": "electron-builder --linux",
-    "build:all": "electron-builder --windows --linux",
+    "build:mac": "electron-builder --mac --x64",
+    "build:all": "electron-builder --windows --linux --mac",
     "build:dir": "electron-builder --windows --x64 --dir",
     "pack": "electron-builder --dir"
   },
@@ -47,6 +48,15 @@
     "linux": {
       "target": ["deb"],
       "category": "Education"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "public.app-category.education"
     },
     "nsis": {
       "oneClick": false,
