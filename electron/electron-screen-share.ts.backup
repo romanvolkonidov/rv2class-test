@@ -94,18 +94,3 @@ export class ElectronScreenShare {
     return await this.getStream(selectedSource.id, includeAudio);
   }
 }
-
-// Type declarations for window.electronAPI
-declare global {
-  interface Window {
-    electronAPI?: {
-      isElectron: boolean;
-      getScreenSources: () => Promise<ElectronSource[]>;
-      getScreenStream: (sourceId: string, includeAudio: boolean) => Promise<any>;
-      minimizeWindow: () => void;
-      maximizeWindow: () => void;
-      closeWindow: () => void;
-    };
-    isElectron?: boolean;
-  }
-}
