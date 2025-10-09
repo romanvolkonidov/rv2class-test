@@ -156,6 +156,45 @@ export async function applyNoiseSuppression(
     // Create a MediaStreamSource from the input stream
     const source = audioContext.createMediaStreamSource(audioStream);
     console.log('✅ MediaStreamSource created');
+
+    // 🔍 AUDIO LEVEL MONITOR: Create analysers to detect where silence starts
+    const inputAnalyser = audioContext.createAnalyser();
+    inputAnalyser.fftSize = 2048;
+    const outputAnalyser = audioContext.createAnalyser();
+    outputAnalyser.fftSize = 2048;
+
+    // Start monitoring input levels
+    const inputDataArray = new Uint8Array(inputAnalyser.frequencyBinCount);
+    let lastInputLevel = 0;
+    const checkInputLevel = setInterval(() => {
+      inputAnalyser.getByteTimeDomainData(inputDataArray);
+      lastInputLevel = Math.max(...inputDataArray) - 128;
+      if (lastInputLevel > 5) {
+        console.log('🔊 INPUT audio level (before RNNoise):', lastInputLevel);
+        clearInterval(checkInputLevel);
+      }
+    }, 500);
+
+    // Start monitoring output levels
+    const outputDataArray = new Uint8Array(outputAnalyser.frequencyBinCount);
+    const checkOutputLevel = setInterval(() => {
+      outputAnalyser.getByteTimeDomainData(outputDataArray);
+      const outputLevel = Math.max(...outputDataArray) - 128;
+      if (outputLevel > 5) {
+        console.log('🔊 OUTPUT audio level (after RNNoise):', outputLevel);
+        clearInterval(checkOutputLevel);
+      } else if (lastInputLevel > 5 && outputLevel === 0) {
+        // Input has audio but output is silent - RNNoise is the problem!
+        console.error('❌ RNNoise is producing SILENT output despite audio input!');
+      }
+    }, 500);
+
+    // Stop monitoring after 10 seconds
+    setTimeout(() => {
+      clearInterval(checkInputLevel);
+      clearInterval(checkOutputLevel);
+      console.log('⏱️ Audio level monitoring stopped');
+    }, 10000);
     
     // Create RNNoise worklet node
     console.log('🎛️ Creating RNNoise worklet node...');
@@ -169,12 +208,18 @@ export async function applyNoiseSuppression(
     const destination = audioContext.createMediaStreamDestination();
     console.log('✅ MediaStreamDestination created');
 
-    // Connect the audio graph: source -> RNNoise -> destination
-    source.connect(rnnoiseNode);
-    console.log('✅ Connected: source -> RNNoise');
+    // Connect the audio graph with analysers: source -> inputAnalyser -> RNNoise -> outputAnalyser -> destination
+    source.connect(inputAnalyser);
+    console.log('✅ Connected: source -> inputAnalyser');
     
-    rnnoiseNode.connect(destination);
-    console.log('✅ Connected: RNNoise -> destination');
+    inputAnalyser.connect(rnnoiseNode);
+    console.log('✅ Connected: inputAnalyser -> RNNoise');
+    
+    rnnoiseNode.connect(outputAnalyser);
+    console.log('✅ Connected: RNNoise -> outputAnalyser');
+    
+    outputAnalyser.connect(destination);
+    console.log('✅ Connected: outputAnalyser -> destination');
 
     // Validate output stream
     const outputTrack = destination.stream.getAudioTracks()[0];
@@ -191,7 +236,8 @@ export async function applyNoiseSuppression(
     }
     
     console.log('✅ Noise suppression applied successfully');
-    console.log('📊 Audio graph: Microphone → MediaStreamSource → RNNoise → MediaStreamDestination → LiveKit');
+    console.log('📊 Audio graph: Microphone → MediaStreamSource → InputAnalyser → RNNoise → OutputAnalyser → MediaStreamDestination → LiveKit');
+    console.log('🔍 Audio level monitoring active for 10 seconds...');
     
     return destination.stream;
   } catch (error) {
@@ -259,6 +305,13 @@ export async function getProcessedMicrophoneAudio(
       readyState: rawTrack.readyState,
       settings: rawTrack.getSettings()
     });
+
+    // 🔧 TEMPORARY BYPASS: Check localStorage for debug flag
+    const bypassRnnoise = localStorage.getItem('bypassRnnoise') === 'true';
+    if (bypassRnnoise) {
+      console.warn('⚠️ BYPASSING RNNoise (debug mode) - using raw audio');
+      return rawStream;
+    }
 
     // Apply RNNoise processing - this returns a NEW stream from AudioContext
     const processedStream = await applyNoiseSuppression(rawStream);

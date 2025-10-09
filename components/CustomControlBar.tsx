@@ -383,28 +383,17 @@ export default function CustomControlBar({
     // Notify user - will need page refresh to apply
     const message = newValue 
       ? '✅ AI noise cancellation enabled for your microphone'
-      : '⚠️ AI noise cancellation disabled - your raw microphone audio will be used';
-    
-    // Show visual notification
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: ${newValue ? 'rgba(34, 197, 94, 0.95)' : 'rgba(249, 115, 22, 0.95)'};
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      z-index: 10000;
-      font-size: 14px;
-      font-weight: 500;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => notification.remove(), 3000);
+      : '⚠️ AI noise cancellation disabled for your microphone';
+    alert(message + '\n\nPlease refresh the page to apply changes.');
+  };
+
+  // Debug: Toggle RNNoise bypass mode
+  const toggleRnnoiseBypass = () => {
+    const currentBypass = localStorage.getItem('bypassRnnoise') === 'true';
+    const newBypass = !currentBypass;
+    localStorage.setItem('bypassRnnoise', String(newBypass));
+    console.log('🔧 RNNoise bypass:', newBypass ? 'ENABLED (using raw audio)' : 'DISABLED (using RNNoise)');
+    alert(`🔧 Debug Mode: ${newBypass ? 'Bypassing RNNoise (raw audio)' : 'Using RNNoise processing'}\n\nPlease refresh the page to apply changes.`);
   };
 
   const toggleScreenShare = async () => {
@@ -870,6 +859,23 @@ export default function CustomControlBar({
                     </div>
                   </div>
                 </label>
+              </div>
+              
+              {/* Debug: RNNoise Bypass Toggle */}
+              <div className="border-t border-white/10 my-1"></div>
+              <div className="p-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleRnnoiseBypass();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-yellow-400 hover:bg-yellow-500/10 rounded transition-colors"
+                >
+                  🔧 Debug: Toggle RNNoise Bypass
+                </button>
+                <div className="text-xs text-white/40 mt-1 px-3">
+                  Test raw audio without RNNoise processing
+                </div>
               </div>
             </>
           )}
