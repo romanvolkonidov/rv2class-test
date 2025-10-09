@@ -48,15 +48,6 @@ export default function CustomControlBar({
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [currentCameraId, setCurrentCameraId] = useState<string>("");
   const [currentMicId, setCurrentMicId] = useState<string>("");
-  
-  // AI Noise Cancellation setting (tutor only)
-  const [aiNoiseCancellation, setAiNoiseCancellation] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('aiNoiseCancellation');
-      return saved !== null ? saved === 'true' : true; // Default to enabled
-    }
-    return true;
-  });
 
   // Sync with actual participant state
   const isMuted = localParticipant ? !localParticipant.isMicrophoneEnabled : true;
@@ -372,28 +363,6 @@ export default function CustomControlBar({
       console.error('❌ Failed to switch microphone:', error);
       alert('Не удалось переключить микрофон. Пожалуйста, проверьте разрешения.');
     }
-  };
-
-  const toggleAiNoiseCancellation = () => {
-    const newValue = !aiNoiseCancellation;
-    setAiNoiseCancellation(newValue);
-    localStorage.setItem('aiNoiseCancellation', String(newValue));
-    console.log('🎛️ AI Noise Cancellation:', newValue ? 'Enabled' : 'Disabled');
-    
-    // Notify user - will need page refresh to apply
-    const message = newValue 
-      ? '✅ AI noise cancellation enabled for your microphone'
-      : '⚠️ AI noise cancellation disabled for your microphone';
-    alert(message + '\n\nPlease refresh the page to apply changes.');
-  };
-
-  // Debug: Toggle RNNoise bypass mode
-  const toggleRnnoiseBypass = () => {
-    const currentBypass = localStorage.getItem('bypassRnnoise') === 'true';
-    const newBypass = !currentBypass;
-    localStorage.setItem('bypassRnnoise', String(newBypass));
-    console.log('🔧 RNNoise bypass:', newBypass ? 'ENABLED (using raw audio)' : 'DISABLED (using RNNoise)');
-    alert(`🔧 Debug Mode: ${newBypass ? 'Bypassing RNNoise (raw audio)' : 'Using RNNoise processing'}\n\nPlease refresh the page to apply changes.`);
   };
 
   const toggleScreenShare = async () => {
@@ -834,51 +803,6 @@ export default function CustomControlBar({
               )}
             </button>
           ))}
-          
-          {/* AI Noise Cancellation Toggle (Tutor Only) */}
-          {isTutor && (
-            <>
-              <div className="border-t border-white/10 my-1"></div>
-              <div className="p-3">
-                <label className="flex items-start gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={aiNoiseCancellation}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      toggleAiNoiseCancellation();
-                    }}
-                    className="mt-0.5 w-4 h-4 rounded border-white/30 bg-white/10 checked:bg-blue-500 checked:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
-                  />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-white group-hover:text-blue-300 transition-colors">
-                      AI Noise Cancellation
-                    </div>
-                    <div className="text-xs text-white/60 mt-0.5">
-                      Remove background noise from your voice (keyboard, fans, etc.)
-                    </div>
-                  </div>
-                </label>
-              </div>
-              
-              {/* Debug: RNNoise Bypass Toggle */}
-              <div className="border-t border-white/10 my-1"></div>
-              <div className="p-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleRnnoiseBypass();
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-yellow-400 hover:bg-yellow-500/10 rounded transition-colors"
-                >
-                  🔧 Debug: Toggle RNNoise Bypass
-                </button>
-                <div className="text-xs text-white/40 mt-1 px-3">
-                  Test raw audio without RNNoise processing
-                </div>
-              </div>
-            </>
-          )}
         </div>
       )}
 

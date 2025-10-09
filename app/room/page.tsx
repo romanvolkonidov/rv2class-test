@@ -15,7 +15,6 @@ import CompactParticipantView from "@/components/CompactParticipantView";
 import CustomControlBar from "@/components/CustomControlBar";
 import ChatPanel from "@/components/ChatPanel";
 import AudioDiagnostics from "@/components/AudioDiagnostics";
-import { initializeNoiseSuppressor, applyNoiseSuppression } from "@/lib/audioProcessor";
 
 function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: boolean; userName: string; sessionCode: string; roomName: string }) {
   const room = useRoomContext();
@@ -83,15 +82,7 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
       return;
     }
 
-    let hasRun = false; // Prevent double execution
-
     const enableMediaOnConnect = async () => {
-      if (hasRun) {
-        console.log('⏭️ Media already enabled, skipping...');
-        return;
-      }
-      hasRun = true;
-
       try {
         console.log('🎥 Room connected! Enabling camera and microphone...');
         
@@ -102,53 +93,7 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
         if (!room.localParticipant.isMicrophoneEnabled) {
           console.log('🎤 Microphone not enabled, enabling now...');
           try {
-            // Check if bypass mode is enabled (debug)
-            const bypassRnnoise = localStorage.getItem('bypassRnnoise') === 'true';
-            
-            if (bypassRnnoise) {
-              // BYPASS MODE: Use LiveKit's standard microphone (no custom processing)
-              console.log('🔧 BYPASS MODE: Using LiveKit standard microphone');
-              await room.localParticipant.setMicrophoneEnabled(true);
-              console.log('✅ Standard microphone enabled (bypass mode)');
-            } else {
-              // Check if AI noise cancellation is enabled
-              const aiNoiseCancellationEnabled = localStorage.getItem('aiNoiseCancellation');
-              const shouldApplyNoiseCancellation = aiNoiseCancellationEnabled !== 'false'; // Default to true if not set
-              
-              if (shouldApplyNoiseCancellation) {
-                try {
-                  console.log('🔊 Getting microphone with AI noise suppression...');
-                  
-                  // Import the function dynamically to avoid SSR issues
-                  const { getProcessedMicrophoneAudio } = await import('@/lib/audioProcessor');
-                  
-                  // Get microphone audio that's already processed by RNNoise
-                  const processedStream = await getProcessedMicrophoneAudio();
-                  const processedTrack = processedStream.getAudioTracks()[0];
-                  
-                  if (processedTrack) {
-                    // Publish the noise-suppressed track directly
-                    await room.localParticipant.publishTrack(processedTrack, {
-                      source: Track.Source.Microphone,
-                      name: 'microphone',
-                    });
-                    console.log('✅ AI noise-suppressed microphone published');
-                  } else {
-                    // Fallback to standard method
-                    await room.localParticipant.setMicrophoneEnabled(true);
-                    console.log('⚠️ Fallback: standard microphone enabled');
-                  }
-                } catch (noiseError) {
-                  console.warn('⚠️ Could not apply noise suppression, using standard audio:', noiseError);
-                  // Fallback to standard LiveKit microphone
-                  await room.localParticipant.setMicrophoneEnabled(true);
-                }
-              } else {
-                console.log('ℹ️ AI noise suppression disabled by user preference');
-                await room.localParticipant.setMicrophoneEnabled(true);
-              }
-            }
-            
+            await room.localParticipant.setMicrophoneEnabled(true);
             console.log('✅ Microphone enabled successfully');
           } catch (micError) {
             console.error('❌ Failed to enable microphone:', micError);
@@ -906,7 +851,7 @@ function RoomPage() {
   return (
     <LiveKitRoom
       video={true} // CRITICAL: Enable video by default for all participants
-      audio={false} // CRITICAL: We'll manually enable audio with RNNoise processing
+      audio={true} // CRITICAL: Enable audio by default for all participants
       token={token}
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
       className="h-full"

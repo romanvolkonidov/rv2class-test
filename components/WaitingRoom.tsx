@@ -95,82 +95,27 @@ const WaitingRoom = forwardRef<WaitingRoomHandle, WaitingRoomProps>(({ studentNa
     const startPreview = async () => {
       try {
         console.log('🎥 Starting waiting room preview...');
-        
-        // Check if AI noise suppression is enabled
-        const aiNoiseCancellationEnabled = localStorage.getItem('aiNoiseCancellation');
-        const shouldApplyNoiseCancellation = aiNoiseCancellationEnabled !== 'false'; // Default to true
-        
-        let processedStream: MediaStream;
-        
-        if (shouldApplyNoiseCancellation) {
-          try {
-            console.log('🔊 Getting microphone with AI noise suppression...');
-            
-            // Import the function dynamically to avoid SSR issues
-            const { getProcessedMicrophoneAudio } = await import('@/lib/audioProcessor');
-            
-            // Get microphone audio that's already processed by RNNoise
-            const audioStream = await getProcessedMicrophoneAudio();
-            const audioTrack = audioStream.getAudioTracks()[0];
-            
-            // Get video separately
-            const videoStream = await navigator.mediaDevices.getUserMedia({
-              video: {
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                frameRate: { ideal: 30 },
-              },
-              audio: false, // Don't get audio again
-            });
-            const videoTrack = videoStream.getVideoTracks()[0];
-            
-            // Combine processed audio with video
-            const tracks = [];
-            if (audioTrack) tracks.push(audioTrack);
-            if (videoTrack) tracks.push(videoTrack);
-            processedStream = new MediaStream(tracks);
-            
-            console.log('✅ AI noise-suppressed audio + video ready for waiting room');
-          } catch (noiseError) {
-            console.warn('⚠️ Could not apply noise suppression, using standard audio:', noiseError);
-            // Fallback to standard method
-            processedStream = await navigator.mediaDevices.getUserMedia({
-              video: {
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                frameRate: { ideal: 30 },
-              },
-              audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-              }
-            });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30 },
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
           }
-        } else {
-          console.log('ℹ️ AI noise suppression disabled by user preference');
-          processedStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-              frameRate: { ideal: 30 },
-            },
-            audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-            }
-          });
-        }
+        });
 
-        streamRef.current = processedStream;
-        setPreviewStream(processedStream);
-        setHasVideo(processedStream.getVideoTracks().length > 0);
-        setHasAudio(processedStream.getAudioTracks().length > 0);
+        streamRef.current = stream;
+        setPreviewStream(stream);
+        setHasVideo(stream.getVideoTracks().length > 0);
+        setHasAudio(stream.getAudioTracks().length > 0);
 
         // Attach to video element
-        if (videoRef.current && processedStream) {
-          videoRef.current.srcObject = processedStream;
+        if (videoRef.current && stream) {
+          videoRef.current.srcObject = stream;
           console.log('✅ Preview stream attached to video element');
         }
       } catch (error) {
