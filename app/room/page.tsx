@@ -102,41 +102,51 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
         if (!room.localParticipant.isMicrophoneEnabled) {
           console.log('🎤 Microphone not enabled, enabling now...');
           try {
-            // Check if AI noise cancellation is enabled
-            const aiNoiseCancellationEnabled = localStorage.getItem('aiNoiseCancellation');
-            const shouldApplyNoiseCancellation = aiNoiseCancellationEnabled !== 'false'; // Default to true if not set
+            // Check if bypass mode is enabled (debug)
+            const bypassRnnoise = localStorage.getItem('bypassRnnoise') === 'true';
             
-            if (shouldApplyNoiseCancellation) {
-              try {
-                console.log('🔊 Getting microphone with AI noise suppression...');
-                
-                // Import the function dynamically to avoid SSR issues
-                const { getProcessedMicrophoneAudio } = await import('@/lib/audioProcessor');
-                
-                // Get microphone audio that's already processed by RNNoise
-                const processedStream = await getProcessedMicrophoneAudio();
-                const processedTrack = processedStream.getAudioTracks()[0];
-                
-                if (processedTrack) {
-                  // Publish the noise-suppressed track directly
-                  await room.localParticipant.publishTrack(processedTrack, {
-                    source: Track.Source.Microphone,
-                    name: 'microphone',
-                  });
-                  console.log('✅ AI noise-suppressed microphone published');
-                } else {
-                  // Fallback to standard method
+            if (bypassRnnoise) {
+              // BYPASS MODE: Use LiveKit's standard microphone (no custom processing)
+              console.log('🔧 BYPASS MODE: Using LiveKit standard microphone');
+              await room.localParticipant.setMicrophoneEnabled(true);
+              console.log('✅ Standard microphone enabled (bypass mode)');
+            } else {
+              // Check if AI noise cancellation is enabled
+              const aiNoiseCancellationEnabled = localStorage.getItem('aiNoiseCancellation');
+              const shouldApplyNoiseCancellation = aiNoiseCancellationEnabled !== 'false'; // Default to true if not set
+              
+              if (shouldApplyNoiseCancellation) {
+                try {
+                  console.log('🔊 Getting microphone with AI noise suppression...');
+                  
+                  // Import the function dynamically to avoid SSR issues
+                  const { getProcessedMicrophoneAudio } = await import('@/lib/audioProcessor');
+                  
+                  // Get microphone audio that's already processed by RNNoise
+                  const processedStream = await getProcessedMicrophoneAudio();
+                  const processedTrack = processedStream.getAudioTracks()[0];
+                  
+                  if (processedTrack) {
+                    // Publish the noise-suppressed track directly
+                    await room.localParticipant.publishTrack(processedTrack, {
+                      source: Track.Source.Microphone,
+                      name: 'microphone',
+                    });
+                    console.log('✅ AI noise-suppressed microphone published');
+                  } else {
+                    // Fallback to standard method
+                    await room.localParticipant.setMicrophoneEnabled(true);
+                    console.log('⚠️ Fallback: standard microphone enabled');
+                  }
+                } catch (noiseError) {
+                  console.warn('⚠️ Could not apply noise suppression, using standard audio:', noiseError);
+                  // Fallback to standard LiveKit microphone
                   await room.localParticipant.setMicrophoneEnabled(true);
-                  console.log('⚠️ Fallback: standard microphone enabled');
                 }
-              } catch (noiseError) {
-                console.warn('⚠️ Could not apply noise suppression, using standard audio:', noiseError);
-                // Fallback to standard LiveKit microphone
+              } else {
+                console.log('ℹ️ AI noise suppression disabled by user preference');
                 await room.localParticipant.setMicrophoneEnabled(true);
               }
-            } else {
-              console.log('ℹ️ AI noise suppression disabled by user preference');
-              await room.localParticipant.setMicrophoneEnabled(true);
             }
             
             console.log('✅ Microphone enabled successfully');
