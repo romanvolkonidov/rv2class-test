@@ -19,6 +19,9 @@ declare global {
         appIcon: string | null;
       }>>;
       getScreenStream: (sourceId: string, includeAudio: boolean) => Promise<any>;
+      minimizeAndFocusShared: () => Promise<boolean>;
+      showAppWindow: () => Promise<boolean>;
+      getWindowState: () => Promise<{ isMinimized: boolean; isVisible: boolean } | null>;
     };
   }
 }
@@ -61,6 +64,10 @@ export default function CustomControlBar({
     appIcon: string | null;
   }>>([]);
   const [includeAudio, setIncludeAudio] = useState(true); // Default to ON
+  
+  // Floating thumbnail state (Teams-like UX)
+  const [showFloatingThumbnail, setShowFloatingThumbnail] = useState(false);
+  const [sharedSourceName, setSharedSourceName] = useState<string>('');
   
   const micButtonRef = useRef<HTMLButtonElement>(null);
   const cameraButtonRef = useRef<HTMLButtonElement>(null);
@@ -392,11 +399,11 @@ export default function CustomControlBar({
   };
 
   // Function to start sharing after source is selected (Electron only)
-  const startSharingWithSource = async (sourceId: string) => {
+  const startSharingWithSource = async (sourceId: string, sourceName: string) => {
     if (!localParticipant || !room) return;
     
     try {
-      console.log(`✅ Selected source: ${sourceId}, Audio: ${includeAudio ? 'ON' : 'OFF'}`);
+      console.log(`✅ Selected source: ${sourceName}, Audio: ${includeAudio ? 'ON' : 'OFF'}`);
       
       // Close the picker modal
       setShowSourcePicker(false);
@@ -460,6 +467,12 @@ export default function CustomControlBar({
         // Update state
         setIsScreenSharing(true);
         setHasScreenShare(true);
+        setSharedSourceName(sourceName);
+
+        // TEAMS-LIKE UX: Minimize window and show floating thumbnail
+        console.log('🪟 Minimizing app window and showing floating thumbnail...');
+        await window.electronAPI!.minimizeAndFocusShared();
+        setShowFloatingThumbnail(true);
 
         // Handle track ended (user stops sharing)
         videoTrack.onended = async () => {
@@ -467,6 +480,9 @@ export default function CustomControlBar({
           await localParticipant.setScreenShareEnabled(false);
           setIsScreenSharing(false);
           setHasScreenShare(false);
+          setShowFloatingThumbnail(false);
+          // Restore window
+          await window.electronAPI!.showAppWindow();
         };
       }
     } catch (error) {
@@ -502,6 +518,14 @@ export default function CustomControlBar({
       // Update state
       setIsScreenSharing(false);
       setHasScreenShare(false);
+      setShowFloatingThumbnail(false);
+      
+      // Restore window if in Electron
+      const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
+      if (isElectron) {
+        await window.electronAPI!.showAppWindow();
+        console.log('🪟 Restored app window');
+      }
       
       // Also call the built-in method as fallback
       await localParticipant.setScreenShareEnabled(false);
@@ -977,6 +1001,65 @@ export default function CustomControlBar({
         </div>
       )}
 
+      {/* Floating Thumbnail (Teams-like) - Only in Electron during screen share */}
+      {showFloatingThumbnail && isScreenSharing && (
+        <div 
+          className="fixed top-4 right-4 z-[10001] bg-black/90 backdrop-blur-xl border-2 border-blue-500/50 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-top-4 fade-in duration-300"
+          style={{ width: '280px' }}
+        >
+          {/* Header */}
+          <div className="p-3 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-white font-medium text-sm">Sharing: {sharedSourceName}</span>
+            </div>
+          </div>
+          
+          {/* Video Preview (local participant's screen share) */}
+          <div className="aspect-video bg-black relative">
+            <video
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-full object-contain"
+              ref={(video) => {
+                if (video && localParticipant) {
+                  const screenSharePub = localParticipant.getTrackPublication(Track.Source.ScreenShare);
+                  if (screenSharePub?.track) {
+                    const mediaStream = new MediaStream([screenSharePub.track.mediaStreamTrack as MediaStreamTrack]);
+                    video.srcObject = mediaStream;
+                  }
+                }
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+          </div>
+          
+          {/* Controls */}
+          <div className="p-3 flex gap-2">
+            <button
+              onClick={async () => {
+                // Show app window without stopping share
+                await window.electronAPI!.showAppWindow();
+              }}
+              className="flex-1 px-3 py-2 bg-blue-600/80 hover:bg-blue-600 border border-blue-400/30 rounded-lg text-white text-sm font-medium transition-all flex items-center justify-center gap-2"
+              title="Show app window"
+            >
+              <Video className="w-4 h-4" />
+              Show App
+            </button>
+            <button
+              onClick={toggleScreenShare}
+              className="flex-1 px-3 py-2 bg-red-600/80 hover:bg-red-600 border border-red-400/30 rounded-lg text-white text-sm font-medium transition-all flex items-center justify-center gap-2"
+              title="Stop sharing"
+            >
+              <PhoneOff className="w-4 h-4" />
+              Stop
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Electron Source Picker Modal */}
       {showSourcePicker && availableSources.length > 0 && (
         <div 
@@ -1021,7 +1104,7 @@ export default function CustomControlBar({
                   return (
                     <button
                       key={source.id}
-                      onClick={() => startSharingWithSource(source.id)}
+                      onClick={() => startSharingWithSource(source.id, source.name)}
                       className="group relative flex flex-col items-center p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-500/50 rounded-xl transition-all duration-200 hover:scale-105"
                     >
                       {/* Thumbnail */}

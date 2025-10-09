@@ -109,21 +109,35 @@ ipcMain.handle('get-screen-stream', async (event, sourceId, includeAudio) => {
   }
 });
 
-// Handle window minimize/maximize/close
-ipcMain.on('minimize-window', () => {
-  if (mainWindow) mainWindow.minimize();
-});
-
-ipcMain.on('maximize-window', () => {
+// Handle window controls for screen sharing UX
+ipcMain.handle('minimize-and-focus-shared', () => {
   if (mainWindow) {
-    if (mainWindow.isMaximized()) {
-      mainWindow.unmaximize();
-    } else {
-      mainWindow.maximize();
-    }
+    // Minimize the app window so user sees the shared content
+    mainWindow.minimize();
+    return true;
   }
+  return false;
 });
 
-ipcMain.on('close-window', () => {
-  if (mainWindow) mainWindow.close();
+ipcMain.handle('show-app-window', () => {
+  if (mainWindow) {
+    // Restore and focus the app window (without stopping screen share)
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.show();
+    mainWindow.focus();
+    return true;
+  }
+  return false;
+});
+
+ipcMain.handle('get-window-state', () => {
+  if (mainWindow) {
+    return {
+      isMinimized: mainWindow.isMinimized(),
+      isVisible: mainWindow.isVisible(),
+    };
+  }
+  return null;
 });

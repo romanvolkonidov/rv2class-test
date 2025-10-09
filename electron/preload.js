@@ -9,10 +9,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getScreenStream: (sourceId, includeAudio) => 
     ipcRenderer.invoke('get-screen-stream', sourceId, includeAudio),
   
-  // Window controls
-  minimizeWindow: () => ipcRenderer.send('minimize-window'),
-  maximizeWindow: () => ipcRenderer.send('maximize-window'),
-  closeWindow: () => ipcRenderer.send('close-window'),
+  // Window controls for screen sharing UX
+  minimizeAndFocusShared: () => ipcRenderer.invoke('minimize-and-focus-shared'),
+  showAppWindow: () => ipcRenderer.invoke('show-app-window'),
+  getWindowState: () => ipcRenderer.invoke('get-window-state'),
   
   // Check if running in Electron
   isElectron: true
