@@ -25,6 +25,28 @@ let wasmBinary: ArrayBuffer | null = null;
 let isInitialized = false;
 let audioContext: AudioContext | null = null;
 let workletLoaded = false;
+let audioContextResumed = false;
+
+// CRITICAL: Set up global click handler to resume AudioContext (Chrome autoplay policy)
+if (typeof window !== 'undefined') {
+  const resumeAudioContext = async () => {
+    if (audioContext && audioContext.state === 'suspended' && !audioContextResumed) {
+      try {
+        await audioContext.resume();
+        audioContextResumed = true;
+        console.log('✅ AudioContext resumed after user gesture');
+      } catch (err) {
+        console.error('❌ Failed to resume AudioContext:', err);
+      }
+    }
+  };
+
+  // Resume on any click
+  document.addEventListener('click', resumeAudioContext, { once: false });
+  // Also try on keypress and touchstart for mobile
+  document.addEventListener('keypress', resumeAudioContext, { once: false });
+  document.addEventListener('touchstart', resumeAudioContext, { once: false });
+}
 
 /**
  * Initialize the noise suppressor
