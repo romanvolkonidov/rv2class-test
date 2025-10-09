@@ -24,6 +24,7 @@ if (typeof window !== 'undefined') {
 let wasmBinary: ArrayBuffer | null = null;
 let isInitialized = false;
 let audioContext: AudioContext | null = null;
+let workletLoaded = false;
 
 /**
  * Initialize the noise suppressor
@@ -89,27 +90,31 @@ export async function applyNoiseSuppression(
     if (!audioContext) {
       try {
         audioContext = new AudioContext({ sampleRate: 48000 }); // RNNoise requires 48kHz
-        // Resume context if it's suspended (required by browser autoplay policy)
-        if (audioContext.state === 'suspended') {
-          await audioContext.resume();
-        }
-        console.log('✅ AudioContext created (48kHz) and resumed');
+        console.log(`✅ AudioContext created (48kHz), state: ${audioContext.state}`);
       } catch (audioContextError) {
         console.error('❌ Failed to create AudioContext:', audioContextError);
-        console.warn('⚠️ This usually means the page needs a user interaction first');
         throw audioContextError;
       }
     }
 
-    // Load AudioWorklet module
-    // The library exports the worklet path, we need to load it manually
-    console.log('📦 Loading RNNoise AudioWorklet module...');
-    const workletPath = new URL(
-      '@sapphi-red/web-noise-suppressor/rnnoiseWorklet.js',
-      import.meta.url
-    ).href;
-    await audioContext.audioWorklet.addModule(workletPath);
-    console.log('✅ AudioWorklet module loaded');
+    // CRITICAL: Resume AudioContext if suspended (Chrome autoplay policy)
+    if (audioContext.state === 'suspended') {
+      console.log('⏸️ AudioContext is suspended, resuming...');
+      await audioContext.resume();
+      console.log(`✅ AudioContext resumed, state: ${audioContext.state}`);
+    }
+
+    // Load AudioWorklet module (only once)
+    if (!workletLoaded) {
+      console.log('📦 Loading RNNoise AudioWorklet module...');
+      const workletPath = new URL(
+        '@sapphi-red/web-noise-suppressor/rnnoiseWorklet.js',
+        import.meta.url
+      ).href;
+      await audioContext.audioWorklet.addModule(workletPath);
+      workletLoaded = true;
+      console.log('✅ AudioWorklet module loaded');
+    }
 
     // Get the audio track
     const audioTrack = audioStream.getAudioTracks()[0];
@@ -118,8 +123,17 @@ export async function applyNoiseSuppression(
       return audioStream;
     }
 
+    // Validate input stream
+    console.log('🎤 Input stream validation:', {
+      enabled: audioTrack.enabled,
+      muted: audioTrack.muted,
+      readyState: audioTrack.readyState,
+      label: audioTrack.label
+    });
+
     // Create a MediaStreamSource from the input stream
     const source = audioContext.createMediaStreamSource(audioStream);
+    console.log('✅ MediaStreamSource created');
     
     // Create RNNoise worklet node
     console.log('🎛️ Creating RNNoise worklet node...');
@@ -127,18 +141,40 @@ export async function applyNoiseSuppression(
       maxChannels: 1, // Mono audio for voice
       wasmBinary: wasmBinary!,
     });
+    console.log('✅ RNNoise worklet node created');
 
-    // Connect: source -> rnnoise -> destination
-    source.connect(rnnoiseNode);
-    
-    // Create a MediaStreamDestination to get the processed audio
+    // CRITICAL: Create destination BEFORE connecting
     const destination = audioContext.createMediaStreamDestination();
+    console.log('✅ MediaStreamDestination created');
+
+    // Connect the audio graph: source -> RNNoise -> destination
+    source.connect(rnnoiseNode);
+    console.log('✅ Connected: source -> RNNoise');
+    
     rnnoiseNode.connect(destination);
+    console.log('✅ Connected: RNNoise -> destination');
+
+    // Validate output stream
+    const outputTrack = destination.stream.getAudioTracks()[0];
+    if (outputTrack) {
+      console.log('🔊 Output stream validation:', {
+        enabled: outputTrack.enabled,
+        muted: outputTrack.muted,
+        readyState: outputTrack.readyState,
+        label: outputTrack.label
+      });
+    } else {
+      console.error('❌ No output audio track!');
+      return audioStream;
+    }
     
     console.log('✅ Noise suppression applied successfully');
+    console.log('📊 Audio graph: Microphone → MediaStreamSource → RNNoise → MediaStreamDestination → LiveKit');
+    
     return destination.stream;
   } catch (error) {
     console.error('❌ Failed to apply noise suppression:', error);
+    console.log('⚠️ Falling back to original audio stream');
     // Return original stream if processing fails
     return audioStream;
   }
@@ -194,10 +230,29 @@ export async function getProcessedMicrophoneAudio(
       }
     });
 
-    console.log('✅ Got raw microphone stream (48kHz)');
+    const rawTrack = rawStream.getAudioTracks()[0];
+    console.log('✅ Got raw microphone stream (48kHz):', {
+      enabled: rawTrack.enabled,
+      muted: rawTrack.muted,
+      readyState: rawTrack.readyState,
+      settings: rawTrack.getSettings()
+    });
 
     // Apply RNNoise processing - this returns a NEW stream from AudioContext
     const processedStream = await applyNoiseSuppression(rawStream);
+    
+    // Validate the processed stream
+    const processedTrack = processedStream.getAudioTracks()[0];
+    if (!processedTrack) {
+      console.error('❌ No processed audio track! Falling back to raw stream.');
+      return rawStream;
+    }
+
+    console.log('✅ Processed stream validation:', {
+      enabled: processedTrack.enabled,
+      muted: processedTrack.muted,
+      readyState: processedTrack.readyState
+    });
     
     // DON'T stop the raw stream - the AudioWorkletNode needs it to keep processing!
     // The raw stream is still active and feeding the AudioWorkletNode
