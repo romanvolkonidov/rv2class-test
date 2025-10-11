@@ -284,12 +284,45 @@ export const submitHomeworkAnswers = async (
     let correctCount = 0;
     const totalCount = questions.length;
     
+    console.log("=== HOMEWORK SUBMISSION DEBUG ===");
+    console.log(`Total questions: ${totalCount}`);
+    console.log(`Total answers: ${answers.length}`);
+    
     answers.forEach(answer => {
       const question = questions.find(q => q.id === answer.questionId);
-      if (question && question.correctAnswer === answer.answer) {
-        correctCount++;
+      if (question) {
+        console.log(`\nQuestion ID: ${answer.questionId}`);
+        console.log(`  User answer: "${answer.answer}" (type: ${typeof answer.answer})`);
+        console.log(`  Correct answer: "${question.correctAnswer}" (type: ${typeof question.correctAnswer})`);
+        console.log(`  Options:`, question.options);
+        
+        // Handle both string and number correctAnswer values
+        let isCorrect = false;
+        
+        // If correctAnswer is a number, it might be an index into the options array
+        if (typeof question.correctAnswer === 'number' && question.options) {
+          // Compare with the option at that index
+          const correctOption = question.options[question.correctAnswer];
+          isCorrect = correctOption === answer.answer;
+          console.log(`  Comparing index ${question.correctAnswer} (option: "${correctOption}") with user answer`);
+        } else {
+          // Direct string comparison (with type coercion for safety)
+          isCorrect = String(question.correctAnswer) === String(answer.answer);
+          console.log(`  Direct string comparison`);
+        }
+        
+        console.log(`  Match: ${isCorrect}`);
+        
+        if (isCorrect) {
+          correctCount++;
+          console.log(`  ✓ CORRECT`);
+        } else {
+          console.log(`  ✗ INCORRECT`);
+        }
       }
     });
+    
+    console.log(`\n=== FINAL SCORE: ${correctCount}/${totalCount} (${Math.round((correctCount / totalCount) * 100)}%) ===\n`);
     
     const score = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
     
