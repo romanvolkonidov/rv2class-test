@@ -288,6 +288,7 @@ export const submitHomeworkAnswers = async (
     console.log(`Total questions: ${totalCount}`);
     console.log(`Total answers: ${answers.length}`);
     
+    
     answers.forEach(answer => {
       const question = questions.find(q => q.id === answer.questionId);
       if (question) {
