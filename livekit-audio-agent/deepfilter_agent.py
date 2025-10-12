@@ -140,6 +140,38 @@ class AudioAgent:
         self.published_tracks: Dict[str, rtc.LocalAudioTrack] = {}
         self.running = False
 
+    async def discover_and_join_rooms(self):
+        """Discover active rooms and join them"""
+        try:
+            # Create API client
+            lkapi = api.LiveKitAPI(
+                self.config.livekit_url,
+                self.config.livekit_api_key,
+                self.config.livekit_api_secret
+            )
+            
+            # List all active rooms
+            rooms_list = await lkapi.room.list_rooms(api.ListRoomsRequest())
+            
+            for room_info in rooms_list.rooms:
+                room_name = room_info.name
+                
+                # Skip if already joined
+                if room_name in self.rooms:
+                    continue
+                
+                # Skip if no participants
+                if room_info.num_participants == 0:
+                    continue
+                
+                logger.info(f"🔍 Discovered active room: {room_name} ({room_info.num_participants} participants)")
+                
+                # Join the room
+                await self.join_room(room_name)
+                
+        except Exception as e:
+            logger.error(f"❌ Error discovering rooms: {e}")
+
     async def start(self):
         """Start the agent and listen for rooms"""
         self.running = True
@@ -151,6 +183,10 @@ class AudioAgent:
             await asyncio.sleep(5)
             poll_count += 1
             
+            # Every 30 seconds, check for new rooms to join
+            if poll_count % 6 == 0:
+                await self.discover_and_join_rooms()
+            
             if poll_count % 1 == 0:
                 for room_name, room in list(self.rooms.items()):
                     try:
@@ -161,6 +197,10 @@ class AudioAgent:
                         
                         for participant in participants:
                             participant_key = f"{room_name}_{participant.identity}"
+                            
+                            # Skip if this is the agent itself or another agent
+                            if participant.identity.startswith(self.config.agent_identity):
+                                continue
                             
                             if participant_key not in self.processing_tracks:
                                 logger.info(f"🔍 Found new participant: {participant.identity}")
@@ -198,7 +238,7 @@ class AudioAgent:
                 room=room_name,
                 can_publish=True,
                 can_subscribe=True,
-                hidden=False
+                hidden=True  # Hide agent from participant list
             ))
             
             jwt_token = token.to_jwt()
@@ -247,6 +287,11 @@ class AudioAgent:
             logger.info(f"📊 Found {len(participants)} existing participants")
             
             for participant in participants:
+                # Skip if this is the agent itself or another agent
+                if participant.identity.startswith(self.config.agent_identity):
+                    logger.info(f"⏭️ Skipping agent participant: {participant.identity}")
+                    continue
+                    
                 participant_key = f"{room_name}_{participant.identity}"
                 
                 for track_sid, publication in participant.track_publications.items():
@@ -412,7 +457,7 @@ async def main():
     # Create and start agent
     agent = AudioAgent(config)
     
-    # Join rooms specified in environment or join all rooms
+    # Join rooms specified in environment or discover all active rooms
     rooms_to_join = os.getenv("LIVEKIT_ROOMS", "").split(",")
     rooms_to_join = [r.strip() for r in rooms_to_join if r.strip()]
     
@@ -421,7 +466,9 @@ async def main():
         for room_name in rooms_to_join:
             await agent.join_room(room_name)
     else:
-        logger.info("🌐 Agent ready to join rooms dynamically")
+        logger.info("🔍 Discovering active rooms...")
+        await agent.discover_and_join_rooms()
+        logger.info("🌐 Agent will continue monitoring for new rooms")
     
     # Start agent loop
     await agent.start()

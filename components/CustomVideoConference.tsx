@@ -608,12 +608,65 @@ export default function CustomVideoConference({ isTutor = false }: CustomVideoCo
     { source: Track.Source.ScreenShare, withPlaceholder: false },
   ]);
 
+  // Get local participant identity to prevent hearing own filtered audio
+  const localParticipantIdentity = participants.find((p) => p.isLocal)?.identity;
+
+  // Filter tracks to prefer DeepFiltered audio
+  const processedTracks = tracks.filter((trackRef) => {
+    const participant = trackRef.participant;
+    const publication = trackRef.publication;
+    
+    // Keep video tracks as-is
+    if (publication?.kind === 'video') {
+      return true;
+    }
+    
+    // For audio tracks, check if there's a filtered version available
+    if (publication?.kind === 'audio') {
+      const identity = participant.identity;
+      
+      // CRITICAL: Skip filtered audio if it's the local user's own voice (prevent echo)
+      if (publication.trackName.includes('_deepfiltered')) {
+        const filterTargetIdentity = publication.trackName.replace('_deepfiltered', '');
+        if (filterTargetIdentity === localParticipantIdentity) {
+          return false; // Skip own filtered audio to prevent hearing yourself
+        }
+      }
+      
+      // If this is the original track and a filtered version exists, skip it
+      if (!publication.trackName.includes('_deepfiltered')) {
+        // Check if ANY participant has published a filtered version of this identity's audio
+        const hasFilteredVersion = tracks.some(t => 
+          t.publication?.trackName === `${identity}_deepfiltered` &&
+          t.publication?.kind === 'audio'
+        );
+        if (hasFilteredVersion) {
+          return false; // Skip original, use filtered instead
+        }
+      }
+      
+      // If this is a filtered track (but not own voice), keep it
+      if (publication.trackName.includes('_deepfiltered')) {
+        return true;
+      }
+      
+      // If no filtered version exists, keep the original
+      return true;
+    }
+    
+    return true;
+  });
+
   // Separate local and remote participants
+  // Filter out DeepFilter agent participants (they should be hidden)
   const localParticipant = participants.find((p) => p.isLocal);
-  const remoteParticipants = participants.filter((p) => !p.isLocal);
+  const remoteParticipants = participants.filter((p) => 
+    !p.isLocal && 
+    !p.identity.includes('deepfilter-agent')
+  );
 
   // Check if anyone is screen sharing
-  const screenShareTrack = tracks.find(
+  const screenShareTrack = processedTracks.find(
     (track) => track.publication?.source === Track.Source.ScreenShare
   );
 
@@ -688,7 +741,7 @@ export default function CustomVideoConference({ isTutor = false }: CustomVideoCo
                 <ParticipantView
                   key={localParticipant.identity}
                   participant={localParticipant}
-                  trackRef={tracks.find(
+                  trackRef={processedTracks.find(
                     (t) => t.participant === localParticipant && t.source === Track.Source.Camera
                   )}
                   isLocal
@@ -701,7 +754,7 @@ export default function CustomVideoConference({ isTutor = false }: CustomVideoCo
 
             {/* Remote participants thumbnails */}
             {remoteParticipants.map((participant) => {
-              const trackRef = tracks.find(
+              const trackRef = processedTracks.find(
                 (t) => t.participant === participant && t.source === Track.Source.Camera
               );
               return (
@@ -733,7 +786,7 @@ export default function CustomVideoConference({ isTutor = false }: CustomVideoCo
                   const fullscreenParticipant = participants.find(p => p.identity === fullscreenParticipantId);
                   if (!fullscreenParticipant) return null;
                   
-                  const trackRef = tracks.find(
+                  const trackRef = processedTracks.find(
                     (t) => t.participant === fullscreenParticipant && t.source === Track.Source.Camera
                   );
                   
@@ -758,7 +811,7 @@ export default function CustomVideoConference({ isTutor = false }: CustomVideoCo
                 {participants
                   .filter(p => p.identity !== fullscreenParticipantId)
                   .map(participant => {
-                    const trackRef = tracks.find(
+                    const trackRef = processedTracks.find(
                       (t) => t.participant === participant && t.source === Track.Source.Camera
                     );
                     return (
@@ -806,7 +859,7 @@ export default function CustomVideoConference({ isTutor = false }: CustomVideoCo
                 <ParticipantView
                   key={localParticipant.identity}
                   participant={localParticipant}
-                  trackRef={tracks.find(
+                  trackRef={processedTracks.find(
                     (t) => t.participant === localParticipant && t.source === Track.Source.Camera
                   )}
                   isLocal
@@ -819,7 +872,7 @@ export default function CustomVideoConference({ isTutor = false }: CustomVideoCo
 
               {/* Remote participants */}
               {remoteParticipants.map((participant) => {
-                const trackRef = tracks.find(
+                const trackRef = processedTracks.find(
                   (t) => t.participant === participant && t.source === Track.Source.Camera
                 );
                 return (
