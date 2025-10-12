@@ -449,7 +449,8 @@ const ParticipantView = memo(function ParticipantView({
       )}
       onMouseEnter={() => {
         if (isTutor && !isLocal) setShowControls(true);
-        if (onClick && !isScreenShare) setShowFullscreenHint(true);
+        // Only show fullscreen hint for remote participants (not yourself)
+        if (onClick && !isScreenShare && !isLocal) setShowFullscreenHint(true);
       }}
       onMouseLeave={() => {
         setShowControls(false);
