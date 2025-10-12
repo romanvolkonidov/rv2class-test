@@ -9,6 +9,8 @@ export async function POST(req: NextRequest) {
   try {
     const { roomName } = await req.json();
 
+    console.log('🔍 Checking room:', roomName);
+
     if (!roomName) {
       return NextResponse.json(
         { error: "Room name is required" },
@@ -17,7 +19,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || !LIVEKIT_URL) {
-      console.error("Missing LiveKit environment variables");
+      console.error("Missing LiveKit environment variables:", {
+        hasApiKey: !!LIVEKIT_API_KEY,
+        hasSecret: !!LIVEKIT_API_SECRET,
+        hasUrl: !!LIVEKIT_URL,
+      });
       return NextResponse.json(
         { error: "Server configuration error" },
         { status: 500 }
@@ -28,9 +34,12 @@ export async function POST(req: NextRequest) {
     // Handle both ws:// and wss:// (convert to http/https for API calls)
     const baseUrl = LIVEKIT_URL.replace(/^(wss?:\/\/)/, '').replace(/^(https?:\/\/)/, '');
     const protocol = LIVEKIT_URL.startsWith('wss://') || LIVEKIT_URL.startsWith('https://') ? 'https' : 'http';
+    
+    const apiUrl = `${protocol}://${baseUrl}/twirp/livekit.RoomService/ListRooms`;
+    console.log('📡 Calling LiveKit API:', apiUrl);
 
     // Call LiveKit API to check if room exists
-    const response = await fetch(`${protocol}://${baseUrl}/twirp/livekit.RoomService/ListRooms`, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${await generateServerToken()}`,
@@ -40,14 +49,20 @@ export async function POST(req: NextRequest) {
     });
 
     if (!response.ok) {
-      console.error("LiveKit API error:", response.status, await response.text());
+      const errorText = await response.text();
+      console.error("LiveKit API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
       return NextResponse.json(
-        { error: "Failed to check room status" },
+        { error: "Failed to check room status", details: errorText },
         { status: 500 }
       );
     }
 
     const data = await response.json();
+    console.log('✅ LiveKit response:', data);
     const rooms = data.rooms || [];
     const room = rooms.find((r: any) => r.name === roomName);
 
