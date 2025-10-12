@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, getDoc, getDocFromServer } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import type { TutorKey } from "./config";
 
@@ -54,15 +54,37 @@ export default function JoinTutorRoom({
           if (data.status === "approved") {
             setIsWaiting(false);
             
-            // Fetch the active session to get the correct room name and session code
+            // CRITICAL: Fetch the active session directly from server (bypass cache)
+            // to ensure we get the LATEST room name and session code
             try {
-              const sessionDoc = await getDoc(doc(db, "activeSessions", tutorKey));
+              console.log(`🔍 Fetching LATEST session data for ${tutorKey} from server...`);
+              const sessionDoc = await getDocFromServer(doc(db, "activeSessions", tutorKey));
               
               if (sessionDoc.exists() && sessionDoc.data().isActive) {
                 const sessionData = sessionDoc.data();
-                router.push(
-                  `/room?room=${encodeURIComponent(sessionData.roomName)}&name=${encodeURIComponent(studentName.trim())}&isTutor=false&sessionCode=${sessionData.sessionCode}`
-                );
+                const targetRoomName = sessionData.roomName;
+                const targetSessionCode = sessionData.sessionCode;
+                
+                console.log(`✅ Got session data from server:`, {
+                  roomName: targetRoomName,
+                  sessionCode: targetSessionCode,
+                  tutorKey,
+                  studentName: studentName.trim()
+                });
+                
+                // Verify the room name format is correct
+                if (!targetRoomName.includes(tutorKey)) {
+                  console.error(`❌ ROOM NAME MISMATCH! Expected format: ${tutorKey}-XXXXXX, got: ${targetRoomName}`);
+                  setError("Invalid room configuration. Please contact your teacher.");
+                  setIsWaiting(false);
+                  setRequestId(null);
+                  return;
+                }
+                
+                const joinUrl = `/room?room=${encodeURIComponent(targetRoomName)}&name=${encodeURIComponent(studentName.trim())}&isTutor=false&sessionCode=${targetSessionCode}`;
+                console.log(`🚀 Navigating student to room:`, joinUrl);
+                
+                router.push(joinUrl);
               } else {
                 setError("The lesson has ended. Please try again later.");
                 setIsWaiting(false);
@@ -98,8 +120,9 @@ export default function JoinTutorRoom({
     setIsWaiting(true);
 
     try {
-      // First, check if there's an active session for this teacher
-      const sessionDoc = await getDoc(doc(db, "activeSessions", tutorKey));
+      // CRITICAL: Fetch session from SERVER (not cache) to ensure we have the latest data
+      console.log(`🔍 Fetching CURRENT session data for ${tutorKey} from server...`);
+      const sessionDoc = await getDocFromServer(doc(db, "activeSessions", tutorKey));
       
       if (!sessionDoc.exists() || !sessionDoc.data().isActive) {
         setError(`${name} hasn't started a lesson yet. Please try again later.`);
@@ -108,6 +131,12 @@ export default function JoinTutorRoom({
       }
       
       const sessionData = sessionDoc.data();
+      
+      console.log(`📋 Current session for ${tutorKey}:`, {
+        roomName: sessionData.roomName,
+        sessionCode: sessionData.sessionCode,
+        teacherName: sessionData.teacherName
+      });
       
       // Verify the room actually exists on LiveKit server
       console.log(`🔍 Checking if room ${sessionData.roomName} exists on LiveKit...`);

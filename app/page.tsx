@@ -53,6 +53,13 @@ export default function Home() {
       const sessionCode = Math.floor(100000 + Math.random() * 900000).toString();
       const room = `${teacherKey}-${sessionCode}`; // e.g., "roman-123456"
       
+      console.log(`🆕 Creating NEW session for ${teacher}:`, {
+        sessionCode,
+        roomName: room,
+        teacherKey,
+        format: `${teacherKey}-${sessionCode}`
+      });
+      
       // Store the active session in Firestore
       await setDoc(doc(db, "activeSessions", teacherKey), {
         sessionCode,
@@ -62,7 +69,11 @@ export default function Home() {
         isActive: true,
       });
       
-      console.log(`✅ Created new session for ${teacher}: ${sessionCode}`);
+      console.log(`✅ Session created and stored in Firestore:`, {
+        docPath: `activeSessions/${teacherKey}`,
+        sessionCode,
+        roomName: room
+      });
       
       // Join the room with the session code
       router.push(`/room?room=${room}&name=${teacher}&isTutor=true&sessionCode=${sessionCode}`);

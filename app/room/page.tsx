@@ -812,14 +812,14 @@ function RoomPage() {
   const roomName = searchParams?.get("room") || "";
   const userName = searchParams?.get("name") || "";
   const isTutor = searchParams?.get("isTutor") === "true";
-  const sessionCode = searchParams?.get("code") || "";
+  const sessionCode = searchParams?.get("sessionCode") || searchParams?.get("code") || "";
 
   const [token, setToken] = useState("");
 
   useEffect(() => {
     if (!roomName || !userName) return;
 
-    console.log("🔵 Connecting to room:", { roomName, userName, isTutor });
+    console.log("🔵 Connecting to room:", { roomName, userName, isTutor, sessionCode });
 
     (async () => {
       try {
@@ -829,13 +829,13 @@ function RoomPage() {
           body: JSON.stringify({ roomName, participantName: userName, isTutor }),
         });
         const data = await resp.json();
-        console.log("✅ Got token for room:", roomName);
+        console.log("✅ Got token for room:", roomName, "| User:", userName, "| Is Tutor:", isTutor);
         setToken(data.token);
       } catch (e) {
         console.error("❌ Error fetching token:", e);
       }
     })();
-  }, [roomName, userName, isTutor]);
+  }, [roomName, userName, isTutor, sessionCode]);
 
   if (token === "") {
     return (
