@@ -10,8 +10,9 @@ export default function Home() {
   const router = useRouter();
   const [showTeacherSelect, setShowTeacherSelect] = useState(false);
 
-  const startLessonAs = (teacher: "Roman" | "Yulia") => {
-    router.push(`/room?room=teaching-room&name=${teacher}&isTutor=true`);
+  const startLessonAs = (teacher: "Roman" | "Violet") => {
+    const room = teacher.toLowerCase() === "roman" ? "roman-room" : "violet-room";
+    router.push(`/room?room=${room}&name=${teacher}&isTutor=true`);
   };
 
   return (
@@ -62,13 +63,13 @@ export default function Home() {
                     </Button>
                     <Button
                       size="lg"
-                      onClick={() => startLessonAs("Yulia")}
+                      onClick={() => startLessonAs("Violet")}
                       className="h-auto py-6 bg-white hover:bg-gray-50 text-purple-600 font-bold shadow-lg hover:scale-105 transition-all duration-300 group"
                     >
                       <User className="h-8 w-8 mr-3 group-hover:scale-110 transition-transform" />
                       <div className="flex flex-col items-start">
-                        <span className="text-lg">Yulia</span>
-                        <span className="text-xs font-normal text-gray-500">Start as Yulia</span>
+                        <span className="text-lg">Violet</span>
+                        <span className="text-xs font-normal text-gray-500">Start as Violet</span>
                       </div>
                     </Button>
                   </div>
