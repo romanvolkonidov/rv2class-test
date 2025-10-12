@@ -1,15 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Video, Users, BookOpen, Calendar, Play } from "lucide-react";
+import { Video, Users, BookOpen, Calendar, Play, User } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
+  const [showTeacherSelect, setShowTeacherSelect] = useState(false);
 
-  const startLesson = () => {
-    router.push("/room?room=teaching-room&name=Teacher&isTutor=true");
+  const startLessonAs = (teacher: "Roman" | "Yulia") => {
+    router.push(`/room?room=teaching-room&name=${teacher}&isTutor=true`);
   };
 
   return (
@@ -27,19 +29,58 @@ export default function Home() {
         <div className="mb-8">
           <Card className="backdrop-blur-sm bg-gradient-to-br from-blue-500 to-purple-600 border-0 shadow-2xl hover:shadow-3xl transition-all duration-300">
             <CardContent className="p-8">
-              <Button
-                size="lg"
-                onClick={startLesson}
-                className="w-full h-auto py-8 bg-white hover:bg-gray-50 text-blue-600 text-2xl font-bold shadow-xl hover:scale-105 transition-all duration-300 group"
-              >
-                <Play className="h-12 w-12 mr-4 group-hover:scale-110 transition-transform" />
-                <div className="flex flex-col items-start">
-                  <span>Start a Lesson</span>
-                  <span className="text-sm font-normal text-gray-500 mt-1">
-                    Begin teaching session immediately
-                  </span>
+              {!showTeacherSelect ? (
+                <Button
+                  size="lg"
+                  onClick={() => setShowTeacherSelect(true)}
+                  className="w-full h-auto py-8 bg-white hover:bg-gray-50 text-blue-600 text-2xl font-bold shadow-xl hover:scale-105 transition-all duration-300 group"
+                >
+                  <Play className="h-12 w-12 mr-4 group-hover:scale-110 transition-transform" />
+                  <div className="flex flex-col items-start">
+                    <span>Start a Lesson</span>
+                    <span className="text-sm font-normal text-gray-500 mt-1">
+                      Begin teaching session immediately
+                    </span>
+                  </div>
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <h3 className="text-white text-xl font-semibold text-center mb-4">
+                    Select Teacher
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button
+                      size="lg"
+                      onClick={() => startLessonAs("Roman")}
+                      className="h-auto py-6 bg-white hover:bg-gray-50 text-blue-600 font-bold shadow-lg hover:scale-105 transition-all duration-300 group"
+                    >
+                      <User className="h-8 w-8 mr-3 group-hover:scale-110 transition-transform" />
+                      <div className="flex flex-col items-start">
+                        <span className="text-lg">Roman</span>
+                        <span className="text-xs font-normal text-gray-500">Start as Roman</span>
+                      </div>
+                    </Button>
+                    <Button
+                      size="lg"
+                      onClick={() => startLessonAs("Yulia")}
+                      className="h-auto py-6 bg-white hover:bg-gray-50 text-purple-600 font-bold shadow-lg hover:scale-105 transition-all duration-300 group"
+                    >
+                      <User className="h-8 w-8 mr-3 group-hover:scale-110 transition-transform" />
+                      <div className="flex flex-col items-start">
+                        <span className="text-lg">Yulia</span>
+                        <span className="text-xs font-normal text-gray-500">Start as Yulia</span>
+                      </div>
+                    </Button>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowTeacherSelect(false)}
+                    className="w-full text-white hover:text-white hover:bg-white/10"
+                  >
+                    Cancel
+                  </Button>
                 </div>
-              </Button>
+              )}
             </CardContent>
           </Card>
         </div>
