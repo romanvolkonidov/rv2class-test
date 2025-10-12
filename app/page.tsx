@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Video, Users, BookOpen, Calendar, Play, User } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 
 export default function Home() {
   const router = useRouter();
@@ -16,9 +16,41 @@ export default function Home() {
   const startLessonAs = async (teacher: "Roman" | "Violet") => {
     setIsStarting(true);
     try {
-      // Generate a unique 6-digit session code
-      const sessionCode = Math.floor(100000 + Math.random() * 900000).toString();
       const teacherKey = teacher.toLowerCase();
+      
+      // Check if there's an existing active session
+      const existingSessionDoc = await getDoc(doc(db, "activeSessions", teacherKey));
+      
+      if (existingSessionDoc.exists()) {
+        const existingSession = existingSessionDoc.data();
+        console.log(`📋 Found existing session for ${teacher}:`, existingSession);
+        
+        // Check if the LiveKit room actually still exists
+        const roomCheckResponse = await fetch("/api/check-room", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomName: existingSession.roomName }),
+        });
+        
+        if (roomCheckResponse.ok) {
+          const roomStatus = await roomCheckResponse.json();
+          
+          if (roomStatus.exists) {
+            console.log(`✅ Room ${existingSession.roomName} still exists with ${roomStatus.numParticipants} participants`);
+            console.log(`🔄 Rejoining existing session...`);
+            
+            // Rejoin the existing room
+            router.push(`/room?room=${existingSession.roomName}&name=${teacher}&isTutor=true&sessionCode=${existingSession.sessionCode}`);
+            return;
+          } else {
+            console.log(`❌ Room ${existingSession.roomName} no longer exists on LiveKit server`);
+            console.log(`🆕 Creating new session...`);
+          }
+        }
+      }
+      
+      // No existing session or room is dead - create new session
+      const sessionCode = Math.floor(100000 + Math.random() * 900000).toString();
       const room = `${teacherKey}-${sessionCode}`; // e.g., "roman-123456"
       
       // Store the active session in Firestore
@@ -30,7 +62,7 @@ export default function Home() {
         isActive: true,
       });
       
-      console.log(`✅ Created session for ${teacher}: ${sessionCode}`);
+      console.log(`✅ Created new session for ${teacher}: ${sessionCode}`);
       
       // Join the room with the session code
       router.push(`/room?room=${room}&name=${teacher}&isTutor=true&sessionCode=${sessionCode}`);

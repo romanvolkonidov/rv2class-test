@@ -480,6 +480,30 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
         sessionCode = sessionData.sessionCode;
         roomName = sessionData.roomName;
         console.log(`✅ Found active session for ${teacherName}: ${sessionCode}`);
+        
+        // Verify the room actually exists on LiveKit server
+        console.log(`🔍 Checking if room ${roomName} exists on LiveKit...`);
+        const roomCheckResponse = await fetch("/api/check-room", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomName }),
+        });
+        
+        if (roomCheckResponse.ok) {
+          const roomStatus = await roomCheckResponse.json();
+          
+          if (!roomStatus.exists) {
+            console.log(`❌ Room ${roomName} doesn't exist on LiveKit server`);
+            alert(`${teacherName} еще не начал урок или урок уже завершился.\n\nПопробуйте позже.`);
+            setIsJoining(false);
+            setIsWaitingForTeacher(false);
+            return;
+          }
+          
+          console.log(`✅ Room ${roomName} exists with ${roomStatus.numParticipants} participants`);
+        } else {
+          console.warn("⚠️ Failed to check room status, proceeding anyway...");
+        }
       } else {
         // No active session - teacher hasn't started yet
         alert(`${teacherName} еще не начал урок. Попробуйте позже.`);

@@ -109,6 +109,29 @@ export default function JoinTutorRoom({
       
       const sessionData = sessionDoc.data();
       
+      // Verify the room actually exists on LiveKit server
+      console.log(`🔍 Checking if room ${sessionData.roomName} exists on LiveKit...`);
+      const roomCheckResponse = await fetch("/api/check-room", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomName: sessionData.roomName }),
+      });
+      
+      if (roomCheckResponse.ok) {
+        const roomStatus = await roomCheckResponse.json();
+        
+        if (!roomStatus.exists) {
+          console.log(`❌ Room ${sessionData.roomName} doesn't exist on LiveKit server`);
+          setError(`${name} hasn't started the lesson yet or it has ended. Please try again later.`);
+          setIsWaiting(false);
+          return;
+        }
+        
+        console.log(`✅ Room ${sessionData.roomName} exists with ${roomStatus.numParticipants} participants`);
+      } else {
+        console.warn("⚠️ Failed to check room status, proceeding anyway...");
+      }
+      
       const response = await fetch("/api/join-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
