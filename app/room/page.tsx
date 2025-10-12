@@ -6,7 +6,7 @@ import { LiveKitRoom, RoomAudioRenderer, useRoomContext, useDataChannel, useChat
 import { VideoPresets, VideoCodec, Track } from "livekit-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, Check, X, MessageSquare } from "lucide-react";
+import { X, MessageSquare } from "lucide-react";
 import Whiteboard from "@/components/Whiteboard";
 import AnnotationOverlay from "@/components/AnnotationOverlay";
 import JoinRequestsPanel from "@/components/JoinRequestsPanel";
@@ -18,7 +18,6 @@ import AudioDiagnostics from "@/components/AudioDiagnostics";
 
 function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: boolean; userName: string; sessionCode: string; roomName: string }) {
   const room = useRoomContext();
-  const [copied, setCopied] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(false);
   const [annotationsClosing, setAnnotationsClosing] = useState(false);
@@ -653,38 +652,10 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     }
   };
 
-  const copyCode = () => {
-    navigator.clipboard.writeText(sessionCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <div className="h-screen flex flex-col relative">
       {/* Join Requests Panel - Only visible to tutors */}
       {isTutor && <JoinRequestsPanel roomName={roomName} />}
-
-      {/* Session Code - Floating top-right corner for tutors only */}
-      {isTutor && sessionCode && (
-        <div className="absolute top-6 right-6 z-10">
-          <Card className="bg-black/20 backdrop-blur-xl border-white/10 shadow-2xl">
-            <CardContent className="p-3 flex items-center gap-3">
-              <div>
-                <p className="text-xs text-gray-400">Session Code</p>
-                <p className="text-lg font-mono font-bold text-white">{sessionCode}</p>
-              </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={copyCode}
-                className="text-white hover:bg-white/20"
-              >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {/* Main Content - Full screen */}
       <div className="absolute inset-0 overflow-hidden">
