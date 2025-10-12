@@ -25,10 +25,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Extract the base URL without the protocol
-    const baseUrl = LIVEKIT_URL.replace(/^(https?:\/\/)/, '');
+    // Handle both ws:// and wss:// (convert to http/https for API calls)
+    const baseUrl = LIVEKIT_URL.replace(/^(wss?:\/\/)/, '').replace(/^(https?:\/\/)/, '');
+    const protocol = LIVEKIT_URL.startsWith('wss://') || LIVEKIT_URL.startsWith('https://') ? 'https' : 'http';
 
     // Call LiveKit API to check if room exists
-    const response = await fetch(`https://${baseUrl}/twirp/livekit.RoomService/ListRooms`, {
+    const response = await fetch(`${protocol}://${baseUrl}/twirp/livekit.RoomService/ListRooms`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${await generateServerToken()}`,
