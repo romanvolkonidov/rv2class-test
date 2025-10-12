@@ -353,6 +353,8 @@ interface ParticipantViewProps {
   isTutor?: boolean;
   onRemoveStudent?: (participantIdentity: string) => void;
   onStopScreenShare?: (participantIdentity: string) => void;
+  onClick?: () => void;
+  isFullscreen?: boolean;
 }
 
 const ParticipantView = memo(function ParticipantView({ 
@@ -361,7 +363,9 @@ const ParticipantView = memo(function ParticipantView({
   isLocal, 
   isTutor,
   onRemoveStudent,
-  onStopScreenShare 
+  onStopScreenShare,
+  onClick,
+  isFullscreen = false
 }: ParticipantViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -416,11 +420,23 @@ const ParticipantView = memo(function ParticipantView({
   const isCameraEnabled = participant.isCameraEnabled;
   const isScreenShare = trackRef?.source === Track.Source.ScreenShare;
   const [showControls, setShowControls] = useState(false);
+  const [showFullscreenHint, setShowFullscreenHint] = useState(false);
 
   // Check if participant has screen share
   const hasScreenShare = participant.getTrackPublications().some(
     (pub) => pub.source === Track.Source.ScreenShare
   );
+  
+  // Handle click with visual feedback
+  const handleVideoClick = (e: React.MouseEvent) => {
+    if (isScreenShare || !onClick) return;
+    e.stopPropagation();
+    
+    // Only trigger onClick if hint is showing (user has hovered)
+    if (showFullscreenHint || isFullscreen) {
+      onClick();
+    }
+  };
 
   return (
     <div
@@ -431,8 +447,15 @@ const ParticipantView = memo(function ParticipantView({
         !isScreenShare && "border",
         !isScreenShare && (isSpeaking ? "border-blue-400 ring-2 ring-blue-400/50" : "border-white/10")
       )}
-      onMouseEnter={() => isTutor && !isLocal && setShowControls(true)}
-      onMouseLeave={() => setShowControls(false)}
+      onMouseEnter={() => {
+        if (isTutor && !isLocal) setShowControls(true);
+        if (onClick && !isScreenShare) setShowFullscreenHint(true);
+      }}
+      onMouseLeave={() => {
+        setShowControls(false);
+        setShowFullscreenHint(false);
+      }}
+      onClick={handleVideoClick}
     >
       {/* Video */}
       <video
@@ -472,6 +495,24 @@ const ParticipantView = memo(function ParticipantView({
                 {participant.identity.charAt(0).toUpperCase()}
               </span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Toggle Hint - Show on hover */}
+      {showFullscreenHint && !isScreenShare && onClick && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm transition-opacity z-10 pointer-events-none">
+          <div className="bg-black/70 backdrop-blur-md px-4 py-2 rounded-lg border border-white/20 flex items-center gap-2">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {isFullscreen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              )}
+            </svg>
+            <span className="text-white text-sm font-medium">
+              {isFullscreen ? "Exit Fullscreen" : "View Fullscreen"}
+            </span>
           </div>
         </div>
       )}
@@ -574,6 +615,9 @@ export default function CustomVideoConference({ isTutor = false }: CustomVideoCo
   // State for thumbnail controls
   const [isMinimized, setIsMinimized] = useState(false);
   const [showLocalThumbnail, setShowLocalThumbnail] = useState(true);
+  
+  // State for fullscreen participant
+  const [fullscreenParticipantId, setFullscreenParticipantId] = useState<string | null>(null);
   
   // Get all video and audio tracks
   const tracks = useTracks([
@@ -697,49 +741,118 @@ export default function CustomVideoConference({ isTutor = false }: CustomVideoCo
       ) : (
         /* Participants grid when no screen share */
         <div className="w-full h-full p-2 md:p-4">
-          <div
-            className={cn(
-              "grid gap-2 md:gap-4 h-full",
-              // Mobile-first responsive grid
-              "grid-cols-1",  // 1 column on mobile
-              remoteParticipants.length === 0 && "md:grid-cols-1",
-              remoteParticipants.length === 1 && "sm:grid-cols-2",
-              remoteParticipants.length === 2 && "sm:grid-cols-2 lg:grid-cols-3",
-              remoteParticipants.length >= 3 && "sm:grid-cols-2 lg:grid-cols-4"
-            )}
-          >
-            {/* Local participant */}
-            {localParticipant && (
-              <ParticipantView
-                key={localParticipant.identity}
-                participant={localParticipant}
-                trackRef={tracks.find(
-                  (t) => t.participant === localParticipant && t.source === Track.Source.Camera
-                )}
-                isLocal
-                isTutor={isTutor}
-                onRemoveStudent={handleRemoveStudent}
-                onStopScreenShare={handleStopScreenShare}
-              />
-            )}
-
-            {/* Remote participants */}
-            {remoteParticipants.map((participant) => {
-              const trackRef = tracks.find(
-                (t) => t.participant === participant && t.source === Track.Source.Camera
-              );
-              return (
+          {fullscreenParticipantId ? (
+            /* Fullscreen mode: one participant large, others in thumbnails */
+            <>
+              {/* Main fullscreen participant */}
+              <div className="w-full h-full pb-2">
+                {(() => {
+                  const fullscreenParticipant = participants.find(p => p.identity === fullscreenParticipantId);
+                  if (!fullscreenParticipant) return null;
+                  
+                  const trackRef = tracks.find(
+                    (t) => t.participant === fullscreenParticipant && t.source === Track.Source.Camera
+                  );
+                  
+                  return (
+                    <ParticipantView
+                      key={fullscreenParticipant.identity}
+                      participant={fullscreenParticipant}
+                      trackRef={trackRef}
+                      isLocal={fullscreenParticipant.isLocal}
+                      isTutor={isTutor}
+                      onRemoveStudent={handleRemoveStudent}
+                      onStopScreenShare={handleStopScreenShare}
+                      onClick={() => setFullscreenParticipantId(null)}
+                      isFullscreen={true}
+                    />
+                  );
+                })()}
+              </div>
+              
+              {/* Thumbnail strip at bottom */}
+              <div className="absolute bottom-4 left-4 right-4 flex gap-2 overflow-x-auto pb-2 z-40">
+                {participants
+                  .filter(p => p.identity !== fullscreenParticipantId)
+                  .map(participant => {
+                    const trackRef = tracks.find(
+                      (t) => t.participant === participant && t.source === Track.Source.Camera
+                    );
+                    return (
+                      <div
+                        key={participant.identity}
+                        className="flex-shrink-0 w-32 h-24 cursor-pointer"
+                        onClick={() => setFullscreenParticipantId(participant.identity)}
+                      >
+                        <ParticipantView
+                          participant={participant}
+                          trackRef={trackRef}
+                          isLocal={participant.isLocal}
+                          isTutor={isTutor}
+                          onRemoveStudent={handleRemoveStudent}
+                          onStopScreenShare={handleStopScreenShare}
+                        />
+                      </div>
+                    );
+                  })}
+              </div>
+            </>
+          ) : (
+            /* Equal grid layout */
+            <div
+              className={cn(
+                "grid gap-2 md:gap-4 h-full w-full",
+                // Calculate grid based on total participant count for equal sizing
+                (() => {
+                  const totalCount = participants.length;
+                  if (totalCount === 1) return "grid-cols-1";
+                  if (totalCount === 2) return "grid-cols-1 sm:grid-cols-2";
+                  if (totalCount === 3) return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+                  if (totalCount === 4) return "grid-cols-2 lg:grid-cols-4";
+                  if (totalCount <= 6) return "grid-cols-2 lg:grid-cols-3";
+                  return "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+                })()
+              )}
+              style={{
+                // Ensure equal heights for all items
+                gridAutoRows: '1fr'
+              }}
+            >
+              {/* Local participant */}
+              {localParticipant && (
                 <ParticipantView
-                  key={participant.identity}
-                  participant={participant}
-                  trackRef={trackRef}
+                  key={localParticipant.identity}
+                  participant={localParticipant}
+                  trackRef={tracks.find(
+                    (t) => t.participant === localParticipant && t.source === Track.Source.Camera
+                  )}
+                  isLocal
                   isTutor={isTutor}
                   onRemoveStudent={handleRemoveStudent}
                   onStopScreenShare={handleStopScreenShare}
+                  onClick={() => setFullscreenParticipantId(localParticipant.identity)}
                 />
-              );
-            })}
-          </div>
+              )}
+
+              {/* Remote participants */}
+              {remoteParticipants.map((participant) => {
+                const trackRef = tracks.find(
+                  (t) => t.participant === participant && t.source === Track.Source.Camera
+                );
+                return (
+                  <ParticipantView
+                    key={participant.identity}
+                    participant={participant}
+                    trackRef={trackRef}
+                    isTutor={isTutor}
+                    onRemoveStudent={handleRemoveStudent}
+                    onStopScreenShare={handleStopScreenShare}
+                    onClick={() => setFullscreenParticipantId(participant.identity)}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
       

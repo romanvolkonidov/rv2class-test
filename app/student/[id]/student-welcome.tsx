@@ -3,10 +3,10 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle, XCircle } from "lucide-react";
+import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle, XCircle, Star, TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import WaitingRoom, { WaitingRoomHandle } from "@/components/WaitingRoom";
-import { db } from "@/lib/firebase";
+import { db, fetchStudentRatings } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 
 interface StudentData {
@@ -31,6 +31,9 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const [hasShownWelcomePopup, setHasShownWelcomePopup] = useState(false);
   const [isWaitingForTeacher, setIsWaitingForTeacher] = useState(false);
   const [joinRequestId, setJoinRequestId] = useState<string | null>(null);
+  const [studentRating, setStudentRating] = useState<any>(null);
+  const [loadingRating, setLoadingRating] = useState(true);
+  const [showRatingDetails, setShowRatingDetails] = useState(false);
 
   const teacherName = student.teacher || "Roman";
   const teacherPath = `/${teacherName.toLowerCase()}`;
@@ -90,6 +93,23 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       }
     };
   }, [micStream, videoStream]);
+  
+  // Load student ratings
+  useEffect(() => {
+    const loadRatings = async () => {
+      setLoadingRating(true);
+      try {
+        const ratings = await fetchStudentRatings(student.id);
+        setStudentRating(ratings);
+      } catch (error) {
+        console.error("Error loading ratings:", error);
+      } finally {
+        setLoadingRating(false);
+      }
+    };
+    
+    loadRatings();
+  }, [student.id]);
 
   // Listen for join request approval/denial
   useEffect(() => {
@@ -638,6 +658,37 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 )}
               </div>
             </div>
+            
+            {/* Rating Display */}
+            {!loadingRating && studentRating && (
+              <div className="backdrop-blur-xl bg-gradient-to-r from-amber-50/70 to-yellow-50/70 border border-amber-200/50 rounded-2xl p-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="backdrop-blur-xl bg-amber-500/15 p-2 rounded-xl border border-amber-400/30">
+                      <Star className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-600 text-sm">Твой рейтинг</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-2xl text-amber-600">
+                          {studentRating.overallRating ? studentRating.overallRating.toFixed(1) : "N/A"}
+                        </span>
+                        <span className="text-sm text-gray-500">/ 10</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowRatingDetails(true)}
+                    className="bg-white/60 hover:bg-white/80 border-amber-200/50 text-amber-700 font-medium"
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Подробнее
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons - Apple-style spacing and refinement */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -678,6 +729,166 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
           </div>
         </div>
       </div>
+      
+      {/* Rating Details Modal */}
+      {showRatingDetails && studentRating && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-500 to-yellow-500 p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Star className="h-8 w-8" />
+                  <div>
+                    <h2 className="text-2xl font-bold">Your Rating Details</h2>
+                    <p className="text-amber-100 mt-1">Complete performance overview</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowRatingDetails(false)}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <XCircle className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Overall Rating */}
+              <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-6 mb-6 border-2 border-amber-200">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 text-white mb-4">
+                    <span className="text-4xl font-bold">{studentRating.overallRating?.toFixed(1) || "N/A"}</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900">Overall Rating</h3>
+                  <p className="text-gray-600 mt-1">Your total performance score</p>
+                </div>
+              </div>
+              
+              {/* Individual Ratings */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Rating Breakdown</h3>
+                
+                {/* Homework Completion */}
+                {studentRating.homeworkCompletion !== undefined && (
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-5 w-5 text-blue-600" />
+                        <span className="font-semibold text-gray-900">Homework Completion</span>
+                      </div>
+                      <span className="font-bold text-xl text-blue-600">
+                        {(studentRating.homeworkCompletion * 10).toFixed(1)}/10
+                      </span>
+                    </div>
+                    <div className="w-full bg-blue-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${studentRating.homeworkCompletion * 100}%` }}
+                      />
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
+                      {(studentRating.homeworkCompletion * 100).toFixed(0)}% of homework completed
+                    </p>
+                  </div>
+                )}
+                
+                {/* Homework Score */}
+                {studentRating.homeworkScore !== undefined && (
+                  <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <span className="font-semibold text-gray-900">Homework Score</span>
+                      </div>
+                      <span className="font-bold text-xl text-green-600">
+                        {(studentRating.homeworkScore * 10).toFixed(1)}/10
+                      </span>
+                    </div>
+                    <div className="w-full bg-green-200 rounded-full h-2">
+                      <div
+                        className="bg-green-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${studentRating.homeworkScore * 100}%` }}
+                      />
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Average score: {(studentRating.homeworkScore * 100).toFixed(0)}%
+                    </p>
+                  </div>
+                )}
+                
+                {/* Lesson Attendance */}
+                {studentRating.lessonAttendance !== undefined && (
+                  <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Video className="h-5 w-5 text-purple-600" />
+                        <span className="font-semibold text-gray-900">Lesson Attendance</span>
+                      </div>
+                      <span className="font-bold text-xl text-purple-600">
+                        {(studentRating.lessonAttendance * 10).toFixed(1)}/10
+                      </span>
+                    </div>
+                    <div className="w-full bg-purple-200 rounded-full h-2">
+                      <div
+                        className="bg-purple-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${studentRating.lessonAttendance * 100}%` }}
+                      />
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
+                      {(studentRating.lessonAttendance * 100).toFixed(0)}% attendance rate
+                    </p>
+                  </div>
+                )}
+                
+                {/* Statistics */}
+                {studentRating.stats && (
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mt-6">
+                    <h4 className="font-semibold text-gray-900 mb-3">Statistics</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      {studentRating.stats.totalHomework !== undefined && (
+                        <div>
+                          <p className="text-sm text-gray-600">Total Homework</p>
+                          <p className="text-xl font-bold text-gray-900">{studentRating.stats.totalHomework}</p>
+                        </div>
+                      )}
+                      {studentRating.stats.completedHomework !== undefined && (
+                        <div>
+                          <p className="text-sm text-gray-600">Completed</p>
+                          <p className="text-xl font-bold text-green-600">{studentRating.stats.completedHomework}</p>
+                        </div>
+                      )}
+                      {studentRating.stats.totalLessons !== undefined && (
+                        <div>
+                          <p className="text-sm text-gray-600">Total Lessons</p>
+                          <p className="text-xl font-bold text-gray-900">{studentRating.stats.totalLessons}</p>
+                        </div>
+                      )}
+                      {studentRating.stats.attendedLessons !== undefined && (
+                        <div>
+                          <p className="text-sm text-gray-600">Attended</p>
+                          <p className="text-xl font-bold text-purple-600">{studentRating.stats.attendedLessons}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="border-t p-4 bg-gray-50">
+              <Button
+                onClick={() => setShowRatingDetails(false)}
+                className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

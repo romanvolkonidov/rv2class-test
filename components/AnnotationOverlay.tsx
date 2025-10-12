@@ -73,7 +73,7 @@ export default function AnnotationOverlay({
     offsetY: 0,
   });
   const [isDrawing, setIsDrawing] = useState(false);
-  const [tool, setTool] = useState<AnnotationTool>("pointer"); // Default to pointer
+  const [tool, setTool] = useState<AnnotationTool>("pencil"); // Default to pencil for immediate drawing
   const [color, setColor] = useState("#FF0000");
   const [lineWidth, setLineWidth] = useState(3);
   const [history, setHistory] = useState<AnnotationAction[]>([]);
@@ -149,6 +149,9 @@ export default function AnnotationOverlay({
         };
         setHistory(updatedHistory);
         
+        // Redraw canvas immediately to show the updated position
+        requestAnimationFrame(() => redrawCanvas());
+        
         // Broadcast the update
         sendAnnotationData(updatedHistory[actionIndex]);
       } else {
@@ -161,6 +164,9 @@ export default function AnnotationOverlay({
             startPoint: relativePoint,
           };
           setRemoteActions(updatedRemote);
+          
+          // Redraw canvas immediately to show the updated position
+          requestAnimationFrame(() => redrawCanvas());
           
           // Broadcast the update
           sendAnnotationData(updatedRemote[remoteIndex]);
@@ -964,13 +970,25 @@ export default function AnnotationOverlay({
         
         // CRITICAL: Store remote actions separately to enable concurrent drawing
         // This prevents remote actions from affecting local undo/redo state
-        setRemoteActions(prev => [...prev, action]);
+        // Check if this action already exists (by ID) and update it, otherwise add it
+        setRemoteActions(prev => {
+          const existingIndex = prev.findIndex(a => a.id === action.id);
+          if (existingIndex !== -1) {
+            // Update existing action (for text edits, drags, etc.)
+            const updated = [...prev];
+            updated[existingIndex] = action;
+            return updated;
+          } else {
+            // Add new action
+            return [...prev, action];
+          }
+        });
         
-        // Immediately draw the received action for real-time feedback
+        // Redraw entire canvas to properly show the updated state
         // Use requestAnimationFrame for smoother rendering
         requestAnimationFrame(() => {
           if (canvasRef.current) {
-            drawAction(action);
+            redrawCanvas();
           }
         });
       } else if (data.type === "clearAnnotations") {
@@ -1596,14 +1614,14 @@ export default function AnnotationOverlay({
           onTouchEnd={stopDrawing}
           className="w-full h-full touch-none"
           style={{ 
-            pointerEvents: viewOnly ? 'none' : 'auto',
-            cursor: viewOnly ? 'default' : tool === 'pointer' ? 'pointer' : tool === 'text' ? 'text' : 'crosshair'
+            pointerEvents: viewOnly || tool === 'pointer' ? 'none' : 'auto',
+            cursor: viewOnly ? 'default' : tool === 'pointer' ? 'default' : tool === 'text' ? 'text' : 'crosshair'
           }}
         />
       </div>
 
       {/* Text Control Circles Overlay */}
-      {!viewOnly && containerRef.current && (
+      {!viewOnly && tool !== 'pointer' && containerRef.current && (
         <div 
           className="fixed z-[35] pointer-events-none"
           style={{

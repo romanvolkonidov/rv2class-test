@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { fetchStudentHomework, fetchHomeworkReports, fetchAllHomework, fetchQuestionsForHomework, HomeworkAssignment, HomeworkReport, Question } from "@/lib/firebase";
+import { fetchStudentHomework, fetchHomeworkReports, fetchAllHomework, fetchQuestionsForHomework, fetchStudentRatings, HomeworkAssignment, HomeworkReport, Question } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Loader2, CheckCircle, Clock, AlertCircle, ArrowLeft, Trophy, Play, HelpCircle } from "lucide-react";
+import { BookOpen, Loader2, CheckCircle, Clock, AlertCircle, ArrowLeft, Trophy, Play, HelpCircle, Eye, X, Check, Star } from "lucide-react";
 
 interface HomeworkPageProps {
   studentId: string;
@@ -18,10 +18,28 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
   const [reports, setReports] = useState<HomeworkReport[]>([]);
   const [questionCounts, setQuestionCounts] = useState<Record<string, { total: number; incomplete: number }>>({});
   const [loading, setLoading] = useState(true);
+  const [viewingResultsFor, setViewingResultsFor] = useState<string | null>(null);
+  const [resultsQuestions, setResultsQuestions] = useState<Question[]>([]);
+  const [loadingResults, setLoadingResults] = useState(false);
+  const [studentRating, setStudentRating] = useState<any>(null);
+  const [loadingRating, setLoadingRating] = useState(true);
 
   useEffect(() => {
     loadHomework();
+    loadRatings();
   }, [studentId]);
+  
+  const loadRatings = async () => {
+    setLoadingRating(true);
+    try {
+      const ratings = await fetchStudentRatings(studentId);
+      setStudentRating(ratings);
+    } catch (error) {
+      console.error("Error loading ratings:", error);
+    } finally {
+      setLoadingRating(false);
+    }
+  };
 
   const loadHomework = async () => {
     setLoading(true);
@@ -77,6 +95,23 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
 
   const handleStartHomework = (assignmentId: string) => {
     router.push(`/student/${studentId}/homework/${assignmentId}`);
+  };
+  
+  const handleViewResults = async (assignment: HomeworkAssignment) => {
+    setLoadingResults(true);
+    setViewingResultsFor(assignment.id);
+    
+    try {
+      const topicIds = assignment.topicIds || (assignment.topicId ? [assignment.topicId] : []);
+      const questions = await fetchQuestionsForHomework(topicIds);
+      setResultsQuestions(questions);
+    } catch (error) {
+      console.error("Error loading questions for results:", error);
+      alert("Failed to load results. Please try again.");
+      setViewingResultsFor(null);
+    } finally {
+      setLoadingResults(false);
+    }
   };
 
   const getReportForAssignment = (assignmentId: string) => {
@@ -192,6 +227,15 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                 <div className="text-right">
                   <div className="text-4xl font-bold text-white">{completionPercentage}%</div>
                   <div className="text-sm text-white/90">Completed</div>
+                  {!loadingRating && studentRating && studentRating.overallRating && (
+                    <div className="mt-3 flex items-center justify-end gap-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 border border-white/30">
+                      <Star className="h-4 w-4 text-yellow-300 fill-yellow-300" />
+                      <span className="text-lg font-bold text-white">
+                        {studentRating.overallRating.toFixed(1)}
+                      </span>
+                      <span className="text-sm text-white/80">/10</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -312,6 +356,19 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                       </div>
                     </div>
 
+                    {statusInfo.status === "completed" && report && (
+                      <div className="mt-4">
+                        <Button
+                          onClick={() => handleViewResults(assignment)}
+                          variant="outline"
+                          className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border-blue-200 text-blue-700 font-semibold min-h-[44px] touch-manipulation active:scale-95"
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Results & Answers
+                        </Button>
+                      </div>
+                    )}
+
                     {statusInfo.status === "pending" && (
                       <div className="mt-4 p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-xl rounded-lg border border-blue-200/50">
                         <div className="flex items-center justify-between gap-4">
@@ -342,6 +399,192 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
           <p>📝 Answer quiz questions to complete your homework and see your score</p>
         </div>
       </div>
+      
+      {/* Results Modal */}
+      {viewingResultsFor && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Trophy className="h-8 w-8" />
+                  <div>
+                    <h2 className="text-2xl font-bold">Homework Results</h2>
+                    {(() => {
+                      const assignment = assignments.find(a => a.id === viewingResultsFor);
+                      const report = getReportForAssignment(viewingResultsFor);
+                      return (
+                        <p className="text-blue-100 mt-1">
+                          {assignment?.topicName || "Homework"} - Score: {report?.score}%
+                        </p>
+                      );
+                    })()}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setViewingResultsFor(null)}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingResults ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {resultsQuestions.map((question, index) => {
+                    const report = getReportForAssignment(viewingResultsFor);
+                    const submittedAnswer = report?.submittedAnswers?.find(
+                      (a: any) => a.questionId === question.id
+                    )?.answer;
+                    const isCorrect = String(submittedAnswer) === String(question.correctAnswer);
+                    
+                    return (
+                      <div
+                        key={question.id}
+                        className={`border-2 rounded-2xl p-5 ${
+                          isCorrect
+                            ? "bg-green-50/50 border-green-300"
+                            : "bg-red-50/50 border-red-300"
+                        }`}
+                      >
+                        {/* Question Header */}
+                        <div className="flex items-start gap-3 mb-4">
+                          <div
+                            className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                              isCorrect
+                                ? "bg-green-500 text-white"
+                                : "bg-red-500 text-white"
+                            }`}
+                          >
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg text-gray-900">
+                              {question.text || question.question}
+                            </h3>
+                            {question.sentence && (
+                              <p className="text-gray-700 mt-1">{question.sentence}</p>
+                            )}
+                          </div>
+                          {isCorrect ? (
+                            <Check className="h-6 w-6 text-green-600 flex-shrink-0" />
+                          ) : (
+                            <X className="h-6 w-6 text-red-600 flex-shrink-0" />
+                          )}
+                        </div>
+                        
+                        {/* Media */}
+                        {(question.mediaUrl || question.imageUrl || question.audioUrl || question.videoUrl) && (
+                          <div className="mb-4">
+                            {(question.mediaType === "image" || question.imageUrl) && (
+                              <img
+                                src={question.mediaUrl || question.imageUrl}
+                                alt="Question media"
+                                className="max-w-full h-auto rounded-lg"
+                              />
+                            )}
+                            {(question.mediaType === "audio" || question.audioUrl) && (
+                              <audio controls className="w-full">
+                                <source src={question.mediaUrl || question.audioUrl} />
+                              </audio>
+                            )}
+                            {(question.mediaType === "video" || question.videoUrl) && (
+                              <video controls className="w-full max-h-64 rounded-lg">
+                                <source src={question.mediaUrl || question.videoUrl} />
+                              </video>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Options (for multiple choice) */}
+                        {question.options && question.options.length > 0 && (
+                          <div className="space-y-2 mb-4">
+                            {question.options.map((option, optIndex) => {
+                              const isThisCorrect = String(question.correctAnswer) === String(optIndex) || 
+                                                   String(question.correctAnswer) === String(option);
+                              const isThisSelected = String(submittedAnswer) === String(optIndex) ||
+                                                    String(submittedAnswer) === String(option);
+                              
+                              return (
+                                <div
+                                  key={optIndex}
+                                  className={`p-3 rounded-lg border-2 ${
+                                    isThisCorrect
+                                      ? "bg-green-100 border-green-400 font-semibold"
+                                      : isThisSelected
+                                      ? "bg-red-100 border-red-400"
+                                      : "bg-white border-gray-200"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span>{option}</span>
+                                    {isThisCorrect && (
+                                      <span className="text-green-700 text-sm font-bold flex items-center gap-1">
+                                        <Check className="h-4 w-4" /> Correct Answer
+                                      </span>
+                                    )}
+                                    {isThisSelected && !isThisCorrect && (
+                                      <span className="text-red-700 text-sm font-bold flex items-center gap-1">
+                                        <X className="h-4 w-4" /> Your Answer
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        
+                        {/* Answer Summary (for text answers or fill-in-blank) */}
+                        {(!question.options || question.options.length === 0) && (
+                          <div className="space-y-2 mb-3">
+                            <div className={`p-3 rounded-lg ${isCorrect ? "bg-white" : "bg-red-100"}`}>
+                              <div className="text-sm font-semibold text-gray-600 mb-1">Your Answer:</div>
+                              <div className="font-medium text-gray-900">{submittedAnswer || "(No answer)"}</div>
+                            </div>
+                            {!isCorrect && (
+                              <div className="p-3 rounded-lg bg-green-100">
+                                <div className="text-sm font-semibold text-gray-600 mb-1">Correct Answer:</div>
+                                <div className="font-medium text-green-900">{question.correctAnswer}</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Explanation */}
+                        {question.explanation && (
+                          <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="text-sm font-semibold text-blue-700 mb-1">💡 Explanation:</div>
+                            <div className="text-sm text-gray-700">{question.explanation}</div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            
+            {/* Footer */}
+            <div className="border-t p-4 bg-gray-50">
+              <Button
+                onClick={() => setViewingResultsFor(null)}
+                className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

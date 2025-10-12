@@ -72,8 +72,8 @@ export const ParticipantView = memo(function ParticipantView({
         <div
         className={cn(
             "relative w-[160px] h-[120px] rounded-lg overflow-hidden transition-all duration-200",
-            "bg-black/20 backdrop-blur-md border",
-            isSpeaking ? "border-blue-400 ring-2 ring-blue-400/50" : "border-white/10"
+            "bg-black/20 backdrop-blur-md",
+            isSpeaking ? "outline outline-2 outline-blue-400 ring-2 ring-blue-400/50" : "outline outline-1 outline-white/10"
         )}
         >
         <video
@@ -99,8 +99,8 @@ export const ParticipantView = memo(function ParticipantView({
             </div>
             </div>
         )}
-        <div className="absolute bottom-1 left-1 right-1 px-2 py-0.5 rounded bg-black/40 backdrop-blur-sm border border-white/10">
-            <p className="text-xs font-medium text-white truncate">
+        <div className="absolute bottom-0.5 left-0.5 right-0.5 px-1.5 py-0.5 rounded bg-black/50 backdrop-blur-sm">
+            <p className="text-[10px] font-medium text-white/90 truncate leading-tight">
             {participant.identity} {isLocal && "(You)"}
             </p>
         </div>
@@ -462,7 +462,7 @@ function DraggableThumbnailContainer({
           />
         </>
       )}
-      <div className="bg-black/60 backdrop-blur-md rounded-t-lg border border-white/20 border-b-0 px-2 py-1 flex items-center gap-2">
+      <div className="bg-black/60 backdrop-blur-md rounded-t-lg outline outline-1 outline-white/20 px-2 py-1 flex items-center gap-2">
         <div 
           ref={dragHandleRef}
           className={cn(
@@ -513,7 +513,7 @@ function DraggableThumbnailContainer({
 
       {!isMinimized && (
         <div 
-          className="bg-black/40 backdrop-blur-md rounded-b-lg border border-white/20 p-2 flex flex-wrap gap-2 items-start overflow-auto"
+          className="bg-black/40 backdrop-blur-md rounded-b-lg outline outline-1 outline-white/20 p-2 flex flex-wrap gap-2 items-start overflow-auto"
           style={{
             maxWidth: '80vw', // Limit max width to prevent taking over screen
           }}

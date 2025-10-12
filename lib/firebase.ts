@@ -491,4 +491,23 @@ export const loadChatHistory = async (
   }
 };
 
+// Fetch student ratings
+export const fetchStudentRatings = async (studentId: string): Promise<any> => {
+  try {
+    const response = await fetch(
+      `https://getstudentratings-35666ugduq-uc.a.run.app?studentId=${studentId}`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ratings: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching student ratings:", error);
+    return null;
+  }
+};
+
 export { app, auth, db };
