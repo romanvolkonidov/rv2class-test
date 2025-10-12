@@ -142,6 +142,7 @@ class AudioAgent:
 
     async def discover_and_join_rooms(self):
         """Discover active rooms and join them"""
+        lkapi = None
         try:
             # Create API client
             lkapi = api.LiveKitAPI(
@@ -171,6 +172,10 @@ class AudioAgent:
                 
         except Exception as e:
             logger.error(f"❌ Error discovering rooms: {e}")
+        finally:
+            # Always close the API client session
+            if lkapi is not None:
+                await lkapi.aclose()
 
     async def start(self):
         """Start the agent and listen for rooms"""
