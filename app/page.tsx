@@ -3,123 +3,104 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Video, Users, UserCheck } from "lucide-react";
+import { Video, Users, BookOpen, Calendar, Play } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
-  const origin = typeof window === "undefined" ? "https://online.rv2class.com" : window.location.origin;
-  const tutors = [
-    { name: "Roman", room: "roman-room", studentPath: "/roman" },
-    { name: "Violet", room: "violet-room", studentPath: "/violet" },
-  ];
 
-  const startSession = (roomName: string, tutorName: string) => {
-    router.push(
-      `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(tutorName)}&isTutor=true`
-    );
+  const startLesson = () => {
+    router.push("/room?room=teaching-room&name=Teacher&isTutor=true");
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <div className="max-w-6xl w-full">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <div className="max-w-5xl w-full">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
             RV2Class
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            Professional English Tutoring Platform
+          <p className="text-xl text-gray-600 dark:text-gray-300">
+            Professional Teaching Platform
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Video className="h-6 w-6 text-blue-600" />
-                Start a Session
-              </CardTitle>
-              <CardDescription>
-                Choose your tutor identity to jump straight into the classroom.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {tutors.map((tutor) => (
-                <Button
-                  key={tutor.name}
-                  className="w-full justify-between"
-                  size="lg"
-                  onClick={() => startSession(tutor.room, tutor.name)}
-                >
-                  <span>{tutor.name}</span>
-                  <span className="text-sm text-blue-100">Room: {tutor.room.replace(/-/g, " ")}</span>
-                </Button>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-6 w-6 text-green-600" />
-                Student Access
-              </CardTitle>
-              <CardDescription>
-                Share one of the dedicated links below with your student. They only need their name.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              {tutors.map((tutor) => (
-                <div
-                  key={tutor.name}
-                  className="flex items-center justify-between rounded-lg border border-green-200/60 dark:border-green-800/60 bg-green-50/60 dark:bg-green-900/30 p-3"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{tutor.name}'s Classroom</p>
-                    <p className="text-gray-600 dark:text-gray-400">Link: {origin}{tutor.studentPath}</p>
-                  </div>
-                  <Button
-                    variant="secondary"
-                    onClick={() => router.push(tutor.studentPath)}
-                  >
-                    Open link
-                  </Button>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-6 w-6 text-purple-600" />
-                Registered Students
-              </CardTitle>
-              <CardDescription>
-                View all students with personalized join links based on their assigned teacher.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                <p>Each student gets a personalized welcome page with quick access to join their teacher's class.</p>
-              </div>
+        <div className="mb-8">
+          <Card className="backdrop-blur-sm bg-gradient-to-br from-blue-500 to-purple-600 border-0 shadow-2xl hover:shadow-3xl transition-all duration-300">
+            <CardContent className="p-8">
               <Button
-                className="w-full"
                 size="lg"
-                variant="outline"
-                onClick={() => router.push("/students")}
+                onClick={startLesson}
+                className="w-full h-auto py-8 bg-white hover:bg-gray-50 text-blue-600 text-2xl font-bold shadow-xl hover:scale-105 transition-all duration-300 group"
               >
-                <UserCheck className="mr-2 h-5 w-5" />
-                View All Students
+                <Play className="h-12 w-12 mr-4 group-hover:scale-110 transition-transform" />
+                <div className="flex flex-col items-start">
+                  <span>Start a Lesson</span>
+                  <span className="text-sm font-normal text-gray-500 mt-1">
+                    Begin teaching session immediately
+                  </span>
+                </div>
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>Powered by LiveKit • Secure real-time communication</p>
+        <div className="grid md:grid-cols-3 gap-6">
+          <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/students")}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Users className="h-6 w-6 text-blue-600" />
+                Students
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                View and manage all registered students
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/homework")}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <BookOpen className="h-6 w-6 text-green-600" />
+                Homework
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Create and review homework assignments
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/schedule")}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Calendar className="h-6 w-6 text-purple-600" />
+                Schedule
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Manage your teaching schedule
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-8 p-6 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+            <Video className="h-5 w-5 text-blue-600" />
+            Quick Tips
+          </h3>
+          <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+            <li>• Click "Start a Lesson" to begin teaching immediately</li>
+            <li>• Students can join via their personalized links</li>
+            <li>• You can approve student join requests during the session</li>
+            <li>• Use the whiteboard and screen sharing tools during lessons</li>
+          </ul>
         </div>
       </div>
     </main>
   );
 }
-

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { fetchStudents, Student, updateStudentTag } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Loader2, Link as LinkIcon, UserCheck, ExternalLink, Copy, Check, Tag } from "lucide-react";
+import { Users, Loader2, Link as LinkIcon, UserCheck, ExternalLink, Copy, Check, Tag, ChevronDown, ChevronRight, X, UserMinus } from "lucide-react";
 
 const TAG_COLORS = {
   red: { bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-800 dark:text-red-300", dot: "bg-red-500" },
@@ -22,6 +22,7 @@ export default function StudentsPage() {
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [updatingTag, setUpdatingTag] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const origin = typeof window === "undefined" ? "https://online.rv2class.com" : window.location.origin;
 
   useEffect(() => {
@@ -70,6 +71,36 @@ export default function StudentsPage() {
       }
     } catch (error) {
       console.error("Failed to update tag:", error);
+    } finally {
+      setUpdatingTag(null);
+    }
+  };
+
+  const toggleGroupExpanded = (color: string) => {
+    setExpandedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(color)) {
+        newSet.delete(color);
+      } else {
+        newSet.add(color);
+      }
+      return newSet;
+    });
+  };
+
+  const removeAllFromGroup = async (color: string) => {
+    if (!confirm(`Remove all students from the ${color} group?`)) return;
+    
+    const studentsInGroup = students.filter(s => s.tag === color);
+    setUpdatingTag('bulk-' + color);
+    
+    try {
+      await Promise.all(
+        studentsInGroup.map(student => updateStudentTag(student.id, null))
+      );
+      await loadStudents();
+    } catch (error) {
+      console.error("Failed to remove students from group:", error);
     } finally {
       setUpdatingTag(null);
     }
@@ -135,48 +166,126 @@ export default function StudentsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Tag className="h-6 w-6 text-blue-600" />
-                    Group Links (Tag-based)
+                    Color Groups
                   </CardTitle>
                   <CardDescription>
-                    Shareable links for students grouped by color tags
+                    Click on a group to expand and see all students. You can remove students or delete entire groups.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="space-y-4">
                     {Object.entries(studentsByTag).map(([color, tagStudents]) => {
                       const tagLink = generateTagLink(color);
                       const colorScheme = TAG_COLORS[color as keyof typeof TAG_COLORS];
                       const isCopied = copiedId === `tag-${color}`;
+                      const isExpanded = expandedGroups.has(color);
+                      const isRemoving = updatingTag === 'bulk-' + color;
                       
                       return (
-                        <div key={color} className="space-y-2">
-                          <div className={`p-3 rounded-lg border-2 ${colorScheme.bg} border-gray-300 dark:border-gray-600`}>
-                            <div className="flex items-center justify-center gap-2 mb-2">
-                              <div className={`w-3 h-3 rounded-full ${colorScheme.dot}`}></div>
-                              <span className={`font-semibold capitalize ${colorScheme.text}`}>
-                                {color}
-                              </span>
+                        <div key={color} className={`border-2 rounded-lg ${colorScheme.bg} border-gray-300 dark:border-gray-600`}>
+                          {/* Group Header */}
+                          <div className="p-4">
+                            <div className="flex items-center justify-between">
+                              <button
+                                onClick={() => toggleGroupExpanded(color)}
+                                className="flex items-center gap-3 flex-1 hover:opacity-80 transition-opacity"
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                                ) : (
+                                  <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                                )}
+                                <div className={`w-4 h-4 rounded-full ${colorScheme.dot}`}></div>
+                                <span className={`font-semibold capitalize text-lg ${colorScheme.text}`}>
+                                  {color} Group
+                                </span>
+                                <span className="text-sm text-gray-600 dark:text-gray-400">
+                                  ({tagStudents.length} {tagStudents.length === 1 ? "student" : "students"})
+                                </span>
+                              </button>
+                              
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(tagLink, `tag-${color}`)}
+                                  className="flex items-center gap-1"
+                                  title="Copy group link"
+                                >
+                                  {isCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                  <span className="hidden sm:inline">Link</span>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(tagLink, "_blank")}
+                                  className="flex items-center gap-1"
+                                  title="Open group page"
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                  <span className="hidden sm:inline">Open</span>
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => removeAllFromGroup(color)}
+                                  disabled={isRemoving}
+                                  className="flex items-center gap-1"
+                                  title="Remove all students from group"
+                                >
+                                  {isRemoving ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <X className="h-4 w-4" />
+                                  )}
+                                  <span className="hidden sm:inline">Delete Group</span>
+                                </Button>
+                              </div>
                             </div>
-                            <p className="text-xs text-center text-gray-600 dark:text-gray-400">
-                              {tagStudents.length} {tagStudents.length === 1 ? "student" : "students"}
-                            </p>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => copyToClipboard(tagLink, `tag-${color}`)}
-                              className="flex-1 text-xs"
-                            >
-                              {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => window.open(tagLink, "_blank")}
-                              className="flex-1 text-xs"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                            </Button>
+                            
+                            {/* Expanded Student List */}
+                            {isExpanded && (
+                              <div className="mt-4 space-y-2 pl-8">
+                                {tagStudents.map((student) => {
+                                  const isUpdating = updatingTag === student.id;
+                                  
+                                  return (
+                                    <div
+                                      key={student.id}
+                                      className="flex items-center justify-between p-3 bg-white/60 dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-700"
+                                    >
+                                      <div>
+                                        <h4 className="font-medium text-gray-900 dark:text-white">
+                                          {student.name}
+                                        </h4>
+                                        {student.teacher && (
+                                          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                            {student.teacher}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleTagChange(student.id, null)}
+                                        disabled={isUpdating}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        title="Remove from group"
+                                      >
+                                        {isUpdating ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <>
+                                            <UserMinus className="h-4 w-4 mr-1" />
+                                            Remove
+                                          </>
+                                        )}
+                                      </Button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
