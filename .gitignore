@@ -38,3 +38,10 @@ next-env.d.ts
 # Electron
 electron/dist/
 electron/node_modules/
+
+# DeepFilterNet Audio Agent
+livekit-audio-agent/venv-deepfilter/
+livekit-audio-agent/agent.log
+livekit-audio-agent/**/*.log
+livekit-audio-agent/__pycache__/
+livekit-audio-agent/**/__pycache__/

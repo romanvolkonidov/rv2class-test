@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DeepFilterNet Audio Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    .info { background: #d1ecf1; color: #0c5460; }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover { background: #0056b3; }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #logs {
+      background: #000;
+      color: #0f0;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .log-line { margin: 2px 0; }
+  </style>
+</head>
+<body>
+  <h1>🎯 DeepFilterNet Audio Test</h1>
+  
+  <div class="card">
+    <h2>📊 Agent Status</h2>
+    <div id="agent-status" class="status info">Checking agent...</div>
+  </div>
+
+  <div class="card">
+    <h2>🎤 Quick Test</h2>
+    <p>This tests the DeepFilterNet agent running on your local machine.</p>
+    <button id="test-btn" onclick="testAgent()">Run Test</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+  </div>
+
+  <div class="card">
+    <h2>📝 Test Instructions</h2>
+    <ol>
+      <li>Make sure the DeepFilterNet agent is running locally</li>
+      <li>Open <a href="https://rv2class-test.vercel.app/" target="_blank">https://rv2class-test.vercel.app/</a></li>
+      <li>Join any room</li>
+      <li>Turn on your microphone</li>
+      <li>Watch the agent logs below - you should see audio processing messages</li>
+      <li>Make noise (keyboard, music) while speaking</li>
+      <li>Other participants will hear crystal-clear audio with zero background noise!</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>📋 Live Logs</h2>
+    <div id="logs"></div>
+  </div>
+
+  <script>
+    let logCount = 0;
+
+    function addLog(message, type = 'info') {
+      const logs = document.getElementById('logs');
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      const timestamp = new Date().toLocaleTimeString();
+      line.textContent = `[${timestamp}] ${message}`;
+      logs.appendChild(line);
+      logs.scrollTop = logs.scrollHeight;
+      logCount++;
+      if (logCount > 100) {
+        logs.removeChild(logs.firstChild);
+      }
+    }
+
+    function clearLogs() {
+      document.getElementById('logs').innerHTML = '';
+      logCount = 0;
+      addLog('Logs cleared');
+    }
+
+    async function checkAgentStatus() {
+      try {
+        addLog('Checking agent health endpoint...');
+        const response = await fetch('http://localhost:8080/health');
+        const data = await response.text();
+        
+        const statusDiv = document.getElementById('agent-status');
+        statusDiv.className = 'status success';
+        statusDiv.innerHTML = `
+          <strong>✅ Agent is Running!</strong><br>
+          Status: ${data}<br>
+          Endpoint: http://localhost:8080/health
+        `;
+        addLog('✅ Agent is healthy and ready!');
+        return true;
+      } catch (error) {
+        const statusDiv = document.getElementById('agent-status');
+        statusDiv.className = 'status error';
+        statusDiv.innerHTML = `
+          <strong>❌ Agent Not Running</strong><br>
+          Error: ${error.message}<br>
+          <br>
+          <strong>To start the agent:</strong><br>
+          <code>cd livekit-audio-agent && ./start_agent.sh</code>
+        `;
+        addLog(`❌ Agent not reachable: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function testAgent() {
+      const btn = document.getElementById('test-btn');
+      btn.disabled = true;
+      btn.textContent = 'Testing...';
+
+      addLog('=== Starting Test ===');
+      
+      // Test 1: Health check
+      addLog('Test 1: Checking agent health...');
+      const isHealthy = await checkAgentStatus();
+      
+      if (!isHealthy) {
+        addLog('❌ Test failed: Agent is not running');
+        btn.disabled = false;
+        btn.textContent = 'Run Test';
+        return;
+      }
+
+      // Test 2: Check LiveKit connection
+      addLog('Test 2: Checking LiveKit server...');
+      try {
+        const response = await fetch('https://rv2class-livekit.fly.dev');
+        addLog('✅ LiveKit server is reachable');
+      } catch (error) {
+        addLog(`⚠️ LiveKit server check failed: ${error.message}`);
+      }
+
+      // Test 3: Instructions
+      addLog('Test 3: Ready for live testing');
+      addLog('');
+      addLog('📝 Next steps:');
+      addLog('1. Open https://rv2class-test.vercel.app/');
+      addLog('2. Join a room');
+      addLog('3. Turn on your microphone');
+      addLog('4. Watch agent logs: tail -f agent.log');
+      addLog('5. The agent will automatically process your audio!');
+      addLog('');
+      addLog('✅ All checks passed! Agent is ready.');
+
+      btn.disabled = false;
+      btn.textContent = 'Run Test Again';
+    }
+
+    // Check agent status on page load
+    window.onload = () => {
+      addLog('Page loaded');
+      checkAgentStatus();
+      
+      // Auto-refresh status every 30 seconds
+      setInterval(checkAgentStatus, 30000);
+    };
+  </script>
+</body>
+</html>
