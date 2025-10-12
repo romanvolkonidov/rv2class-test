@@ -509,28 +509,23 @@ div.lk-chat {
 
 /* Ultra-sharp screen share rendering - prevent blurring */
 video {
-  /* High-quality rendering for all video elements */
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-}
-
-/* Override for camera feeds - allow smoother rendering */
-video:not([data-lk-source="screen_share"]) {
+  /* Smooth, high-quality rendering for all video elements */
   image-rendering: auto;
+  image-rendering: high-quality;
 }
 
 /* Specific optimization for screen share video elements */
 video[data-lk-source="screen_share"],
 video[data-source="screen_share"] {
-  /* Prevent any browser downscaling blur */
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
+  /* Use smooth high-quality rendering - NOT crisp-edges which causes pixelation */
+  image-rendering: auto;
+  image-rendering: high-quality;
   
-  /* Disable hardware acceleration if it causes blur */
+  /* Enable hardware acceleration for smooth rendering */
   transform: translateZ(0);
   will-change: transform;
   
-  /* Ensure pixel-perfect rendering */
+  /* Ensure smooth rendering */
   -webkit-font-smoothing: subpixel-antialiased;
   backface-visibility: hidden;
 }
