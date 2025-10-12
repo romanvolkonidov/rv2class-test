@@ -1,0 +1,29 @@
+# fly.toml app configuration file generated for rv2class-audio-agent on 2025-10-12T21:44:27+03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'rv2class-audio-agent'
+primary_region = 'iad'
+
+[build]
+  dockerfile = 'Dockerfile.deepfilter'
+
+[env]
+  AGENT_IDENTITY = 'deepfilter-agent'
+  ATTENUATION_LIMIT = '100'
+  POST_GAIN = '1.0'
+
+[http_service]
+  internal_port = 8080
+  auto_stop_machines = 'off'
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = 'shared-cpu-2x'
+  memory_mb = 512
+
+[[metrics]]
+  port = 8080
+  path = '/health'
