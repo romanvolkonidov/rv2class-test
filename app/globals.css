@@ -3,6 +3,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Glassmorphism Design System */
+@import './glassmorphism.css';
+
 /* Scrollbar hiding utility */
 @layer utilities {
   .scrollbar-hide {

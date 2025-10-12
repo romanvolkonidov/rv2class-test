@@ -7,7 +7,7 @@ import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, Vide
 import { useState, useEffect, useRef } from "react";
 import WaitingRoom, { WaitingRoomHandle } from "@/components/WaitingRoom";
 import { db, fetchStudentRatings } from "@/lib/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, getDoc } from "firebase/firestore";
 
 interface StudentData {
   id: string;
@@ -34,6 +34,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const [studentRating, setStudentRating] = useState<any>(null);
   const [loadingRating, setLoadingRating] = useState(true);
   const [showRatingDetails, setShowRatingDetails] = useState(false);
+  const [isExcludedFromRating, setIsExcludedFromRating] = useState(false);
 
   const teacherName = student.teacher || "Roman";
   const teacherPath = `/${teacherName.toLowerCase()}`;
@@ -99,10 +100,24 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     const loadRatings = async () => {
       setLoadingRating(true);
       try {
-        const ratings = await fetchStudentRatings(student.id);
-        setStudentRating(ratings);
+        console.log("🎯 Fetching ratings for student:", student.id);
+        
+        // Check if student is excluded from rating
+        const profileRef = doc(db, 'studentProfiles', student.id);
+        const profileSnap = await getDoc(profileRef);
+        const excluded = profileSnap.exists() ? profileSnap.data()?.excludeFromRating : false;
+        setIsExcludedFromRating(excluded);
+        
+        if (excluded) {
+          console.log("⚠️ Student is excluded from rating");
+          setStudentRating(null);
+        } else {
+          const ratings = await fetchStudentRatings(student.id);
+          console.log("📊 Received ratings:", ratings);
+          setStudentRating(ratings);
+        }
       } catch (error) {
-        console.error("Error loading ratings:", error);
+        console.error("❌ Error loading ratings:", error);
       } finally {
         setLoadingRating(false);
       }
@@ -606,10 +621,10 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
 
       <div className="max-w-2xl w-full space-y-6 relative z-10">
         {/* Welcome Card - Apple-style refined glass */}
-        <div className="backdrop-blur-2xl bg-white/60 border border-gray-200/50 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] overflow-hidden">
+        <div className="glass-panel rounded-3xl overflow-hidden">
           <div className={`bg-gradient-to-r ${colors.gradient} p-8`}>
             <div className="flex items-center gap-4">
-              <div className="backdrop-blur-xl bg-white/20 p-3 rounded-2xl border border-white/30">
+              <div className="glass-surface-dark p-3 rounded-2xl">
                 <UserCircle className="h-10 w-10 text-white" />
               </div>
               <div>
@@ -624,10 +639,10 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
           </div>
           <div className="p-8 space-y-6">
             {/* Student Info */}
-            <div className="backdrop-blur-xl bg-white/40 border border-gray-200/50 rounded-2xl p-5">
+            <div className="glass-surface rounded-2xl p-5">
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="backdrop-blur-xl bg-blue-500/15 p-2 rounded-xl border border-blue-400/30">
+                  <div className="glass-accent-blue p-2 rounded-xl">
                     <GraduationCap className="h-5 w-5 text-blue-600" />
                   </div>
                   <span className="font-medium text-gray-600">Твой учитель:</span>
@@ -638,17 +653,17 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 
                 {activeSubjects.length > 0 && (
                   <div className="flex items-center gap-3 flex-wrap">
-                    <div className="backdrop-blur-xl bg-blue-500/15 p-2 rounded-xl border border-blue-400/30">
+                    <div className="glass-accent-blue p-2 rounded-xl">
                       <BookOpen className="h-5 w-5 text-blue-600" />
                     </div>
                     <span className="font-medium text-gray-600">Твои предметы:</span>
                     {activeSubjects.map((subject) => (
                       <span
                         key={subject}
-                        className={`px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-xl border ${
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium ${
                           subject === "English"
-                            ? "bg-green-500/20 text-green-700 border-green-400/30"
-                            : "bg-blue-500/20 text-blue-700 border-blue-400/30"
+                            ? "glass-accent-green text-green-700"
+                            : "glass-accent-blue text-blue-700"
                         }`}
                       >
                         {subject}
@@ -660,11 +675,27 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
             </div>
             
             {/* Rating Display */}
-            {!loadingRating && studentRating && (
-              <div className="backdrop-blur-xl bg-gradient-to-r from-amber-50/70 to-yellow-50/70 border border-amber-200/50 rounded-2xl p-5">
+            {!loadingRating && isExcludedFromRating && (
+              <div className="glass-surface rounded-2xl p-5 border-2 border-gray-300">
+                <div className="flex items-center gap-3">
+                  <div className="glass-surface-dark p-2 rounded-xl">
+                    <Star className="h-5 w-5 text-gray-500" />
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600 text-sm">Рейтинг</span>
+                    <div className="text-sm text-gray-500 mt-1">
+                      Вы не участвуете в общем рейтинге
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {!loadingRating && !isExcludedFromRating && studentRating && (
+              <div className="glass-accent-amber rounded-2xl p-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="backdrop-blur-xl bg-amber-500/15 p-2 rounded-xl border border-amber-400/30">
+                    <div className="glass-surface-dark p-2 rounded-xl">
                       <Star className="h-5 w-5 text-amber-600" />
                     </div>
                     <div>
@@ -675,13 +706,16 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                         </span>
                         <span className="text-sm text-gray-500">/ 10</span>
                       </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Место: {studentRating.rank} из {studentRating.totalStudents}
+                      </div>
                     </div>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowRatingDetails(true)}
-                    className="bg-white/60 hover:bg-white/80 border-amber-200/50 text-amber-700 font-medium"
+                    className="glass-button-dark text-amber-700 font-medium"
                   >
                     <TrendingUp className="h-4 w-4 mr-2" />
                     Подробнее
@@ -712,11 +746,11 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full h-auto py-5 min-h-[64px] backdrop-blur-xl bg-white/40 border border-gray-200/50 hover:bg-white/60 text-gray-700 transition-all duration-300 shadow-xl font-medium touch-manipulation active:scale-95 select-none"
+                className="w-full h-auto py-5 min-h-[64px] glass-card text-gray-700 transition-all duration-300 shadow-xl font-medium touch-manipulation active:scale-95 select-none"
                 onClick={handleHomeworks}
               >
                 <div className="flex items-center gap-3">
-                  <div className="backdrop-blur-xl bg-blue-500/15 p-2 rounded-xl border border-blue-400/30">
+                  <div className="glass-accent-blue p-2 rounded-xl">
                     <BookOpen className="h-5 w-5 text-blue-600" />
                   </div>
                   <div className="flex flex-col items-start">
@@ -732,8 +766,8 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       
       {/* Rating Details Modal */}
       {showRatingDetails && studentRating && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 glass-backdrop-strong z-50 flex items-center justify-center p-4">
+          <div className="glass-modal rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="bg-gradient-to-r from-amber-500 to-yellow-500 p-6 text-white">
               <div className="flex items-center justify-between">

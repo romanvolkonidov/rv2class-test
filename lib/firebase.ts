@@ -494,19 +494,95 @@ export const loadChatHistory = async (
 // Fetch student ratings
 export const fetchStudentRatings = async (studentId: string): Promise<any> => {
   try {
-    const response = await fetch(
-      `https://getstudentratings-35666ugduq-uc.a.run.app?studentId=${studentId}`
-    );
+    console.log("🔍 Fetching ratings from Cloud Function for student:", studentId);
+    const url = `https://getstudentratings-35666ugduq-uc.a.run.app?studentId=${studentId}`;
+    console.log("📡 Request URL:", url);
+    
+    const response = await fetch(url);
+    console.log("📥 Response status:", response.status, response.statusText);
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Cloud Function error response:", errorText);
       throw new Error(`Failed to fetch ratings: ${response.statusText}`);
     }
     
     const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching student ratings:", error);
+    console.log("✅ Cloud Function returned data:", JSON.stringify(data, null, 2));
+    
+    // The Cloud Function returns ALL students, we need to find our specific student
+    if (data.success && data.ratings && Array.isArray(data.ratings)) {
+      // Filter out students who are excluded from rating
+      const filteredRatings = await filterExcludedStudents(data.ratings);
+      console.log(`🔍 Filtered ratings: ${data.ratings.length} -> ${filteredRatings.length} students`);
+      
+      // Recalculate ranks after filtering
+      const rerankedRatings = filteredRatings.map((student: any, index: number) => ({
+        ...student,
+        rank: index + 1
+      }));
+      
+      const studentRating = rerankedRatings.find((r: any) => r.studentId === studentId);
+      
+      if (studentRating) {
+        console.log("🎯 Found student rating:", studentRating);
+        // Transform to match expected structure
+        return {
+          overallRating: studentRating.averagePercentage / 10, // Convert 0-100 to 0-10
+          homeworkCompletion: studentRating.completedHomeworks / studentRating.totalAssigned || 0,
+          homeworkScore: studentRating.averagePercentage / 100, // 0-1 scale
+          rank: studentRating.rank,
+          totalStudents: rerankedRatings.length,
+          completedHomeworks: studentRating.completedHomeworks,
+          totalAssigned: studentRating.totalAssigned,
+          averagePercentage: studentRating.averagePercentage
+        };
+      } else {
+        console.warn("⚠️ Student not found in ratings list (may be excluded from rating)");
+        return null;
+      }
+    }
+    
     return null;
+  } catch (error) {
+    console.error("❌ Error fetching student ratings:", error);
+    return null;
+  }
+};
+
+// Helper function to filter out excluded students
+const filterExcludedStudents = async (ratings: any[]): Promise<any[]> => {
+  try {
+    // Get all student profiles to check exclusion status
+    const studentIds = ratings.map(r => r.studentId);
+    const profileChecks = await Promise.all(
+      studentIds.map(async (id) => {
+        try {
+          const profileRef = doc(db, 'studentProfiles', id);
+          const profileSnap = await getDoc(profileRef);
+          const excludeFromRating = profileSnap.exists() ? profileSnap.data()?.excludeFromRating : false;
+          return { studentId: id, excluded: excludeFromRating };
+        } catch (error) {
+          console.error(`Error checking profile for ${id}:`, error);
+          return { studentId: id, excluded: false }; // Include by default if error
+        }
+      })
+    );
+    
+    // Create a map of excluded students
+    const excludedMap = new Map(
+      profileChecks.map(check => [check.studentId, check.excluded])
+    );
+    
+    // Filter out excluded students
+    const filtered = ratings.filter(rating => !excludedMap.get(rating.studentId));
+    
+    console.log(`📊 Exclusion stats: ${profileChecks.filter(c => c.excluded).length} students excluded`);
+    
+    return filtered;
+  } catch (error) {
+    console.error("Error filtering excluded students:", error);
+    return ratings; // Return all if error
   }
 };
 

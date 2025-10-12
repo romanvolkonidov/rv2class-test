@@ -201,18 +201,18 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
           <Button
             variant="outline"
             onClick={() => router.back()}
-            className="mb-4 backdrop-blur-xl bg-white/60 border-gray-200/50 hover:bg-white/80 min-h-[44px] touch-manipulation active:scale-95 select-none"
+            className="mb-4 glass-card hover:glass-hover min-h-[44px] touch-manipulation active:scale-95 select-none"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Welcome Page
           </Button>
 
           {/* Glass morphism card */}
-          <div className="backdrop-blur-2xl bg-white/60 border border-gray-200/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] rounded-3xl overflow-hidden">
+          <div className="glass-panel rounded-3xl overflow-hidden">
             <div className="bg-gradient-to-r from-purple-500/90 via-purple-600/90 to-indigo-600/90 p-8">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="backdrop-blur-xl bg-white/20 p-3 rounded-2xl border border-white/30">
+                  <div className="glass-surface-dark p-3 rounded-2xl">
                     <BookOpen className="h-10 w-10 text-white" />
                   </div>
                   <div>
@@ -228,7 +228,7 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                   <div className="text-4xl font-bold text-white">{completionPercentage}%</div>
                   <div className="text-sm text-white/90">Completed</div>
                   {!loadingRating && studentRating && studentRating.overallRating && (
-                    <div className="mt-3 flex items-center justify-end gap-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 border border-white/30">
+                    <div className="mt-3 flex items-center justify-end gap-2 glass-surface-dark rounded-full px-3 py-1">
                       <Star className="h-4 w-4 text-yellow-300 fill-yellow-300" />
                       <span className="text-lg font-bold text-white">
                         {studentRating.overallRating.toFixed(1)}
@@ -241,15 +241,15 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
             </div>
             <div className="p-6">
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="text-center p-4 rounded-xl bg-blue-50/80 backdrop-blur-xl border border-blue-200/50">
+                <div className="text-center p-4 rounded-xl glass-accent-blue">
                   <div className="text-2xl font-bold text-blue-600">{totalCount}</div>
                   <div className="text-sm text-gray-600">Total</div>
                 </div>
-                <div className="text-center p-4 rounded-xl bg-green-50/80 backdrop-blur-xl border border-green-200/50">
+                <div className="text-center p-4 rounded-xl glass-accent-green">
                   <div className="text-2xl font-bold text-green-600">{completedCount}</div>
                   <div className="text-sm text-gray-600">Completed</div>
                 </div>
-                <div className="text-center p-4 rounded-xl bg-orange-50/80 backdrop-blur-xl border border-orange-200/50">
+                <div className="text-center p-4 rounded-xl glass-accent-amber">
                   <div className="text-2xl font-bold text-orange-600">{totalCount - completedCount}</div>
                   <div className="text-sm text-gray-600">Pending</div>
                 </div>
@@ -263,7 +263,7 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
             <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
           </div>
         ) : assignments.length === 0 ? (
-          <div className="backdrop-blur-2xl bg-white/60 border border-gray-200/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] rounded-3xl overflow-hidden">
+          <div className="glass-panel rounded-3xl overflow-hidden">
             <div className="py-12 text-center px-6">
               <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600 text-lg">
@@ -284,7 +284,7 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
               return (
                 <div
                   key={assignment.id}
-                  className={`backdrop-blur-2xl bg-white/60 border-2 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] rounded-3xl overflow-hidden ${statusInfo.color}`}
+                  className={`glass-card rounded-3xl overflow-hidden ${statusInfo.color}`}
                 >
                   <div className="pt-6 px-6 pb-6">
                     <div className="flex items-start justify-between gap-4">
@@ -303,13 +303,13 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                         {(assignment.courseName || assignment.chapterName) && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
                             {assignment.courseName && (
-                              <div className="bg-blue-50/80 backdrop-blur-xl px-3 py-2 rounded-lg border border-blue-200/50">
+                              <div className="glass-accent-blue px-3 py-2 rounded-lg">
                                 <div className="text-xs text-blue-600 font-semibold">COURSE</div>
                                 <div className="text-sm font-bold text-blue-900">{assignment.courseName}</div>
                               </div>
                             )}
                             {assignment.chapterName && (
-                              <div className="bg-purple-50/80 backdrop-blur-xl px-3 py-2 rounded-lg border border-purple-200/50">
+                              <div className="glass-accent-purple px-3 py-2 rounded-lg">
                                 <div className="text-xs text-purple-600 font-semibold">CHAPTER</div>
                                 <div className="text-sm font-bold text-purple-900">{assignment.chapterName}</div>
                               </div>
