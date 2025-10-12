@@ -5,14 +5,40 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Video, Users, BookOpen, Calendar, Play, User } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export default function Home() {
   const router = useRouter();
   const [showTeacherSelect, setShowTeacherSelect] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
-  const startLessonAs = (teacher: "Roman" | "Violet") => {
-    const room = teacher.toLowerCase() === "roman" ? "roman-room" : "violet-room";
-    router.push(`/room?room=${room}&name=${teacher}&isTutor=true`);
+  const startLessonAs = async (teacher: "Roman" | "Violet") => {
+    setIsStarting(true);
+    try {
+      // Generate a unique 6-digit session code
+      const sessionCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const teacherKey = teacher.toLowerCase();
+      const room = `${teacherKey}-${sessionCode}`; // e.g., "roman-123456"
+      
+      // Store the active session in Firestore
+      await setDoc(doc(db, "activeSessions", teacherKey), {
+        sessionCode,
+        roomName: room,
+        teacherName: teacher,
+        startedAt: serverTimestamp(),
+        isActive: true,
+      });
+      
+      console.log(`✅ Created session for ${teacher}: ${sessionCode}`);
+      
+      // Join the room with the session code
+      router.push(`/room?room=${room}&name=${teacher}&isTutor=true&sessionCode=${sessionCode}`);
+    } catch (error) {
+      console.error("Error starting lesson:", error);
+      alert("Failed to start lesson. Please try again.");
+      setIsStarting(false);
+    }
   };
 
   return (
@@ -35,6 +61,7 @@ export default function Home() {
                   size="lg"
                   onClick={() => setShowTeacherSelect(true)}
                   className="w-full h-auto py-8 bg-white hover:bg-gray-50 text-blue-600 text-2xl font-bold shadow-xl hover:scale-105 transition-all duration-300 group"
+                  disabled={isStarting}
                 >
                   <Play className="h-12 w-12 mr-4 group-hover:scale-110 transition-transform" />
                   <div className="flex flex-col items-start">
@@ -54,6 +81,7 @@ export default function Home() {
                       size="lg"
                       onClick={() => startLessonAs("Roman")}
                       className="h-auto py-6 bg-white hover:bg-gray-50 text-blue-600 font-bold shadow-lg hover:scale-105 transition-all duration-300 group"
+                      disabled={isStarting}
                     >
                       <User className="h-8 w-8 mr-3 group-hover:scale-110 transition-transform" />
                       <div className="flex flex-col items-start">
@@ -65,6 +93,7 @@ export default function Home() {
                       size="lg"
                       onClick={() => startLessonAs("Violet")}
                       className="h-auto py-6 bg-white hover:bg-gray-50 text-purple-600 font-bold shadow-lg hover:scale-105 transition-all duration-300 group"
+                      disabled={isStarting}
                     >
                       <User className="h-8 w-8 mr-3 group-hover:scale-110 transition-transform" />
                       <div className="flex flex-col items-start">
@@ -77,8 +106,9 @@ export default function Home() {
                     variant="ghost"
                     onClick={() => setShowTeacherSelect(false)}
                     className="w-full text-white hover:text-white hover:bg-white/10"
+                    disabled={isStarting}
                   >
-                    Cancel
+                    {isStarting ? "Starting..." : "Cancel"}
                   </Button>
                 </div>
               )}

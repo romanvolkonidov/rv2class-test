@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import type { TutorKey } from "./config";
 
@@ -48,14 +48,32 @@ export default function JoinTutorRoom({
         collection(db, "joinRequests"),
         where("__name__", "==", requestId)
       ),
-      (snapshot) => {
+      async (snapshot) => {
         if (!snapshot.empty) {
           const data = snapshot.docs[0].data();
           if (data.status === "approved") {
             setIsWaiting(false);
-            router.push(
-              `/room?room=${encodeURIComponent(room)}&name=${encodeURIComponent(studentName.trim())}&isTutor=false`
-            );
+            
+            // Fetch the active session to get the correct room name and session code
+            try {
+              const sessionDoc = await getDoc(doc(db, "activeSessions", tutorKey));
+              
+              if (sessionDoc.exists() && sessionDoc.data().isActive) {
+                const sessionData = sessionDoc.data();
+                router.push(
+                  `/room?room=${encodeURIComponent(sessionData.roomName)}&name=${encodeURIComponent(studentName.trim())}&isTutor=false&sessionCode=${sessionData.sessionCode}`
+                );
+              } else {
+                setError("The lesson has ended. Please try again later.");
+                setIsWaiting(false);
+                setRequestId(null);
+              }
+            } catch (error) {
+              console.error("Error fetching session:", error);
+              setError("Failed to join the lesson.");
+              setIsWaiting(false);
+              setRequestId(null);
+            }
           } else if (data.status === "denied") {
             setIsWaiting(false);
             setError("Your request to join was denied. Please try again.");
@@ -66,7 +84,7 @@ export default function JoinTutorRoom({
     );
 
     return () => unsubscribe();
-  }, [requestId, router, room, studentName]);
+  }, [requestId, router, room, studentName, tutorKey]);
 
   const shareLink = useMemo(() => `${origin}/${tutorKey}`, [origin, tutorKey]);
 
@@ -80,12 +98,24 @@ export default function JoinTutorRoom({
     setIsWaiting(true);
 
     try {
+      // First, check if there's an active session for this teacher
+      const sessionDoc = await getDoc(doc(db, "activeSessions", tutorKey));
+      
+      if (!sessionDoc.exists() || !sessionDoc.data().isActive) {
+        setError(`${name} hasn't started a lesson yet. Please try again later.`);
+        setIsWaiting(false);
+        return;
+      }
+      
+      const sessionData = sessionDoc.data();
+      
       const response = await fetch("/api/join-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          roomName: room,
+          roomName: sessionData.roomName,
           studentName: studentName.trim(),
+          sessionCode: sessionData.sessionCode,
         }),
       });
 

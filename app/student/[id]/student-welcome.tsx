@@ -134,7 +134,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     
     const unsubscribe = onSnapshot(
       doc(db, "joinRequests", joinRequestId),
-      (docSnapshot) => {
+      async (docSnapshot) => {
         if (!docSnapshot.exists()) {
           console.log("❌ Join request document not found");
           return;
@@ -145,9 +145,30 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
 
         if (data.status === "approved") {
           console.log("✅ Join request approved! Redirecting to room...");
-          const roomName = teacherName.toLowerCase() === "roman" ? "roman-room" : "violet-room";
-          const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&isTutor=false`;
-          router.push(roomUrl);
+          
+          // Fetch the active session to get the room name and session code
+          const teacherKey = teacherName.toLowerCase();
+          try {
+            const sessionDoc = await getDoc(doc(db, "activeSessions", teacherKey));
+            
+            if (sessionDoc.exists() && sessionDoc.data().isActive) {
+              const sessionData = sessionDoc.data();
+              const roomUrl = `/room?room=${encodeURIComponent(sessionData.roomName)}&name=${encodeURIComponent(student.name)}&isTutor=false&sessionCode=${sessionData.sessionCode}`;
+              console.log("🚀 Joining room:", roomUrl);
+              router.push(roomUrl);
+            } else {
+              alert("Урок завершился. Попробуйте позже.");
+              setIsWaitingForTeacher(false);
+              setIsJoining(false);
+              setJoinRequestId(null);
+            }
+          } catch (error) {
+            console.error("Error fetching session:", error);
+            alert("Не удалось подключиться к уроку.");
+            setIsWaitingForTeacher(false);
+            setIsJoining(false);
+            setJoinRequestId(null);
+          }
         } else if (data.status === "denied") {
           console.log("❌ Join request denied");
           alert("😔 Учитель отклонил ваш запрос на подключение.\n\nПожалуйста, свяжитесь с учителем или попробуйте позже.");
@@ -446,8 +467,33 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       console.warn("⚠️ Error during device enumeration:", err);
     }
     
-    // Get the room name based on the teacher
-    const roomName = teacherName.toLowerCase() === "roman" ? "roman-room" : "violet-room";
+    // Fetch the active session code for this teacher from Firestore
+    const teacherKey = teacherName.toLowerCase();
+    let sessionCode = "";
+    let roomName = "";
+    
+    try {
+      const sessionDoc = await getDoc(doc(db, "activeSessions", teacherKey));
+      
+      if (sessionDoc.exists() && sessionDoc.data().isActive) {
+        const sessionData = sessionDoc.data();
+        sessionCode = sessionData.sessionCode;
+        roomName = sessionData.roomName;
+        console.log(`✅ Found active session for ${teacherName}: ${sessionCode}`);
+      } else {
+        // No active session - teacher hasn't started yet
+        alert(`${teacherName} еще не начал урок. Попробуйте позже.`);
+        setIsJoining(false);
+        setIsWaitingForTeacher(false);
+        return;
+      }
+    } catch (error) {
+      console.error("Error fetching active session:", error);
+      alert("Не удалось подключиться к уроку. Попробуйте снова.");
+      setIsJoining(false);
+      setIsWaitingForTeacher(false);
+      return;
+    }
     
     // Send join request to get approval
     try {
@@ -457,6 +503,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
         body: JSON.stringify({
           roomName: roomName,
           studentName: student.name,
+          sessionCode: sessionCode, // Include session code
         }),
       });
 
