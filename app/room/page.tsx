@@ -14,7 +14,6 @@ import CustomVideoConference from "@/components/CustomVideoConference";
 import CompactParticipantView from "@/components/CompactParticipantView";
 import CustomControlBar from "@/components/CustomControlBar";
 import ChatPanel from "@/components/ChatPanel";
-import VideoEnhancementPanel from "@/components/VideoEnhancementPanel";
 import { WebGLVideoProcessor, EnhancementPreset, PRESETS } from "@/lib/videoEnhancement";
 
 function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: boolean; userName: string; sessionCode: string; roomName: string }) {
@@ -32,8 +31,6 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   const { chatMessages } = useChat();
   
   // Video enhancement state
-  const [showEnhancement, setShowEnhancement] = useState(false);
-  const [enhancementClosing, setEnhancementClosing] = useState(false);
   const [currentPreset, setCurrentPreset] = useState<EnhancementPreset>(EnhancementPreset.OFF);
   const videoProcessorRef = useRef<WebGLVideoProcessor | null>(null);
   const originalVideoTrackRef = useRef<MediaStreamTrack | null>(null);
@@ -908,21 +905,6 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     }
   };
 
-  const toggleEnhancement = () => {
-    if (showEnhancement) {
-      // Trigger closing animation
-      setEnhancementClosing(true);
-      // Wait for animation to complete before hiding
-      setTimeout(() => {
-        setShowEnhancement(false);
-        setEnhancementClosing(false);
-      }, 300);
-    } else {
-      // Open immediately
-      setShowEnhancement(true);
-    }
-  };
-
   return (
     <div className="h-screen flex flex-col relative">
       {/* Join Requests Panel - Only visible to tutors */}
@@ -957,12 +939,12 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               showWhiteboard={showWhiteboard}
               showAnnotations={showAnnotations}
               showChat={showChat}
-              showEnhancement={showEnhancement}
               onToggleWhiteboard={toggleWhiteboard}
               onToggleAnnotations={toggleAnnotations}
               onToggleChat={toggleChat}
-              onToggleEnhancement={toggleEnhancement}
               unreadChatCount={unreadCount}
+              currentPreset={currentPreset}
+              onPresetChange={handlePresetChange}
             />
           </>
         ) : (
@@ -973,12 +955,12 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               showWhiteboard={showWhiteboard}
               showAnnotations={showAnnotations}
               showChat={showChat}
-              showEnhancement={showEnhancement}
               onToggleWhiteboard={toggleWhiteboard}
               onToggleAnnotations={toggleAnnotations}
               onToggleChat={toggleChat}
-              onToggleEnhancement={toggleEnhancement}
               unreadChatCount={unreadCount}
+              currentPreset={currentPreset}
+              onPresetChange={handlePresetChange}
             />
             {/* Show annotations for everyone when active - tutor gets close button, students don't */}
             {(showAnnotations || annotationsClosing) && (
@@ -999,16 +981,6 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
             isClosing={chatClosing}
             roomName={roomName}
             isTutor={isTutor}
-          />
-        )}
-
-        {/* Video Enhancement Panel - Available in all modes */}
-        {(showEnhancement || enhancementClosing) && (
-          <VideoEnhancementPanel
-            onClose={toggleEnhancement}
-            onPresetChange={handlePresetChange}
-            currentPreset={currentPreset}
-            isClosing={enhancementClosing}
           />
         )}
 

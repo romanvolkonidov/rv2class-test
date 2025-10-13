@@ -444,40 +444,57 @@ export enum EnhancementPreset {
 export const PRESETS: Record<EnhancementPreset, VideoEnhancementSettings> = {
   [EnhancementPreset.OFF]: DEFAULT_SETTINGS,
   
+  // Low Light - Significantly brighten dark environments while lifting shadows
   [EnhancementPreset.LOW_LIGHT]: {
     ...DEFAULT_SETTINGS,
-    brightness: 130,
-    gamma: 0.8,
-    exposure: 0.5,
-    shadows: 40,
-    contrast: 110,
+    brightness: 140,      // More brightness for dim rooms
+    gamma: 0.75,          // Stronger gamma correction for dark areas
+    exposure: 0.8,        // Higher exposure boost
+    shadows: 60,          // Significantly lift shadows
+    contrast: 115,        // Add contrast to prevent washed-out look
+    saturation: 108,      // Slight saturation boost to compensate for brightness
   },
   
+  // Outdoor Bright - Tame harsh lighting and reduce overexposure
   [EnhancementPreset.OUTDOOR_BRIGHT]: {
     ...DEFAULT_SETTINGS,
-    highlights: 30,
-    contrast: 95,
-    saturation: 110,
+    highlights: 45,       // More aggressive highlight recovery
+    contrast: 90,         // Reduce contrast to soften harsh light
+    saturation: 115,      // Boost saturation (outdoor colors often wash out)
+    gamma: 1.1,           // Slightly darken to balance bright scenes
+    shadows: 15,          // Lift shadows a bit for balanced exposure
   },
   
+  // Warm Indoor - Create a cozy, warm atmosphere
   [EnhancementPreset.WARM_INDOOR]: {
     ...DEFAULT_SETTINGS,
-    warmth: 20,
-    brightness: 105,
-    saturation: 105,
+    warmth: 35,           // Much warmer color temperature
+    brightness: 110,      // Slightly brighter
+    saturation: 112,      // More saturated for rich colors
+    gamma: 0.95,          // Slight gamma adjustment
+    shadows: 20,          // Lift shadows slightly
+    contrast: 105,        // Subtle contrast boost
   },
   
+  // Cool Professional - Sharp, clean, business-like appearance
   [EnhancementPreset.COOL_PROFESSIONAL]: {
     ...DEFAULT_SETTINGS,
-    warmth: -15,
-    contrast: 115,
-    sharpness: 20,
+    warmth: -25,          // Cooler color temperature
+    contrast: 125,        // Strong contrast for crisp look
+    sharpness: 40,        // Significant sharpening for clarity
+    saturation: 95,       // Slightly desaturated for professional look
+    gamma: 1.05,          // Slightly darker for serious tone
+    brightness: 105,      // Subtle brightness boost
   },
   
+  // Vibrant - Punchy colors and high contrast for visual impact
   [EnhancementPreset.VIBRANT]: {
     ...DEFAULT_SETTINGS,
-    saturation: 130,
-    contrast: 120,
-    sharpness: 30,
+    saturation: 145,      // Very saturated colors
+    contrast: 130,        // High contrast
+    sharpness: 45,        // Sharp details
+    brightness: 108,      // Slightly brighter
+    gamma: 0.92,          // Slight gamma for pop
+    shadows: 25,          // Lift shadows for better detail
   },
 };

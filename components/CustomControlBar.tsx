@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
 import { Track, VideoPresets } from "livekit-client";
-import { Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, PhoneOff, Pencil, Square, ChevronDown, Check, Pin, PinOff, Sparkles } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, PhoneOff, Pencil, Square, ChevronDown, Check, Pin, PinOff, Sun, CloudSun, Briefcase, Palette, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { EnhancementPreset } from "@/lib/videoEnhancement";
 
 // Electron API type declarations
 declare global {
@@ -31,12 +32,12 @@ interface CustomControlBarProps {
   showWhiteboard?: boolean;
   showAnnotations?: boolean;
   showChat?: boolean;
-  showEnhancement?: boolean;
   onToggleWhiteboard?: () => void;
   onToggleAnnotations?: () => void;
   onToggleChat?: () => void;
-  onToggleEnhancement?: () => void;
   unreadChatCount?: number;
+  currentPreset?: EnhancementPreset;
+  onPresetChange?: (preset: EnhancementPreset) => void;
 }
 
 export default function CustomControlBar({ 
@@ -44,12 +45,12 @@ export default function CustomControlBar({
   showWhiteboard = false,
   showAnnotations = false,
   showChat = false,
-  showEnhancement = false,
   onToggleWhiteboard,
   onToggleAnnotations,
   onToggleChat,
-  onToggleEnhancement,
   unreadChatCount = 0,
+  currentPreset = EnhancementPreset.OFF,
+  onPresetChange,
 }: CustomControlBarProps) {
   const { localParticipant } = useLocalParticipant();
   const room = useRoomContext();
@@ -77,12 +78,15 @@ export default function CustomControlBar({
   
   const micButtonRef = useRef<HTMLButtonElement>(null);
   const cameraButtonRef = useRef<HTMLButtonElement>(null);
+  const enhancementButtonRef = useRef<HTMLButtonElement>(null);
   const micMenuRef = useRef<HTMLDivElement>(null);
   const cameraMenuRef = useRef<HTMLDivElement>(null);
+  const enhancementMenuRef = useRef<HTMLDivElement>(null);
   
   // Device selection state
   const [showCameraMenu, setShowCameraMenu] = useState(false);
   const [showMicMenu, setShowMicMenu] = useState(false);
+  const [showEnhancementMenu, setShowEnhancementMenu] = useState(false);
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [currentCameraId, setCurrentCameraId] = useState<string>("");
@@ -158,13 +162,18 @@ export default function CustomControlBar({
       if (showCameraMenu && cameraButtonRef.current && !cameraButtonRef.current.contains(target) && cameraMenuRef.current && !cameraMenuRef.current.contains(target)) {
         setShowCameraMenu(false);
       }
+      
+      // Check if the click is outside the enhancement button and menu
+      if (showEnhancementMenu && enhancementButtonRef.current && !enhancementButtonRef.current.contains(target) && enhancementMenuRef.current && !enhancementMenuRef.current.contains(target)) {
+        setShowEnhancementMenu(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showCameraMenu, showMicMenu]);
+  }, [showCameraMenu, showMicMenu, showEnhancementMenu]);
 
   // Check if anyone (local or remote) is screen sharing
   useEffect(() => {
@@ -869,26 +878,26 @@ export default function CustomControlBar({
               {isCameraOff ? <VideoOff className="w-5 h-5" fill="currentColor" /> : <Video className="w-5 h-5" fill="currentColor" />}
             </GlassButton>
             
-            {videoDevices.length > 1 && (
-              <button
-                ref={cameraButtonRef}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowCameraMenu(!showCameraMenu);
-                  setShowMicMenu(false);
-                }}
-                className={cn(
-                  "w-8 h-12 flex items-center justify-center rounded-lg",
-                  "bg-white/10 backdrop-blur-md border border-white/20",
-                  "hover:bg-white/20 hover:border-white/30",
-                  "transition-all duration-200 touch-manipulation select-none",
-                  showCameraMenu && "bg-white/25 border-white/40"
-                )}
-                title="Select Camera"
-              >
-                <ChevronDown className="w-4 h-4 text-white" />
-              </button>
-            )}
+            {/* Device/Enhancement dropdown button */}
+            <button
+              ref={enhancementButtonRef}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowEnhancementMenu(!showEnhancementMenu);
+                setShowCameraMenu(false);
+                setShowMicMenu(false);
+              }}
+              className={cn(
+                "w-8 h-12 flex items-center justify-center rounded-lg",
+                "bg-white/10 backdrop-blur-md border border-white/20",
+                "hover:bg-white/20 hover:border-white/30",
+                "transition-all duration-200 touch-manipulation select-none",
+                showEnhancementMenu && "bg-white/25 border-white/40"
+              )}
+              title="Video Enhancement"
+            >
+              <ChevronDown className="w-4 h-4 text-white" />
+            </button>
           </div>
 
           <GlassButton
@@ -919,17 +928,6 @@ export default function CustomControlBar({
                 </div>
               )}
             </div>
-          )}
-
-          {/* Video Enhancement Button */}
-          {onToggleEnhancement && (
-            <GlassButton
-              onClick={onToggleEnhancement}
-              active={showEnhancement}
-              title={showEnhancement ? "Close Enhancement" : "Enhance Video"}
-            >
-              <Sparkles className="w-5 h-5" fill="currentColor" />
-            </GlassButton>
           )}
 
           {/* Annotation & Whiteboard Buttons */}
@@ -1037,6 +1035,158 @@ export default function CustomControlBar({
               )}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Enhancement Menu Dropdown (Portal) */}
+      {showEnhancementMenu && enhancementButtonRef.current && onPresetChange && (
+        <div 
+          ref={enhancementMenuRef}
+          className="fixed w-64 bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-200"
+          style={{
+            bottom: `${window.innerHeight - enhancementButtonRef.current.getBoundingClientRect().top + 12}px`,
+            left: `${enhancementButtonRef.current.getBoundingClientRect().left}px`,
+          }}
+        >
+          <div className="p-2 border-b border-white/10">
+            <p className="text-xs font-semibold text-white/70 uppercase tracking-wide px-2">Video Enhancement</p>
+          </div>
+          <div className="p-2">
+            {/* OFF */}
+            <button
+              onClick={() => {
+                onPresetChange(EnhancementPreset.OFF);
+                setShowEnhancementMenu(false);
+              }}
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between gap-2 rounded-lg",
+                currentPreset === EnhancementPreset.OFF && "bg-gray-500/20"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <X className="w-4 h-4" />
+                <span>Off</span>
+              </div>
+              {currentPreset === EnhancementPreset.OFF && (
+                <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              )}
+            </button>
+            
+            {/* LOW LIGHT */}
+            <button
+              onClick={() => {
+                onPresetChange(EnhancementPreset.LOW_LIGHT);
+                setShowEnhancementMenu(false);
+              }}
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between gap-2 rounded-lg",
+                currentPreset === EnhancementPreset.LOW_LIGHT && "bg-amber-500/20"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Sun className="w-4 h-4 text-amber-400" />
+                <div>
+                  <div>Low Light</div>
+                  <div className="text-xs text-white/50">Brighten dark rooms</div>
+                </div>
+              </div>
+              {currentPreset === EnhancementPreset.LOW_LIGHT && (
+                <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              )}
+            </button>
+            
+            {/* OUTDOOR BRIGHT */}
+            <button
+              onClick={() => {
+                onPresetChange(EnhancementPreset.OUTDOOR_BRIGHT);
+                setShowEnhancementMenu(false);
+              }}
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between gap-2 rounded-lg",
+                currentPreset === EnhancementPreset.OUTDOOR_BRIGHT && "bg-orange-500/20"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Sun className="w-4 h-4 text-orange-400" />
+                <div>
+                  <div>Outdoor Bright</div>
+                  <div className="text-xs text-white/50">Balance bright scenes</div>
+                </div>
+              </div>
+              {currentPreset === EnhancementPreset.OUTDOOR_BRIGHT && (
+                <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              )}
+            </button>
+            
+            {/* WARM INDOOR */}
+            <button
+              onClick={() => {
+                onPresetChange(EnhancementPreset.WARM_INDOOR);
+                setShowEnhancementMenu(false);
+              }}
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between gap-2 rounded-lg",
+                currentPreset === EnhancementPreset.WARM_INDOOR && "bg-rose-500/20"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <CloudSun className="w-4 h-4 text-rose-400" />
+                <div>
+                  <div>Warm Indoor</div>
+                  <div className="text-xs text-white/50">Cozy warm tones</div>
+                </div>
+              </div>
+              {currentPreset === EnhancementPreset.WARM_INDOOR && (
+                <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              )}
+            </button>
+            
+            {/* COOL PROFESSIONAL */}
+            <button
+              onClick={() => {
+                onPresetChange(EnhancementPreset.COOL_PROFESSIONAL);
+                setShowEnhancementMenu(false);
+              }}
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between gap-2 rounded-lg",
+                currentPreset === EnhancementPreset.COOL_PROFESSIONAL && "bg-blue-500/20"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-blue-400" />
+                <div>
+                  <div>Professional</div>
+                  <div className="text-xs text-white/50">Clean, sharp look</div>
+                </div>
+              </div>
+              {currentPreset === EnhancementPreset.COOL_PROFESSIONAL && (
+                <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              )}
+            </button>
+            
+            {/* VIBRANT */}
+            <button
+              onClick={() => {
+                onPresetChange(EnhancementPreset.VIBRANT);
+                setShowEnhancementMenu(false);
+              }}
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between gap-2 rounded-lg",
+                currentPreset === EnhancementPreset.VIBRANT && "bg-purple-500/20"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-purple-400" />
+                <div>
+                  <div>Vibrant</div>
+                  <div className="text-xs text-white/50">Pop of color</div>
+                </div>
+              </div>
+              {currentPreset === EnhancementPreset.VIBRANT && (
+                <Check className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              )}
+            </button>
+          </div>
         </div>
       )}
 
