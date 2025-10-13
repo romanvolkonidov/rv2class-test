@@ -591,11 +591,9 @@ export const fetchAllStudentRatings = async (tutorKey?: string): Promise<any[]> 
   try {
     console.log('📊 Fetching ALL student ratings for comparison...');
     
-    // Build URL with optional tutorKey parameter
-    let url = 'https://calculatestudentratings-35666ugduq-uc.a.run.app';
-    if (tutorKey) {
-      url += `?tutorKey=${tutorKey}`;
-    }
+    // Use the getstudentratings endpoint without a specific studentId to get all ratings
+    // This endpoint returns all students' ratings already calculated and ranked
+    const url = 'https://getstudentratings-35666ugduq-uc.a.run.app';
     
     console.log("📡 Request URL:", url);
     
@@ -616,8 +614,14 @@ export const fetchAllStudentRatings = async (tutorKey?: string): Promise<any[]> 
 
     const data = await response.json();
     console.log("✅ All student ratings fetched:", data);
+    console.log("📋 Response keys:", Object.keys(data));
+    console.log("📋 Ratings type:", typeof data.ratings);
+    console.log("📋 Is ratings array?:", Array.isArray(data.ratings));
+    console.log("📋 Ratings length:", data.ratings?.length);
     
     if (data.success && data.ratings && Array.isArray(data.ratings)) {
+      console.log(`📊 Raw ratings count: ${data.ratings.length}`);
+      
       // Filter out students who are excluded from rating
       const filteredRatings = await filterExcludedStudents(data.ratings);
       console.log(`🔍 Filtered ratings: ${data.ratings.length} -> ${filteredRatings.length} students`);
@@ -634,9 +638,16 @@ export const fetchAllStudentRatings = async (tutorKey?: string): Promise<any[]> 
         completionRate: student.totalAssigned > 0 ? (student.completedHomeworks / student.totalAssigned * 100) : 0,
       }));
       
+      console.log(`📊 Final reranked ratings count: ${rerankedRatings.length}`);
+      console.log(`📊 First few students:`, rerankedRatings.slice(0, 3));
+      
       return rerankedRatings;
     }
     
+    console.warn("⚠️ Unexpected response structure:", data);
+    console.warn("⚠️ Success:", data.success);
+    console.warn("⚠️ Has ratings:", !!data.ratings);
+    console.warn("⚠️ Is array:", Array.isArray(data.ratings));
     return [];
   } catch (error) {
     console.error('❌ Error fetching all student ratings:', error);
