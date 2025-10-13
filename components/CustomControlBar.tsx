@@ -1038,7 +1038,7 @@ export default function CustomControlBar({
         </div>
       )}
 
-      {/* Enhancement Menu Dropdown (Portal) - TEMPORARILY HIDDEN */}
+      {/* Enhancement Menu Dropdown (Portal) - TEMPORARILY HIDDEN 
       {false && showEnhancementMenu && enhancementButtonRef.current && onPresetChange && (
         <div 
           ref={enhancementMenuRef}
@@ -1052,7 +1052,6 @@ export default function CustomControlBar({
             <p className="text-xs font-semibold text-white/70 uppercase tracking-wide px-2">Video Enhancement</p>
           </div>
           <div className="p-2">
-            {/* OFF */}
             <button
               onClick={() => {
                 onPresetChange(EnhancementPreset.OFF);
@@ -1072,7 +1071,6 @@ export default function CustomControlBar({
               )}
             </button>
             
-            {/* LOW LIGHT */}
             <button
               onClick={() => {
                 onPresetChange(EnhancementPreset.LOW_LIGHT);
@@ -1095,7 +1093,6 @@ export default function CustomControlBar({
               )}
             </button>
             
-            {/* OUTDOOR BRIGHT */}
             <button
               onClick={() => {
                 onPresetChange(EnhancementPreset.OUTDOOR_BRIGHT);
@@ -1118,7 +1115,6 @@ export default function CustomControlBar({
               )}
             </button>
             
-            {/* WARM INDOOR */}
             <button
               onClick={() => {
                 onPresetChange(EnhancementPreset.WARM_INDOOR);
@@ -1141,7 +1137,6 @@ export default function CustomControlBar({
               )}
             </button>
             
-            {/* COOL PROFESSIONAL */}
             <button
               onClick={() => {
                 onPresetChange(EnhancementPreset.COOL_PROFESSIONAL);
@@ -1164,7 +1159,6 @@ export default function CustomControlBar({
               )}
             </button>
             
-            {/* VIBRANT */}
             <button
               onClick={() => {
                 onPresetChange(EnhancementPreset.VIBRANT);
