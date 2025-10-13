@@ -37,6 +37,8 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   const [currentPreset, setCurrentPreset] = useState<EnhancementPreset>(EnhancementPreset.OFF);
   const videoProcessorRef = useRef<WebGLVideoProcessor | null>(null);
   const originalVideoTrackRef = useRef<MediaStreamTrack | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const isInitialMount = useRef(true);
 
   // Monitor for new chat messages when chat is closed
   useEffect(() => {
@@ -133,6 +135,9 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
                   deviceId: cameraTrack.track.mediaStreamTrack?.getSettings().deviceId,
                 });
                 cameraEnabled = true;
+                
+                // Mark camera as ready for enhancement
+                setCameraReady(true);
               } else {
                 throw new Error('Camera track not published after enabling');
               }
@@ -178,6 +183,8 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
           const cameraTrack = room.localParticipant.getTrackPublication(Track.Source.Camera);
           if (cameraTrack && cameraTrack.track) {
             console.log('✅ Camera track verified and published');
+            // Mark camera as ready for enhancement
+            setCameraReady(true);
           } else {
             console.warn('⚠️ Camera shows enabled but track not published - attempting to republish...');
             try {
@@ -613,6 +620,18 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   useEffect(() => {
     if (!room || !room.localParticipant) return;
 
+    // Don't apply enhancement on initial mount - only when user explicitly changes it
+    if (isInitialMount.current) {
+      console.log('🚫 Skipping enhancement on initial mount');
+      return;
+    }
+
+    // Don't apply enhancement until camera is ready
+    if (!cameraReady) {
+      console.log('⏳ Waiting for camera to be ready before applying enhancement');
+      return;
+    }
+
     const setupEnhancement = async () => {
       try {
         const cameraPublication = room.localParticipant.getTrackPublication(Track.Source.Camera);
@@ -744,22 +763,25 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
         videoProcessorRef.current = null;
       }
     };
-  }, [room, room?.state, currentPreset]);
+  }, [room, room?.state, currentPreset, cameraReady]);
 
   // Handle preset change
   const handlePresetChange = (preset: EnhancementPreset) => {
+    // Mark that we're no longer on initial mount when user changes preset
+    isInitialMount.current = false;
+    
     setCurrentPreset(preset);
     // Save to localStorage
     localStorage.setItem('videoEnhancementPreset', preset);
     console.log('🎨 Video enhancement preset changed to:', preset);
   };
 
-  // Load saved preset on mount
+  // Load saved preset on mount (but don't apply it until user interacts)
   useEffect(() => {
     const savedPreset = localStorage.getItem('videoEnhancementPreset') as EnhancementPreset | null;
     if (savedPreset && Object.values(EnhancementPreset).includes(savedPreset)) {
       setCurrentPreset(savedPreset);
-      console.log('📁 Loaded saved preset:', savedPreset);
+      console.log('📁 Loaded saved preset (will not auto-apply):', savedPreset);
     }
   }, []);
 
