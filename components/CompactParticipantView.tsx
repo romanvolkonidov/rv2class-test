@@ -310,7 +310,12 @@ function DraggableThumbnailContainer({
             maxWidth: '100%',
           }}
         >
-          {children}
+          <div className="flex gap-2" style={{
+            transform: `scale(${1 / scale})`,
+            transformOrigin: 'top left',
+          }}>
+            {children}
+          </div>
         </div>
       )}
     </div>
