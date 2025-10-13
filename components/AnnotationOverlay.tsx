@@ -1090,6 +1090,31 @@ export default function AnnotationOverlay({
     };
   };
 
+  // Check if two points are close enough to be considered intersecting
+  const pointsAreClose = (p1: RelativePoint, p2: RelativePoint, threshold: number = 0.02): boolean => {
+    const dx = p1.x - p2.x;
+    const dy = p1.y - p2.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    return distance < threshold;
+  };
+
+  // Check if an eraser path intersects with an annotation
+  const eraserIntersectsAnnotation = (eraserPoints: RelativePoint[], annotation: AnnotationAction): boolean => {
+    if (!annotation.points || annotation.tool !== "pencil") {
+      return false; // Only check pencil strokes
+    }
+
+    // Check if any eraser point is close to any annotation point
+    for (const eraserPoint of eraserPoints) {
+      for (const annotationPoint of annotation.points) {
+        if (pointsAreClose(eraserPoint, annotationPoint, 0.015)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   // Send annotation data to other participants
   const sendAnnotationData = (action: AnnotationAction) => {
     const encoder = new TextEncoder();
@@ -1276,13 +1301,19 @@ export default function AnnotationOverlay({
     ctx.restore();
 
     // CRITICAL: Draw local actions up to historyStep (for undo/redo)
+    // Skip eraser actions - they should only delete annotations, not persist as strokes
     history.slice(0, historyStep).forEach((action) => {
-      drawAction(action);
+      if (action.tool !== "eraser") {
+        drawAction(action);
+      }
     });
 
     // CRITICAL: Draw ALL remote actions (concurrent drawing support)
+    // Skip eraser actions - they should only delete annotations, not persist as strokes
     remoteActions.forEach((action) => {
-      drawAction(action);
+      if (action.tool !== "eraser") {
+        drawAction(action);
+      }
     });
   };
 
@@ -1439,7 +1470,10 @@ export default function AnnotationOverlay({
       if (currentAction && currentAction.points) {
         currentAction.points.push(relativePoint);
         drawAction(currentAction);
-        sendAnnotationData(currentAction);
+        // Only send pencil actions in real-time; eraser actions will be handled differently
+        if (tool === "pencil") {
+          sendAnnotationData(currentAction);
+        }
       }
     }
   };
@@ -1474,7 +1508,53 @@ export default function AnnotationOverlay({
     if (tool === "pencil" || tool === "eraser") {
       const currentAction = history[historyStep - 1];
       if (currentAction) {
-        sendAnnotationData(currentAction);
+        // If using eraser, detect and delete intersecting annotations
+        if (tool === "eraser" && currentAction.points) {
+          const annotationsToDelete: string[] = [];
+          
+          // Check local history for intersections
+          const localAnnotations = history.slice(0, historyStep - 1); // Exclude the eraser action itself
+          localAnnotations.forEach(annotation => {
+            if (annotation.id && eraserIntersectsAnnotation(currentAction.points!, annotation)) {
+              annotationsToDelete.push(annotation.id);
+            }
+          });
+          
+          // Check remote actions for intersections
+          remoteActions.forEach(annotation => {
+            if (annotation.id && eraserIntersectsAnnotation(currentAction.points!, annotation)) {
+              annotationsToDelete.push(annotation.id);
+            }
+          });
+          
+          // Remove the eraser action itself and any intersecting annotations from history
+          let newHistory = history.filter(a => !annotationsToDelete.includes(a.id || ''));
+          // Also remove the eraser action itself (it should be transient)
+          newHistory = newHistory.filter(a => a.id !== currentAction.id);
+          setHistory(newHistory);
+          setHistoryStep(newHistory.length);
+          
+          // Remove from remote actions
+          setRemoteActions(prev => prev.filter(a => !annotationsToDelete.includes(a.id || '')));
+          
+          // Send deletion messages to other participants for intersected annotations
+          if (annotationsToDelete.length > 0) {
+            annotationsToDelete.forEach(id => {
+              const encoder = new TextEncoder();
+              const data = encoder.encode(JSON.stringify({ 
+                type: "deleteAnnotation", 
+                id 
+              }));
+              room.localParticipant.publishData(data, { reliable: true });
+            });
+          }
+          
+          // Redraw canvas without the deleted annotations
+          redrawCanvas();
+        } else {
+          // For pencil tool, just send the annotation data
+          sendAnnotationData(currentAction);
+        }
       }
     }
 
