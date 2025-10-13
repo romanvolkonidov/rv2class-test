@@ -4,7 +4,7 @@ import { useEffect, useRef, memo, useState, useCallback } from "react";
 import { useTracks, useParticipants, TrackReferenceOrPlaceholder, useRoomContext } from "@livekit/components-react";
 import { Track, Participant } from "livekit-client";
 import { cn } from "@/lib/utils";
-import { X, Minimize2, Maximize2, GripHorizontal } from "lucide-react";
+import { X, Minimize2, Maximize2 } from "lucide-react";
 
 // Draggable Thumbnail Container - same as CustomVideoConference
 function DraggableThumbnailContainer({ 
@@ -29,7 +29,6 @@ function DraggableThumbnailContainer({
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, scale: 1.0, posX: 0, posY: 0, width: 0, height: 0 });
   const [isHovered, setIsHovered] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
-  const dragHandleRef = useRef<HTMLDivElement>(null);
 
   const MIN_SCALE = 0.5;
   const MAX_SCALE = 3.0;
@@ -54,7 +53,11 @@ function DraggableThumbnailContainer({
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!dragHandleRef.current?.contains(e.target as Node)) return;
+    // Don't drag when clicking on buttons or resize handles
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('[data-resize-handle]')) {
+      return;
+    }
     if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
@@ -66,7 +69,11 @@ function DraggableThumbnailContainer({
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (!dragHandleRef.current?.contains(e.target as Node)) return;
+    // Don't drag when touching buttons
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('[data-resize-handle]')) {
+      return;
+    }
     e.stopPropagation();
     const touch = e.touches[0];
     setIsDragging(true);
@@ -211,8 +218,6 @@ function DraggableThumbnailContainer({
   return (
     <div
       ref={elementRef}
-      onMouseDown={handleMouseDown}
-      onTouchStart={handleTouchStart}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => !isResizing && setIsHovered(false)}
       className={cn(
@@ -223,63 +228,33 @@ function DraggableThumbnailContainer({
         position: 'fixed',
         left: 0,
         top: 0,
-        transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+        transform: `translate(${position.x}px, ${position.y}px)`,
         transformOrigin: 'top left',
         willChange: isDragging || isResizing ? 'transform' : 'auto',
         WebkitUserSelect: 'none',
         userSelect: 'none',
       }}
     >
-      {(isHovered || isResizing) && !isDragging && !isMinimized && (
-        <>
-          <div
-            className="absolute top-0 left-0 w-4 h-4 cursor-nw-resize hover:bg-blue-500/50 transition-colors rounded-tl-lg"
-            onMouseDown={(e) => handleResizeStart(e, 'nw')}
-            style={{ zIndex: 1001 }}
-          />
-          <div
-            className="absolute top-0 right-0 w-4 h-4 cursor-ne-resize hover:bg-blue-500/50 transition-colors rounded-tr-lg"
-            onMouseDown={(e) => handleResizeStart(e, 'ne')}
-            style={{ zIndex: 1001 }}
-          />
-          <div
-            className="absolute bottom-0 left-0 w-4 h-4 cursor-sw-resize hover:bg-blue-500/50 transition-colors rounded-bl-lg"
-            onMouseDown={(e) => handleResizeStart(e, 'sw')}
-            style={{ zIndex: 1001 }}
-          />
-          <div
-            className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize hover:bg-blue-500/50 transition-colors rounded-br-lg"
-            onMouseDown={(e) => handleResizeStart(e, 'se')}
-            style={{ zIndex: 1001 }}
-          />
-        </>
-      )}
-      <div className="bg-black/60 backdrop-blur-md rounded-t-lg border border-white/20 px-2 py-1 flex items-center gap-2">
-        <div 
-          ref={dragHandleRef}
-          className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded cursor-move hover:bg-white/10 transition-colors touch-manipulation",
-            isDragging && "bg-white/20"
-          )}
-          title="Drag to move"
-        >
-          <GripHorizontal className="w-4 h-4 text-white/70" />
-          <span className="text-xs text-white/70 font-medium hidden sm:inline">Drag</span>
-        </div>
-
-        <div className="flex items-center gap-1">
+      {/* Control bar with fixed size */}
+      <div 
+        className="bg-black/60 backdrop-blur-md rounded px-2 py-1 flex items-center gap-2 mb-1"
+        style={{
+          borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+        }}
+      >
+        <div className="flex items-center gap-1 ml-auto">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onHideLocal();
             }}
-            className="p-1.5 rounded hover:bg-white/10 transition-colors group"
+            className="p-1 rounded hover:bg-white/10 transition-colors group"
             title={showLocal ? "Hide your camera" : "Show your camera"}
           >
             {showLocal ? (
-              <X className="w-4 h-4 text-white/70 group-hover:text-white" />
+              <X className="w-3.5 h-3.5 text-white/70 group-hover:text-white" />
             ) : (
-              <svg className="w-4 h-4 text-white/70 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-white/70 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
@@ -291,13 +266,13 @@ function DraggableThumbnailContainer({
               e.stopPropagation();
               onToggleMinimize();
             }}
-            className="p-1.5 rounded hover:bg-white/10 transition-colors group"
+            className="p-1 rounded hover:bg-white/10 transition-colors group"
             title={isMinimized ? "Show thumbnails" : "Minimize"}
           >
             {isMinimized ? (
-              <Maximize2 className="w-4 h-4 text-white/70 group-hover:text-white" />
+              <Maximize2 className="w-3.5 h-3.5 text-white/70 group-hover:text-white" />
             ) : (
-              <Minimize2 className="w-4 h-4 text-white/70 group-hover:text-white" />
+              <Minimize2 className="w-3.5 h-3.5 text-white/70 group-hover:text-white" />
             )}
           </button>
         </div>
@@ -305,17 +280,45 @@ function DraggableThumbnailContainer({
 
       {!isMinimized && (
         <div 
-          className="bg-black/40 backdrop-blur-md rounded-b-lg border border-white/20 p-2 flex gap-2 items-start overflow-auto"
+          className="flex gap-2 items-start relative"
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
           style={{
-            maxWidth: '100%',
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            cursor: isDragging ? 'grabbing' : 'grab',
           }}
         >
-          <div className="flex gap-2" style={{
-            transform: `scale(${1 / scale})`,
-            transformOrigin: 'top left',
-          }}>
-            {children}
-          </div>
+          {/* Resize handles - only visible on hover */}
+          {(isHovered || isResizing) && !isDragging && (
+            <>
+              <div
+                data-resize-handle="nw"
+                className="absolute -top-1 -left-1 w-3 h-3 cursor-nw-resize hover:bg-blue-500/50 transition-colors rounded-full border border-white/30 bg-blue-400/30"
+                onMouseDown={(e) => handleResizeStart(e, 'nw')}
+                style={{ zIndex: 1001 }}
+              />
+              <div
+                data-resize-handle="ne"
+                className="absolute -top-1 -right-1 w-3 h-3 cursor-ne-resize hover:bg-blue-500/50 transition-colors rounded-full border border-white/30 bg-blue-400/30"
+                onMouseDown={(e) => handleResizeStart(e, 'ne')}
+                style={{ zIndex: 1001 }}
+              />
+              <div
+                data-resize-handle="sw"
+                className="absolute -bottom-1 -left-1 w-3 h-3 cursor-sw-resize hover:bg-blue-500/50 transition-colors rounded-full border border-white/30 bg-blue-400/30"
+                onMouseDown={(e) => handleResizeStart(e, 'sw')}
+                style={{ zIndex: 1001 }}
+              />
+              <div
+                data-resize-handle="se"
+                className="absolute -bottom-1 -right-1 w-3 h-3 cursor-se-resize hover:bg-blue-500/50 transition-colors rounded-full border border-white/30 bg-blue-400/30"
+                onMouseDown={(e) => handleResizeStart(e, 'se')}
+                style={{ zIndex: 1001 }}
+              />
+            </>
+          )}
+          {children}
         </div>
       )}
     </div>
