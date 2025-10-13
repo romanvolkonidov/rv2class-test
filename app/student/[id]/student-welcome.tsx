@@ -3,10 +3,10 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle, XCircle, Star, TrendingUp } from "lucide-react";
+import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import WaitingRoom, { WaitingRoomHandle } from "@/components/WaitingRoom";
-import { db, fetchStudentRatings, fetchAllStudentRatings } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { doc, onSnapshot, getDoc } from "firebase/firestore";
 
 interface StudentData {
@@ -31,12 +31,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const [hasShownWelcomePopup, setHasShownWelcomePopup] = useState(false);
   const [isWaitingForTeacher, setIsWaitingForTeacher] = useState(false);
   const [joinRequestId, setJoinRequestId] = useState<string | null>(null);
-  const [studentRating, setStudentRating] = useState<any>(null);
-  const [loadingRating, setLoadingRating] = useState(true);
-  const [showRatingDetails, setShowRatingDetails] = useState(false);
-  const [isExcludedFromRating, setIsExcludedFromRating] = useState(false);
-  const [allStudentRatings, setAllStudentRatings] = useState<any[]>([]);
-  const [loadingAllRatings, setLoadingAllRatings] = useState(false);
 
   const teacherName = student.teacher || "Roman";
   const teacherPath = `/${teacherName.toLowerCase()}`;
@@ -96,37 +90,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       }
     };
   }, [micStream, videoStream]);
-  
-  // Load student ratings
-  useEffect(() => {
-    const loadRatings = async () => {
-      setLoadingRating(true);
-      try {
-        console.log("🎯 Fetching ratings for student:", student.id);
-        
-        // Check if student is excluded from rating
-        const profileRef = doc(db, 'studentProfiles', student.id);
-        const profileSnap = await getDoc(profileRef);
-        const excluded = profileSnap.exists() ? profileSnap.data()?.excludeFromRating : false;
-        setIsExcludedFromRating(excluded);
-        
-        if (excluded) {
-          console.log("⚠️ Student is excluded from rating");
-          setStudentRating(null);
-        } else {
-          const ratings = await fetchStudentRatings(student.id);
-          console.log("📊 Received ratings:", ratings);
-          setStudentRating(ratings);
-        }
-      } catch (error) {
-        console.error("❌ Error loading ratings:", error);
-      } finally {
-        setLoadingRating(false);
-      }
-    };
-    
-    loadRatings();
-  }, [student.id]);
 
   // Listen for join request approval/denial
   useEffect(() => {
@@ -407,26 +370,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   };
 
   const colors = getTeacherColor(student.teacher);
-
-  const handleShowRatingDetails = async () => {
-    setShowRatingDetails(true);
-    
-    // Fetch all student ratings for comparison
-    if (allStudentRatings.length === 0) {
-      setLoadingAllRatings(true);
-      try {
-        console.log("📊 Fetching all student ratings for leaderboard...");
-        const teacherKey = teacherName.toLowerCase();
-        const ratings = await fetchAllStudentRatings(teacherKey);
-        console.log("✅ Got all ratings:", ratings);
-        setAllStudentRatings(ratings);
-      } catch (error) {
-        console.error("❌ Error fetching all ratings:", error);
-      } finally {
-        setLoadingAllRatings(false);
-      }
-    }
-  };
 
   const handleJoinClass = async () => {
     // Check if permissions are granted
@@ -767,58 +710,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               </div>
             </div>
             
-            {/* Rating Display */}
-            {!loadingRating && isExcludedFromRating && (
-              <div className="glass-surface rounded-2xl p-5 border-2 border-gray-300">
-                <div className="flex items-center gap-3">
-                  <div className="glass-surface-dark p-2 rounded-xl">
-                    <Star className="h-5 w-5 text-gray-500" />
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-600 text-sm">Рейтинг</span>
-                    <div className="text-sm text-gray-500 mt-1">
-                      Вы не участвуете в общем рейтинге
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {!loadingRating && !isExcludedFromRating && studentRating && studentRating.overallRating && (
-              <div className="glass-surface rounded-2xl p-5 border-2 border-amber-300 bg-gradient-to-br from-amber-50/50 to-yellow-50/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-2 rounded-xl">
-                      <Star className="h-5 w-5 text-white fill-white" />
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-600 text-sm">Твой рейтинг</span>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-2xl font-bold text-amber-600">
-                          {studentRating.averagePercentage?.toFixed(1) || studentRating.overallRating.toFixed(1)}%
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          ({studentRating.overallRating.toFixed(1)}/10)
-                        </span>
-                      </div>
-                      {studentRating.rank && (
-                        <div className="text-sm text-gray-600 mt-1">
-                          Место: {studentRating.rank} из {studentRating.totalStudents || "?"}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleShowRatingDetails}
-                    className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold shadow-md min-h-[44px] touch-manipulation active:scale-95"
-                  >
-                    <TrendingUp className="mr-2 h-4 w-4" />
-                    Подробнее
-                  </Button>
-                </div>
-              </div>
-            )}
-
             {/* Action Buttons - Apple-style spacing and refinement */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <Button
@@ -858,109 +749,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
           </div>
         </div>
       </div>
-      
-      {/* Rating Details Modal */}
-      {showRatingDetails && studentRating && (
-        <div className="fixed inset-0 glass-backdrop-strong z-50 flex items-center justify-center p-4">
-          <div className="glass-modal rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-amber-500 to-yellow-500 p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Star className="h-8 w-8" />
-                  <div>
-                    <h2 className="text-2xl font-bold">Рейтинг всех учеников</h2>
-                    <p className="text-amber-100 mt-1">Сравни свои результаты с другими</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowRatingDetails(false)}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <XCircle className="h-6 w-6" />
-                </button>
-              </div>
-            </div>
-            
-            {/* Content - Leaderboard */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {loadingAllRatings ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Загрузка рейтинга...</p>
-                  </div>
-                </div>
-              ) : allStudentRatings.length > 0 ? (
-                <div className="space-y-3">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Общий рейтинг</h3>
-                  {allStudentRatings.map((rating, index) => {
-                    const isCurrentStudent = rating.studentId === student.id;
-                    const medalEmoji = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "";
-                    
-                    return (
-                      <div
-                        key={rating.studentId}
-                        className={`rounded-xl p-4 border-2 transition-all ${
-                          isCurrentStudent
-                            ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300 shadow-lg"
-                            : "bg-white border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold ${
-                              isCurrentStudent
-                                ? "bg-amber-600 text-white"
-                                : "bg-gray-100 text-gray-600"
-                            }`}>
-                              {medalEmoji || rating.rank}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className={`font-semibold ${isCurrentStudent ? "text-amber-900" : "text-gray-900"}`}>
-                                  {rating.studentName}
-                                </span>
-                                {isCurrentStudent && (
-                                  <span className="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full font-medium">
-                                    Это ты!
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-sm text-gray-600 mt-1">
-                                {rating.completedHomeworks} из {rating.totalAssigned} заданий
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm text-gray-600">
-                              балл: {rating.overallRating.toFixed(1)}/10
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-600">Нет данных для отображения</p>
-                </div>
-              )}
-            </div>
-            
-            {/* Footer */}
-            <div className="border-t p-4 bg-gray-50">
-              <Button
-                onClick={() => setShowRatingDetails(false)}
-                className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
-              >
-                Закрыть
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

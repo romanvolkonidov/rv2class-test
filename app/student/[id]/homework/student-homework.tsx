@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { fetchStudentHomework, fetchHomeworkReports, fetchAllHomework, fetchQuestionsForHomework, fetchStudentRatings, HomeworkAssignment, HomeworkReport, Question } from "@/lib/firebase";
+import { fetchStudentHomework, fetchHomeworkReports, fetchAllHomework, fetchQuestionsForHomework, fetchStudentRatings, fetchAllStudentRatings, HomeworkAssignment, HomeworkReport, Question } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Loader2, CheckCircle, Clock, AlertCircle, ArrowLeft, Trophy, Play, HelpCircle, Eye, X, Check, Star } from "lucide-react";
+import { BookOpen, Loader2, CheckCircle, Clock, AlertCircle, ArrowLeft, Trophy, Play, HelpCircle, Eye, X, Check, Star, TrendingUp, XCircle } from "lucide-react";
 
 interface HomeworkPageProps {
   studentId: string;
@@ -23,6 +23,9 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
   const [loadingResults, setLoadingResults] = useState(false);
   const [studentRating, setStudentRating] = useState<any>(null);
   const [loadingRating, setLoadingRating] = useState(true);
+  const [showRatingDetails, setShowRatingDetails] = useState(false);
+  const [allStudentRatings, setAllStudentRatings] = useState<any[]>([]);
+  const [loadingAllRatings, setLoadingAllRatings] = useState(false);
 
   useEffect(() => {
     loadHomework();
@@ -38,6 +41,34 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
       console.error("Error loading ratings:", error);
     } finally {
       setLoadingRating(false);
+    }
+  };
+
+  const handleShowRatingDetails = async () => {
+    setShowRatingDetails(true);
+    
+    // Fetch all student ratings for comparison
+    if (allStudentRatings.length === 0) {
+      setLoadingAllRatings(true);
+      try {
+        console.log("📊 Fetching all student ratings for leaderboard...");
+        // We need to extract teacher key from studentId or pass it as a prop
+        // For now, let's assume we can get it from the student rating
+        const ratings = await fetchAllStudentRatings();
+        console.log("✅ Got all ratings:", ratings);
+        
+        // Filter out students who have never completed any homework
+        const filteredRatings = ratings.filter((rating: any) => 
+          rating.completedHomeworks && rating.completedHomeworks > 0
+        );
+        console.log(`📊 Filtered ratings: ${ratings.length} -> ${filteredRatings.length} (excluding students with 0 completed homework)`);
+        
+        setAllStudentRatings(filteredRatings);
+      } catch (error) {
+        console.error("❌ Error fetching all ratings:", error);
+      } finally {
+        setLoadingAllRatings(false);
+      }
     }
   };
 
@@ -228,12 +259,22 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                   <div className="text-4xl font-bold text-white">{completionPercentage}%</div>
                   <div className="text-sm text-white/90">Completed</div>
                   {!loadingRating && studentRating && studentRating.overallRating && (
-                    <div className="mt-3 flex items-center justify-end gap-2 glass-surface-dark rounded-full px-3 py-1">
-                      <Star className="h-4 w-4 text-yellow-300 fill-yellow-300" />
-                      <span className="text-lg font-bold text-white">
-                        {studentRating.overallRating.toFixed(1)}
-                      </span>
-                      <span className="text-sm text-white/80">/10</span>
+                    <div className="mt-3">
+                      <div className="flex items-center justify-end gap-2 glass-surface-dark rounded-full px-3 py-1">
+                        <Star className="h-4 w-4 text-yellow-300 fill-yellow-300" />
+                        <span className="text-lg font-bold text-white">
+                          {studentRating.overallRating.toFixed(1)}
+                        </span>
+                        <span className="text-sm text-white/80">/10</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={handleShowRatingDetails}
+                        className="mt-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold shadow-md min-h-[36px] text-xs"
+                      >
+                        <TrendingUp className="mr-1 h-3 w-3" />
+                        Подробнее
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -611,6 +652,109 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                 className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
               >
                 Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Rating Details Modal */}
+      {showRatingDetails && studentRating && (
+        <div className="fixed inset-0 glass-backdrop-strong z-50 flex items-center justify-center p-4">
+          <div className="glass-modal rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-500 to-yellow-500 p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Star className="h-8 w-8" />
+                  <div>
+                    <h2 className="text-2xl font-bold">Рейтинг всех учеников</h2>
+                    <p className="text-amber-100 mt-1">Сравни свои результаты с другими</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowRatingDetails(false)}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <XCircle className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Content - Leaderboard */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingAllRatings ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Загрузка рейтинга...</p>
+                  </div>
+                </div>
+              ) : allStudentRatings.length > 0 ? (
+                <div className="space-y-3">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Общий рейтинг</h3>
+                  {allStudentRatings.map((rating, index) => {
+                    const isCurrentStudent = rating.studentId === studentId;
+                    const medalEmoji = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "";
+                    
+                    return (
+                      <div
+                        key={rating.studentId}
+                        className={`rounded-xl p-4 border-2 transition-all ${
+                          isCurrentStudent
+                            ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300 shadow-lg"
+                            : "bg-white border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold ${
+                              isCurrentStudent
+                                ? "bg-amber-600 text-white"
+                                : "bg-gray-100 text-gray-600"
+                            }`}>
+                              {medalEmoji || rating.rank}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`font-semibold ${isCurrentStudent ? "text-amber-900" : "text-gray-900"}`}>
+                                  {rating.studentName}
+                                </span>
+                                {isCurrentStudent && (
+                                  <span className="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full font-medium">
+                                    Это ты!
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {rating.completedHomeworks} из {rating.totalAssigned} заданий
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-600">
+                              балл: {rating.overallRating.toFixed(1)}/10
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-600">Нет данных для отображения</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Footer */}
+            <div className="border-t p-4 bg-gray-50">
+              <Button
+                onClick={() => setShowRatingDetails(false)}
+                className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
+              >
+                Закрыть
               </Button>
             </div>
           </div>
