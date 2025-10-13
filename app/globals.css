@@ -512,6 +512,9 @@ video {
   /* Smooth, high-quality rendering for all video elements */
   image-rendering: auto;
   image-rendering: high-quality;
+  
+  /* Make videos brighter and more vibrant */
+  filter: brightness(1.15) contrast(1.05);
 }
 
 /* Specific optimization for screen share video elements */
