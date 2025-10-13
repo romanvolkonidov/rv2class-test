@@ -86,6 +86,8 @@ export default function AnnotationOverlay({
   const [isTextInputVisible, setIsTextInputVisible] = useState(false);
   const [fontSize, setFontSize] = useState(24);
   const [internalIsClosing, setInternalIsClosing] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0); // Track keyboard height
+  const textInputRef = useRef<HTMLTextAreaElement>(null);
   const [editingTextId, setEditingTextId] = useState<string | null>(null); // ID of text being edited
   const [showClearOptions, setShowClearOptions] = useState(false); // For clear options modal
   const [textBounds, setTextBounds] = useState<TextBounds[]>([]); // Store bounds of all text annotations
@@ -400,6 +402,52 @@ export default function AnnotationOverlay({
       }
     };
   }, []);
+
+  // Detect keyboard appearance on mobile devices (especially iPad)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isTextInputVisible) return;
+
+    const initialViewportHeight = window.innerHeight;
+
+    const handleResize = () => {
+      const currentViewportHeight = window.innerHeight;
+      const heightDifference = initialViewportHeight - currentViewportHeight;
+      
+      // If viewport height decreased significantly, keyboard is likely visible
+      if (heightDifference > 150) {
+        setKeyboardHeight(heightDifference);
+        
+        // Scroll the text input into view if it's covered by keyboard
+        if (textInputRef.current) {
+          setTimeout(() => {
+            textInputRef.current?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+            });
+          }, 100);
+        }
+      } else {
+        setKeyboardHeight(0);
+      }
+    };
+
+    // Use visualViewport API if available (better for iOS)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      window.visualViewport.addEventListener('scroll', handleResize);
+    } else {
+      window.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+        window.visualViewport.removeEventListener('scroll', handleResize);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+    };
+  }, [isTextInputVisible]);
 
   // Update canvas size and position to match screen share video
   useEffect(() => {
@@ -1953,12 +2001,18 @@ export default function AnnotationOverlay({
           className="fixed z-[45]"
           style={{
             left: `${toAbsolute(textInputPosition).x}px`,
-            top: `${toAbsolute(textInputPosition).y}px`,
+            // Adjust top position to account for keyboard on mobile
+            top: keyboardHeight > 0 
+              ? `${Math.min(toAbsolute(textInputPosition).y, window.innerHeight - keyboardHeight - 250)}px`
+              : `${toAbsolute(textInputPosition).y}px`,
+            // Add transition for smooth adjustment
+            transition: 'top 0.3s ease-out',
           }}
         >
           <div className="relative">
             {/* Transparent input that appears directly on screen */}
             <textarea
+              ref={textInputRef}
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               placeholder="Type here..."

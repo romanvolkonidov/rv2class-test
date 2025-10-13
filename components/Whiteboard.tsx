@@ -75,21 +75,23 @@ export default function Whiteboard() {
         // Get current scene elements
         const currentElements = excalidrawAPI.getSceneElements();
         
-        // Track deleted elements from remote
+        // Update deleted elements tracking FIRST before merging
+        const updatedDeletedIds = new Set(deletedElementIds);
         if (data.deletedIds && Array.isArray(data.deletedIds)) {
-          setDeletedElementIds(prev => {
-            const updated = new Set(prev);
-            data.deletedIds.forEach((id: string) => updated.add(id));
-            return updated;
-          });
+          data.deletedIds.forEach((id: string) => updatedDeletedIds.add(id));
         }
         
         // Create a map of remote elements by ID for quick lookup
-        const remoteElementsMap = new Map(data.elements.map((el: any) => [el.id, el]));
+        // CRITICAL: Filter out deleted elements from remote data too
+        const remoteElementsMap = new Map(
+          data.elements
+            .filter((el: any) => !updatedDeletedIds.has(el.id))
+            .map((el: any) => [el.id, el])
+        );
         
-        // Keep local elements that aren't in remote update, and use remote versions for conflicts
+        // Keep local elements that aren't deleted, and use remote versions for conflicts
         const mergedElements = currentElements
-          .filter((el: any) => !deletedElementIds.has(el.id)) // Filter out deleted elements
+          .filter((el: any) => !updatedDeletedIds.has(el.id)) // Filter out deleted elements
           .map((localEl: any) => {
             const remoteEl: any = remoteElementsMap.get(localEl.id);
             if (remoteEl) {
@@ -104,11 +106,14 @@ export default function Whiteboard() {
         
         // Add any new remote elements that aren't in local and not deleted
         const localElementIds = new Set(currentElements.map((el: any) => el.id));
-        data.elements.forEach((remoteEl: any) => {
-          if (!localElementIds.has(remoteEl.id) && !deletedElementIds.has(remoteEl.id)) {
+        remoteElementsMap.forEach((remoteEl: any) => {
+          if (!localElementIds.has(remoteEl.id)) {
             mergedElements.push(remoteEl);
           }
         });
+        
+        // Update the deleted elements state
+        setDeletedElementIds(updatedDeletedIds);
         
         excalidrawAPI.updateScene({
           elements: mergedElements,
