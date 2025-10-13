@@ -127,6 +127,9 @@ export default function AnnotationOverlay({
   useEffect(() => {
     if (!draggingTextId || !dragOffset) return;
 
+    let lastBroadcastTime = 0;
+    const BROADCAST_THROTTLE_MS = 50; // Throttle broadcasts to every 50ms
+
     const handleMouseMove = (e: MouseEvent) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -139,11 +142,11 @@ export default function AnnotationOverlay({
       const relativePoint = toRelative(newX, newY);
       
       // Update the text action's position
-      const allActions = [...history, ...remoteActions];
       const actionIndex = history.findIndex(a => a.id === draggingTextId);
       
       if (actionIndex !== -1) {
         const updatedHistory = [...history];
+        // CRITICAL: Keep the same ID to prevent duplication
         updatedHistory[actionIndex] = {
           ...updatedHistory[actionIndex],
           startPoint: relativePoint,
@@ -153,13 +156,18 @@ export default function AnnotationOverlay({
         // Redraw canvas immediately to show the updated position
         requestAnimationFrame(() => redrawCanvas());
         
-        // Broadcast the update
-        sendAnnotationData(updatedHistory[actionIndex]);
+        // Throttle broadcasts to prevent spamming
+        const now = Date.now();
+        if (now - lastBroadcastTime >= BROADCAST_THROTTLE_MS) {
+          sendAnnotationData(updatedHistory[actionIndex]);
+          lastBroadcastTime = now;
+        }
       } else {
         // It's in remote actions
         const remoteIndex = remoteActions.findIndex(a => a.id === draggingTextId);
         if (remoteIndex !== -1) {
           const updatedRemote = [...remoteActions];
+          // CRITICAL: Keep the same ID to prevent duplication
           updatedRemote[remoteIndex] = {
             ...updatedRemote[remoteIndex],
             startPoint: relativePoint,
@@ -169,13 +177,28 @@ export default function AnnotationOverlay({
           // Redraw canvas immediately to show the updated position
           requestAnimationFrame(() => redrawCanvas());
           
-          // Broadcast the update
-          sendAnnotationData(updatedRemote[remoteIndex]);
+          // Throttle broadcasts to prevent spamming
+          const now = Date.now();
+          if (now - lastBroadcastTime >= BROADCAST_THROTTLE_MS) {
+            sendAnnotationData(updatedRemote[remoteIndex]);
+            lastBroadcastTime = now;
+          }
         }
       }
     };
 
     const handleMouseUp = () => {
+      // Send final position on mouse up
+      const actionIndex = history.findIndex(a => a.id === draggingTextId);
+      if (actionIndex !== -1) {
+        sendAnnotationData(history[actionIndex]);
+      } else {
+        const remoteIndex = remoteActions.findIndex(a => a.id === draggingTextId);
+        if (remoteIndex !== -1) {
+          sendAnnotationData(remoteActions[remoteIndex]);
+        }
+      }
+      
       setDraggingTextId(null);
       setDragOffset(null);
     };
@@ -1947,23 +1970,17 @@ export default function AnnotationOverlay({
         {/* Drag Handle - Always show, students can drag too */}
         <div 
           className={cn(
-            "drag-handle absolute px-4 py-1.5 bg-black/40 backdrop-blur-xl border border-white/20 flex items-center gap-2 transition-colors pointer-events-auto",
+            "drag-handle absolute px-2 py-1.5 bg-black/40 backdrop-blur-xl border border-white/20 flex items-center justify-center transition-colors pointer-events-auto",
             isDraggingToolbar ? "cursor-grabbing bg-black/60" : "cursor-grab hover:bg-black/50",
             toolbarOrientation === 'horizontal' 
               ? "-top-6 left-1/2 transform -translate-x-1/2 rounded-t-lg border-b-0" 
-              : "-left-6 top-1/2 transform -translate-y-1/2 rounded-l-lg border-r-0 flex-col"
+              : "-left-6 top-1/2 transform -translate-y-1/2 rounded-l-lg border-r-0"
           )}
         >
           <GripVertical className={cn(
             "h-4 w-4 text-white/60",
             toolbarOrientation === 'vertical' && "rotate-90"
           )} />
-          <span className={cn(
-            "text-xs text-white/70 font-medium select-none",
-            toolbarOrientation === 'vertical' && "writing-mode-vertical transform rotate-180"
-          )}>
-            {toolbarOrientation === 'horizontal' ? 'Drag Here or Between Buttons' : 'Drag'}
-          </span>
         </div>
 
           {/* Main Toolbar with glass morphism */}
