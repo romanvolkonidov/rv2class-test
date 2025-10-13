@@ -658,6 +658,9 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               console.log('🔌 Detaching enhanced track:', cameraPublication.trackSid);
               await room.localParticipant.unpublishTrack(currentTrack);
               
+              // Wait a bit to ensure unpublish completes
+              await new Promise(resolve => setTimeout(resolve, 100));
+              
               // Publish original track back
               await room.localParticipant.publishTrack(originalVideoTrackRef.current, {
                 source: Track.Source.Camera,
@@ -672,19 +675,34 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
         }
 
         // Enhancement is ON - set up WebGL processor
-        const mediaStreamTrack = cameraPublication.track.mediaStreamTrack;
-        if (!mediaStreamTrack) {
+        const currentMediaStreamTrack = cameraPublication.track.mediaStreamTrack;
+        if (!currentMediaStreamTrack) {
           console.log('⚠️ No media stream track found');
           return;
         }
 
         // Store original track only if not already stored
         if (!originalVideoTrackRef.current) {
-          originalVideoTrackRef.current = mediaStreamTrack;
+          originalVideoTrackRef.current = currentMediaStreamTrack;
           console.log('💾 Stored original camera track');
         }
 
-        // Create video element from track
+        // If we're changing presets and already have a processor, clean it up first
+        if (videoProcessorRef.current) {
+          console.log('🧹 Cleaning up existing processor for preset change');
+          videoProcessorRef.current.dispose();
+          videoProcessorRef.current = null;
+          
+          // Unpublish current enhanced track if it exists
+          const currentTrack = cameraPublication.track.mediaStreamTrack;
+          if (currentTrack !== originalVideoTrackRef.current) {
+            console.log('🔌 Detaching old enhanced track:', cameraPublication.trackSid);
+            await room.localParticipant.unpublishTrack(currentTrack);
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+
+        // Create video element from ORIGINAL track
         const videoElement = document.createElement('video');
         videoElement.srcObject = new MediaStream([originalVideoTrackRef.current]);
         videoElement.autoplay = true;
@@ -703,19 +721,17 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
         
         console.log('🎥 Video element created and playing');
 
-        // Create processor if needed
-        if (!videoProcessorRef.current) {
-          videoProcessorRef.current = new WebGLVideoProcessor();
-          console.log('✨ Video enhancement processor created');
-        }
+        // Create new processor
+        videoProcessorRef.current = new WebGLVideoProcessor();
+        console.log('✨ Video enhancement processor created');
 
         // Attach processor and get enhanced stream
         const settings = PRESETS[currentPreset];
         const enhancedStream = videoProcessorRef.current.attachToVideo(videoElement, settings);
         console.log('✅ Enhancement applied with preset:', currentPreset);
 
-        // Wait a bit for the processor to generate at least one frame
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for the processor to generate several frames
+        await new Promise(resolve => setTimeout(resolve, 200));
 
         // Get the enhanced track
         const enhancedTrack = enhancedStream.getVideoTracks()[0];
@@ -723,14 +739,16 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
           throw new Error('No enhanced video track available');
         }
 
-        // Check if track is producing frames
-        const settings2 = enhancedTrack.getSettings();
-        console.log('🎬 Enhanced track settings:', settings2);
-
-        // Now safely replace the track
-        console.log('🔌 Detaching video track:', cameraPublication.trackSid);
-        await room.localParticipant.unpublishTrack(mediaStreamTrack);
+        // Verify track has valid dimensions
+        const trackSettings = enhancedTrack.getSettings();
+        if (!trackSettings.width || !trackSettings.height) {
+          console.warn('⚠️ Enhanced track has no dimensions, waiting longer...');
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
         
+        console.log('🎬 Enhanced track settings:', trackSettings);
+
+        // Publish the new enhanced track
         await room.localParticipant.publishTrack(enhancedTrack, {
           source: Track.Source.Camera,
           name: 'enhanced-camera',
@@ -744,6 +762,19 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
         if (videoProcessorRef.current) {
           videoProcessorRef.current.dispose();
           videoProcessorRef.current = null;
+        }
+        
+        // Restore original track if we have it
+        if (originalVideoTrackRef.current) {
+          try {
+            await room.localParticipant.publishTrack(originalVideoTrackRef.current, {
+              source: Track.Source.Camera,
+              name: 'camera',
+            });
+            console.log('🔄 Restored original track after error');
+          } catch (restoreError) {
+            console.error('❌ Failed to restore original track:', restoreError);
+          }
         }
         
         // Set preset back to OFF
