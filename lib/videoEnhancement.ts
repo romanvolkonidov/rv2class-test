@@ -46,6 +46,9 @@ export class WebGLVideoProcessor {
   private animationFrameId: number | null = null;
   private videoElement: HTMLVideoElement | null = null;
   private texture: WebGLTexture | null = null;
+  private settings: VideoEnhancementSettings = DEFAULT_SETTINGS;
+  private frameCount: number = 0;
+  private startTime: number = 0;
 
   constructor() {
     this.canvas = document.createElement('canvas');
@@ -283,6 +286,7 @@ export class WebGLVideoProcessor {
 
   public attachToVideo(video: HTMLVideoElement, settings: VideoEnhancementSettings = DEFAULT_SETTINGS) {
     this.videoElement = video;
+    this.settings = { ...settings }; // Store settings as instance variable
     
     // Ensure video has dimensions
     if (!video.videoWidth || !video.videoHeight) {
@@ -296,8 +300,12 @@ export class WebGLVideoProcessor {
 
     console.log('📐 Canvas size:', this.canvas.width, 'x', this.canvas.height);
 
+    // Reset frame counter for new processing session
+    this.frameCount = 0;
+    this.startTime = Date.now();
+
     // Start processing loop
-    this.startProcessing(settings);
+    this.startProcessing();
 
     // Return canvas stream with appropriate frame rate
     const stream = this.canvas.captureStream(30);
@@ -306,14 +314,11 @@ export class WebGLVideoProcessor {
     return stream;
   }
 
-  private startProcessing(settings: VideoEnhancementSettings) {
+  private startProcessing() {
     if (!this.gl || !this.videoElement || !this.program) {
       console.error('❌ Cannot start processing: missing GL context, video element, or program');
       return;
     }
-
-    let frameCount = 0;
-    const startTime = Date.now();
 
     const render = () => {
       if (!this.gl || !this.videoElement || !this.program) return;
@@ -348,30 +353,30 @@ export class WebGLVideoProcessor {
           this.videoElement
         );
 
-        // Use program and set uniforms
+        // Use program and set uniforms using instance settings
         this.gl.useProgram(this.program);
         
         this.gl.uniform1i(this.textureLocation, 0);
-        this.gl.uniform1f(this.uniformLocations.get('u_brightness')!, settings.brightness / 100);
-        this.gl.uniform1f(this.uniformLocations.get('u_contrast')!, settings.contrast / 100);
-        this.gl.uniform1f(this.uniformLocations.get('u_saturation')!, settings.saturation / 100);
-        this.gl.uniform1f(this.uniformLocations.get('u_gamma')!, settings.gamma);
-        this.gl.uniform1f(this.uniformLocations.get('u_exposure')!, settings.exposure);
-        this.gl.uniform1f(this.uniformLocations.get('u_shadows')!, settings.shadows / 100);
-        this.gl.uniform1f(this.uniformLocations.get('u_highlights')!, settings.highlights / 100);
-        this.gl.uniform1f(this.uniformLocations.get('u_sharpness')!, settings.sharpness / 100);
-        this.gl.uniform1f(this.uniformLocations.get('u_warmth')!, settings.warmth / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_brightness')!, this.settings.brightness / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_contrast')!, this.settings.contrast / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_saturation')!, this.settings.saturation / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_gamma')!, this.settings.gamma);
+        this.gl.uniform1f(this.uniformLocations.get('u_exposure')!, this.settings.exposure);
+        this.gl.uniform1f(this.uniformLocations.get('u_shadows')!, this.settings.shadows / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_highlights')!, this.settings.highlights / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_sharpness')!, this.settings.sharpness / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_warmth')!, this.settings.warmth / 100);
         this.gl.uniform2f(this.uniformLocations.get('u_resolution')!, this.canvas.width, this.canvas.height);
 
         // Draw
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
 
         // Log performance stats every 30 frames
-        frameCount++;
-        if (frameCount % 30 === 0) {
-          const elapsed = (Date.now() - startTime) / 1000;
-          const fps = frameCount / elapsed;
-          console.log(`🎬 Enhancement FPS: ${fps.toFixed(1)}, Frames: ${frameCount}`);
+        this.frameCount++;
+        if (this.frameCount % 30 === 0) {
+          const elapsed = (Date.now() - this.startTime) / 1000;
+          const fps = this.frameCount / elapsed;
+          console.log(`🎬 Enhancement FPS: ${fps.toFixed(1)}, Frames: ${this.frameCount}`);
         }
       } catch (error) {
         console.error('❌ Error in render loop:', error);
@@ -385,7 +390,9 @@ export class WebGLVideoProcessor {
   }
 
   public updateSettings(settings: Partial<VideoEnhancementSettings>) {
-    // Settings are updated in real-time in the render loop
+    // Merge new settings with existing settings
+    this.settings = { ...this.settings, ...settings };
+    console.log('🔄 Settings updated:', this.settings);
   }
 
   public dispose() {
