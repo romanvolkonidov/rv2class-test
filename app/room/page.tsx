@@ -38,7 +38,6 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   const videoProcessorRef = useRef<WebGLVideoProcessor | null>(null);
   const originalVideoTrackRef = useRef<MediaStreamTrack | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
-  const isInitialMount = useRef(true);
 
   // Monitor for new chat messages when chat is closed
   useEffect(() => {
@@ -620,12 +619,6 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   useEffect(() => {
     if (!room || !room.localParticipant) return;
 
-    // Don't apply enhancement on initial mount - only when user explicitly changes it
-    if (isInitialMount.current) {
-      console.log('🚫 Skipping enhancement on initial mount');
-      return;
-    }
-
     // Don't apply enhancement until camera is ready
     if (!cameraReady) {
       console.log('⏳ Waiting for camera to be ready before applying enhancement');
@@ -687,21 +680,16 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
           console.log('💾 Stored original camera track');
         }
 
-        // If we're changing presets and already have a processor, clean it up first
+        // If we already have a processor, just update its settings (much faster!)
         if (videoProcessorRef.current) {
-          console.log('🧹 Cleaning up existing processor for preset change');
-          videoProcessorRef.current.dispose();
-          videoProcessorRef.current = null;
-          
-          // Unpublish current enhanced track if it exists
-          const currentTrack = cameraPublication.track.mediaStreamTrack;
-          if (currentTrack !== originalVideoTrackRef.current) {
-            console.log('🔌 Detaching old enhanced track:', cameraPublication.trackSid);
-            await room.localParticipant.unpublishTrack(currentTrack);
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
+          console.log('🔄 Updating existing processor settings for preset:', currentPreset);
+          const settings = PRESETS[currentPreset];
+          videoProcessorRef.current.updateSettings(settings);
+          console.log('✅ Enhancement settings updated to preset:', currentPreset);
+          return;
         }
 
+        // First time enabling enhancement - create processor and republish track
         // Create video element from ORIGINAL track
         const videoElement = document.createElement('video');
         videoElement.srcObject = new MediaStream([originalVideoTrackRef.current]);
@@ -798,9 +786,6 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
 
   // Handle preset change
   const handlePresetChange = (preset: EnhancementPreset) => {
-    // Mark that we're no longer on initial mount when user changes preset
-    isInitialMount.current = false;
-    
     setCurrentPreset(preset);
     // Save to localStorage
     localStorage.setItem('videoEnhancementPreset', preset);
