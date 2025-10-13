@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
 import { Track, VideoPresets } from "livekit-client";
-import { Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, PhoneOff, Pencil, Square, ChevronDown, Check } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, PhoneOff, Pencil, Square, ChevronDown, Check, Pin, PinOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
@@ -53,6 +53,7 @@ export default function CustomControlBar({
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [hasScreenShare, setHasScreenShare] = useState(false);
   const [isControlBarVisible, setIsControlBarVisible] = useState(true);
+  const [isControlBarPinned, setIsControlBarPinned] = useState(true); // Pin by default
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Source picker state for Electron only
@@ -245,7 +246,7 @@ export default function CustomControlBar({
     });
   }, [hasScreenShare, showAnnotations]);
 
-  // Auto-hide control bar after inactivity
+  // Auto-hide control bar after inactivity (unless pinned)
   useEffect(() => {
     const showControlBar = () => {
       setIsControlBarVisible(true);
@@ -255,10 +256,12 @@ export default function CustomControlBar({
         clearTimeout(hideTimeoutRef.current);
       }
       
-      // Hide after 3 seconds of inactivity
-      hideTimeoutRef.current = setTimeout(() => {
-        setIsControlBarVisible(false);
-      }, 3000);
+      // Only hide if not pinned
+      if (!isControlBarPinned) {
+        hideTimeoutRef.current = setTimeout(() => {
+          setIsControlBarVisible(false);
+        }, 3000);
+      }
     };
 
     // Show control bar on mouse move
@@ -295,7 +298,7 @@ export default function CustomControlBar({
         clearTimeout(hideTimeoutRef.current);
       }
     };
-  }, []);
+  }, [isControlBarPinned]);
 
   // Removed duplicate useEffect for isScreenSharing - now handled above
 
@@ -776,19 +779,22 @@ export default function CustomControlBar({
       title={title}
       className={cn(
         "group relative p-4 rounded-xl transition-all duration-200",
-        "bg-white/10 backdrop-blur-md border border-white/20",
-        "hover:bg-white/20 hover:border-white/30 hover:-translate-y-0.5 hover:scale-110",
+        "bg-white/90 backdrop-blur-md shadow-lg",
+        "hover:bg-white hover:-translate-y-0.5 hover:scale-110 hover:shadow-xl",
         "active:translate-y-0 active:scale-95",  // Better touch feedback
         // Larger touch target for mobile
         "min-w-[48px] min-h-[48px] flex items-center justify-center",
         // Touch-friendly spacing
         "touch-manipulation select-none",
-        danger && "bg-red-500/20 border-red-400/30 hover:bg-red-500/30",
-        success && "bg-green-500/50 border-green-400/60 hover:bg-green-500/60 shadow-lg shadow-green-500/30",
-        active && !success && "bg-white/25 border-white/40"
+        danger && "bg-red-500/90 hover:bg-red-500 shadow-red-500/30",
+        success && "bg-green-500/90 hover:bg-green-500 shadow-lg shadow-green-500/40",
+        active && !success && "bg-blue-500/90 hover:bg-blue-500 shadow-blue-500/30"
       )}
     >
-      <div className={cn("text-white transition-transform")}>
+      <div className={cn(
+        "transition-transform",
+        danger ? "text-white" : success ? "text-white" : active ? "text-white" : "text-gray-900"
+      )}>
         {children}
       </div>
     </button>
@@ -830,14 +836,17 @@ export default function CustomControlBar({
                 }}
                 className={cn(
                   "w-8 h-12 flex items-center justify-center rounded-lg",
-                  "bg-white/10 backdrop-blur-md border border-white/20",
-                  "hover:bg-white/20 hover:border-white/30",
+                  "bg-white/90 backdrop-blur-md shadow-lg",
+                  "hover:bg-white hover:shadow-xl",
                   "transition-all duration-200 touch-manipulation select-none",
-                  showMicMenu && "bg-white/25 border-white/40"
+                  showMicMenu && "bg-blue-500/90 shadow-blue-500/30"
                 )}
                 title="Select Microphone"
               >
-                <ChevronDown className="w-4 h-4 text-white" />
+                <ChevronDown className={cn(
+                  "w-4 h-4 transition-colors",
+                  showMicMenu ? "text-white" : "text-gray-900"
+                )} />
               </button>
             )}
           </div>
@@ -862,14 +871,17 @@ export default function CustomControlBar({
                 }}
                 className={cn(
                   "w-8 h-12 flex items-center justify-center rounded-lg",
-                  "bg-white/10 backdrop-blur-md border border-white/20",
-                  "hover:bg-white/20 hover:border-white/30",
+                  "bg-white/90 backdrop-blur-md shadow-lg",
+                  "hover:bg-white hover:shadow-xl",
                   "transition-all duration-200 touch-manipulation select-none",
-                  showCameraMenu && "bg-white/25 border-white/40"
+                  showCameraMenu && "bg-blue-500/90 shadow-blue-500/30"
                 )}
                 title="Select Camera"
               >
-                <ChevronDown className="w-4 h-4 text-white" />
+                <ChevronDown className={cn(
+                  "w-4 h-4 transition-colors",
+                  showCameraMenu ? "text-white" : "text-gray-900"
+                )} />
               </button>
             )}
           </div>
@@ -930,6 +942,17 @@ export default function CustomControlBar({
               </GlassButton>
             </>
           )}
+
+          <div className="w-px h-10 bg-white/20 mx-2" />
+
+          {/* Pin/Unpin Toggle */}
+          <GlassButton 
+            onClick={() => setIsControlBarPinned(!isControlBarPinned)} 
+            active={isControlBarPinned}
+            title={isControlBarPinned ? "Unpin Control Bar (Auto-hide)" : "Pin Control Bar (Always visible)"}
+          >
+            {isControlBarPinned ? <Pin className="w-5 h-5" /> : <PinOff className="w-5 h-5" />}
+          </GlassButton>
 
           <div className="w-px h-10 bg-white/20 mx-2" />
 
@@ -1145,7 +1168,7 @@ export default function CustomControlBar({
             <div className="p-4 border-t border-white/10 flex justify-end">
               <button
                 onClick={() => setShowSourcePicker(false)}
-                className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white font-medium transition-all"
+                className="px-6 py-2 bg-white/90 hover:bg-white shadow-lg hover:shadow-xl rounded-lg text-gray-900 font-medium transition-all"
               >
                 Cancel
               </button>
