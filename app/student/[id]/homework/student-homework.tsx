@@ -340,17 +340,12 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                           {statusInfo.label}
                         </div>
                         
-                        {report && report.score !== undefined && (
+                        {report && report.correctAnswers !== undefined && report.totalQuestions !== undefined && (
                           <div className="mt-2 flex items-center gap-1 justify-end">
                             <Trophy className="h-4 w-4 text-yellow-600" />
                             <span className="text-lg font-bold text-yellow-600">
-                              {report.score}%
+                              {report.correctAnswers}/{report.totalQuestions}
                             </span>
-                            {report.correctAnswers !== undefined && report.totalQuestions !== undefined && (
-                              <span className="text-sm text-gray-500 ml-1">
-                                ({report.correctAnswers}/{report.totalQuestions})
-                              </span>
-                            )}
                           </div>
                         )}
                       </div>
@@ -517,25 +512,39 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                                 <div
                                   key={optIndex}
                                   className={`p-3 rounded-lg border-2 ${
-                                    isThisCorrect
+                                    isThisCorrect && isThisSelected
                                       ? "bg-green-100 border-green-400 font-semibold"
+                                      : isThisCorrect
+                                      ? "bg-green-50 border-green-300"
                                       : isThisSelected
                                       ? "bg-red-100 border-red-400"
                                       : "bg-white border-gray-200"
                                   }`}
                                 >
                                   <div className="flex items-center justify-between">
-                                    <span>{option}</span>
-                                    {isThisCorrect && (
-                                      <span className="text-green-700 text-sm font-bold flex items-center gap-1">
-                                        <Check className="h-4 w-4" /> Correct Answer
-                                      </span>
-                                    )}
-                                    {isThisSelected && !isThisCorrect && (
-                                      <span className="text-red-700 text-sm font-bold flex items-center gap-1">
-                                        <X className="h-4 w-4" /> Your Answer
-                                      </span>
-                                    )}
+                                    <span className={isThisSelected ? "font-bold" : ""}>{option}</span>
+                                    <div className="flex items-center gap-2">
+                                      {isThisSelected && (
+                                        <span className={`text-sm font-bold flex items-center gap-1 ${
+                                          isThisCorrect ? "text-green-700" : "text-red-700"
+                                        }`}>
+                                          {isThisCorrect ? (
+                                            <>
+                                              <Check className="h-4 w-4" /> Your Answer ✓
+                                            </>
+                                          ) : (
+                                            <>
+                                              <X className="h-4 w-4" /> Your Answer ✗
+                                            </>
+                                          )}
+                                        </span>
+                                      )}
+                                      {isThisCorrect && !isThisSelected && (
+                                        <span className="text-green-700 text-sm font-bold flex items-center gap-1">
+                                          <Check className="h-4 w-4" /> Correct Answer
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               );
@@ -546,14 +555,36 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                         {/* Answer Summary (for text answers or fill-in-blank) */}
                         {(!question.options || question.options.length === 0) && (
                           <div className="space-y-2 mb-3">
-                            <div className={`p-3 rounded-lg ${isCorrect ? "bg-white" : "bg-red-100"}`}>
-                              <div className="text-sm font-semibold text-gray-600 mb-1">Your Answer:</div>
-                              <div className="font-medium text-gray-900">{submittedAnswer || "(No answer)"}</div>
+                            <div className={`p-4 rounded-lg border-2 ${
+                              isCorrect 
+                                ? "bg-green-50 border-green-300" 
+                                : "bg-red-50 border-red-300"
+                            }`}>
+                              <div className="flex items-center gap-2 mb-2">
+                                {isCorrect ? (
+                                  <Check className="h-5 w-5 text-green-600" />
+                                ) : (
+                                  <X className="h-5 w-5 text-red-600" />
+                                )}
+                                <div className={`text-sm font-bold ${
+                                  isCorrect ? "text-green-700" : "text-red-700"
+                                }`}>
+                                  Your Answer:
+                                </div>
+                              </div>
+                              <div className={`font-bold text-lg ${
+                                isCorrect ? "text-green-900" : "text-red-900"
+                              }`}>
+                                {submittedAnswer || "(No answer provided)"}
+                              </div>
                             </div>
                             {!isCorrect && (
-                              <div className="p-3 rounded-lg bg-green-100">
-                                <div className="text-sm font-semibold text-gray-600 mb-1">Correct Answer:</div>
-                                <div className="font-medium text-green-900">{question.correctAnswer}</div>
+                              <div className="p-4 rounded-lg bg-green-50 border-2 border-green-300">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Check className="h-5 w-5 text-green-600" />
+                                  <div className="text-sm font-bold text-green-700">Correct Answer:</div>
+                                </div>
+                                <div className="font-bold text-lg text-green-900">{question.correctAnswer}</div>
                               </div>
                             )}
                           </div>

@@ -783,6 +783,41 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 </div>
               </div>
             )}
+            
+            {!loadingRating && !isExcludedFromRating && studentRating && studentRating.overallRating && (
+              <div className="glass-surface rounded-2xl p-5 border-2 border-amber-300 bg-gradient-to-br from-amber-50/50 to-yellow-50/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-2 rounded-xl">
+                      <Star className="h-5 w-5 text-white fill-white" />
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-600 text-sm">Твой рейтинг</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-2xl font-bold text-amber-600">
+                          {studentRating.averagePercentage?.toFixed(1) || studentRating.overallRating.toFixed(1)}%
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          ({studentRating.overallRating.toFixed(1)}/10)
+                        </span>
+                      </div>
+                      {studentRating.rank && (
+                        <div className="text-sm text-gray-600 mt-1">
+                          Место: {studentRating.rank} из {studentRating.totalStudents || "?"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleShowRatingDetails}
+                    className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold shadow-md min-h-[44px] touch-manipulation active:scale-95"
+                  >
+                    <TrendingUp className="mr-2 h-4 w-4" />
+                    Подробнее
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons - Apple-style spacing and refinement */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
