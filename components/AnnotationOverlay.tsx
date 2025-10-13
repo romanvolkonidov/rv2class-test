@@ -97,7 +97,21 @@ export default function AnnotationOverlay({
   const room = useRoomContext();
   
   // Toolbar dragging state
-  const [toolbarPosition, setToolbarPosition] = useState({ x: 0, y: 0 });
+  // Initialize toolbar position to center instead of top-left
+  const [toolbarPosition, setToolbarPosition] = useState(() => {
+    // Calculate initial centered position
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+    const isPortrait = screenHeight > screenWidth;
+    
+    if (isPortrait) {
+      // Portrait: right side, vertically centered (rough estimate)
+      return { x: screenWidth - 80, y: Math.max(200, screenHeight / 2 - 200) };
+    } else {
+      // Landscape: bottom center (rough estimate)
+      return { x: screenWidth / 2 - 200, y: screenHeight - 150 };
+    }
+  });
   const [isDraggingToolbar, setIsDraggingToolbar] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const toolbarRef = useRef<HTMLDivElement>(null);
