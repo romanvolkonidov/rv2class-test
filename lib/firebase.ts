@@ -586,4 +586,62 @@ const filterExcludedStudents = async (ratings: any[]): Promise<any[]> => {
   }
 };
 
+// Fetch ALL student ratings for comparison (leaderboard)
+export const fetchAllStudentRatings = async (tutorKey?: string): Promise<any[]> => {
+  try {
+    console.log('📊 Fetching ALL student ratings for comparison...');
+    
+    // Build URL with optional tutorKey parameter
+    let url = 'https://calculatestudentratings-35666ugduq-uc.a.run.app';
+    if (tutorKey) {
+      url += `?tutorKey=${tutorKey}`;
+    }
+    
+    console.log("📡 Request URL:", url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log("📥 Response status:", response.status, response.statusText);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Cloud Function error response:", errorText);
+      throw new Error(`Failed to fetch all student ratings: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log("✅ All student ratings fetched:", data);
+    
+    if (data.success && data.ratings && Array.isArray(data.ratings)) {
+      // Filter out students who are excluded from rating
+      const filteredRatings = await filterExcludedStudents(data.ratings);
+      console.log(`🔍 Filtered ratings: ${data.ratings.length} -> ${filteredRatings.length} students`);
+      
+      // Recalculate ranks after filtering and transform data
+      const rerankedRatings = filteredRatings.map((student: any, index: number) => ({
+        studentId: student.studentId,
+        studentName: student.studentName,
+        rank: index + 1,
+        overallRating: student.averagePercentage / 10, // Convert 0-100 to 0-10
+        averagePercentage: student.averagePercentage, // Keep original percentage
+        completedHomeworks: student.completedHomeworks,
+        totalAssigned: student.totalAssigned,
+        completionRate: student.totalAssigned > 0 ? (student.completedHomeworks / student.totalAssigned * 100) : 0,
+      }));
+      
+      return rerankedRatings;
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('❌ Error fetching all student ratings:', error);
+    throw error;
+  }
+};
+
 export { app, auth, db };

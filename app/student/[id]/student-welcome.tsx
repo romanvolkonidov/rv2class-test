@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle, XCircle, Star, TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import WaitingRoom, { WaitingRoomHandle } from "@/components/WaitingRoom";
-import { db, fetchStudentRatings } from "@/lib/firebase";
+import { db, fetchStudentRatings, fetchAllStudentRatings } from "@/lib/firebase";
 import { doc, onSnapshot, getDoc } from "firebase/firestore";
 
 interface StudentData {
@@ -35,6 +35,8 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const [loadingRating, setLoadingRating] = useState(true);
   const [showRatingDetails, setShowRatingDetails] = useState(false);
   const [isExcludedFromRating, setIsExcludedFromRating] = useState(false);
+  const [allStudentRatings, setAllStudentRatings] = useState<any[]>([]);
+  const [loadingAllRatings, setLoadingAllRatings] = useState(false);
 
   const teacherName = student.teacher || "Roman";
   const teacherPath = `/${teacherName.toLowerCase()}`;
@@ -406,6 +408,26 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
 
   const colors = getTeacherColor(student.teacher);
 
+  const handleShowRatingDetails = async () => {
+    setShowRatingDetails(true);
+    
+    // Fetch all student ratings for comparison
+    if (allStudentRatings.length === 0) {
+      setLoadingAllRatings(true);
+      try {
+        console.log("📊 Fetching all student ratings for leaderboard...");
+        const teacherKey = teacherName.toLowerCase();
+        const ratings = await fetchAllStudentRatings(teacherKey);
+        console.log("✅ Got all ratings:", ratings);
+        setAllStudentRatings(ratings);
+      } catch (error) {
+        console.error("❌ Error fetching all ratings:", error);
+      } finally {
+        setLoadingAllRatings(false);
+      }
+    }
+  };
+
   const handleJoinClass = async () => {
     // Check if permissions are granted
     if (micPermission !== "granted" || videoPermission !== "granted") {
@@ -773,9 +795,8 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                       <span className="font-medium text-gray-600 text-sm">Твой рейтинг</span>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-2xl text-amber-600">
-                          {studentRating.overallRating ? studentRating.overallRating.toFixed(1) : "N/A"}
+                          {studentRating.averagePercentage ? studentRating.averagePercentage.toFixed(1) : "N/A"}%
                         </span>
-                        <span className="text-sm text-gray-500">/ 10</span>
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
                         Место: {studentRating.rank} из {studentRating.totalStudents}
@@ -785,7 +806,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setShowRatingDetails(true)}
+                    onClick={handleShowRatingDetails}
                     className="glass-button-dark text-amber-700 font-medium"
                   >
                     <TrendingUp className="h-4 w-4 mr-2" />
@@ -845,8 +866,8 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 <div className="flex items-center gap-3">
                   <Star className="h-8 w-8" />
                   <div>
-                    <h2 className="text-2xl font-bold">Your Rating Details</h2>
-                    <p className="text-amber-100 mt-1">Complete performance overview</p>
+                    <h2 className="text-2xl font-bold">Рейтинг всех учеников</h2>
+                    <p className="text-amber-100 mt-1">Сравни свои результаты с другими</p>
                   </div>
                 </div>
                 <button
@@ -858,128 +879,74 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               </div>
             </div>
             
-            {/* Content */}
+            {/* Content - Leaderboard */}
             <div className="flex-1 overflow-y-auto p-6">
-              {/* Overall Rating */}
-              <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-6 mb-6 border-2 border-amber-200">
-                <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 text-white mb-4">
-                    <span className="text-4xl font-bold">{studentRating.overallRating?.toFixed(1) || "N/A"}</span>
+              {loadingAllRatings ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Загрузка рейтинга...</p>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">Overall Rating</h3>
-                  <p className="text-gray-600 mt-1">Your total performance score</p>
                 </div>
-              </div>
-              
-              {/* Individual Ratings */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Rating Breakdown</h3>
-                
-                {/* Homework Completion */}
-                {studentRating.homeworkCompletion !== undefined && (
-                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-blue-600" />
-                        <span className="font-semibold text-gray-900">Homework Completion</span>
-                      </div>
-                      <span className="font-bold text-xl text-blue-600">
-                        {(studentRating.homeworkCompletion * 10).toFixed(1)}/10
-                      </span>
-                    </div>
-                    <div className="w-full bg-blue-200 rounded-full h-2">
+              ) : allStudentRatings.length > 0 ? (
+                <div className="space-y-3">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Общий рейтинг</h3>
+                  {allStudentRatings.map((rating, index) => {
+                    const isCurrentStudent = rating.studentId === student.id;
+                    const medalEmoji = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "";
+                    
+                    return (
                       <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${studentRating.homeworkCompletion * 100}%` }}
-                      />
-                    </div>
-                    <p className="text-sm text-gray-600 mt-2">
-                      {(studentRating.homeworkCompletion * 100).toFixed(0)}% of homework completed
-                    </p>
-                  </div>
-                )}
-                
-                {/* Homework Score */}
-                {studentRating.homeworkScore !== undefined && (
-                  <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span className="font-semibold text-gray-900">Homework Score</span>
+                        key={rating.studentId}
+                        className={`rounded-xl p-4 border-2 transition-all ${
+                          isCurrentStudent
+                            ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300 shadow-lg"
+                            : "bg-white border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold ${
+                              isCurrentStudent
+                                ? "bg-amber-600 text-white"
+                                : "bg-gray-100 text-gray-600"
+                            }`}>
+                              {medalEmoji || rating.rank}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`font-semibold ${isCurrentStudent ? "text-amber-900" : "text-gray-900"}`}>
+                                  {rating.studentName}
+                                </span>
+                                {isCurrentStudent && (
+                                  <span className="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full font-medium">
+                                    Это ты!
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {rating.completedHomeworks} из {rating.totalAssigned} заданий ({rating.completionRate.toFixed(0)}%)
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-2xl font-bold ${isCurrentStudent ? "text-amber-600" : "text-gray-900"}`}>
+                              {rating.averagePercentage.toFixed(1)}%
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              балл: {rating.overallRating.toFixed(1)}/10
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <span className="font-bold text-xl text-green-600">
-                        {(studentRating.homeworkScore * 10).toFixed(1)}/10
-                      </span>
-                    </div>
-                    <div className="w-full bg-green-200 rounded-full h-2">
-                      <div
-                        className="bg-green-600 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${studentRating.homeworkScore * 100}%` }}
-                      />
-                    </div>
-                    <p className="text-sm text-gray-600 mt-2">
-                      Average score: {(studentRating.homeworkScore * 100).toFixed(0)}%
-                    </p>
-                  </div>
-                )}
-                
-                {/* Lesson Attendance */}
-                {studentRating.lessonAttendance !== undefined && (
-                  <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Video className="h-5 w-5 text-purple-600" />
-                        <span className="font-semibold text-gray-900">Lesson Attendance</span>
-                      </div>
-                      <span className="font-bold text-xl text-purple-600">
-                        {(studentRating.lessonAttendance * 10).toFixed(1)}/10
-                      </span>
-                    </div>
-                    <div className="w-full bg-purple-200 rounded-full h-2">
-                      <div
-                        className="bg-purple-600 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${studentRating.lessonAttendance * 100}%` }}
-                      />
-                    </div>
-                    <p className="text-sm text-gray-600 mt-2">
-                      {(studentRating.lessonAttendance * 100).toFixed(0)}% attendance rate
-                    </p>
-                  </div>
-                )}
-                
-                {/* Statistics */}
-                {studentRating.stats && (
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mt-6">
-                    <h4 className="font-semibold text-gray-900 mb-3">Statistics</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      {studentRating.stats.totalHomework !== undefined && (
-                        <div>
-                          <p className="text-sm text-gray-600">Total Homework</p>
-                          <p className="text-xl font-bold text-gray-900">{studentRating.stats.totalHomework}</p>
-                        </div>
-                      )}
-                      {studentRating.stats.completedHomework !== undefined && (
-                        <div>
-                          <p className="text-sm text-gray-600">Completed</p>
-                          <p className="text-xl font-bold text-green-600">{studentRating.stats.completedHomework}</p>
-                        </div>
-                      )}
-                      {studentRating.stats.totalLessons !== undefined && (
-                        <div>
-                          <p className="text-sm text-gray-600">Total Lessons</p>
-                          <p className="text-xl font-bold text-gray-900">{studentRating.stats.totalLessons}</p>
-                        </div>
-                      )}
-                      {studentRating.stats.attendedLessons !== undefined && (
-                        <div>
-                          <p className="text-sm text-gray-600">Attended</p>
-                          <p className="text-xl font-bold text-purple-600">{studentRating.stats.attendedLessons}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-600">Нет данных для отображения</p>
+                </div>
+              )}
             </div>
             
             {/* Footer */}
@@ -988,7 +955,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 onClick={() => setShowRatingDetails(false)}
                 className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
               >
-                Close
+                Закрыть
               </Button>
             </div>
           </div>
