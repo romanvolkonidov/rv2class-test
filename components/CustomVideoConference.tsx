@@ -250,10 +250,13 @@ function DraggableThumbnailContainer({
       {/* Control bar with fixed thickness but scales width to match videos */}
       <div 
         className="bg-black/60 backdrop-blur-md rounded-t px-2 py-1 flex items-center gap-2"
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
         style={{
           borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
           transform: `scaleX(${scale})`,
           transformOrigin: 'left',
+          cursor: isDragging ? 'grabbing' : 'grab',
         }}
       >
         <div className="flex items-center gap-1 ml-auto" style={{
@@ -470,8 +473,7 @@ const ParticipantView = memo(function ParticipantView({
         "relative transition-all duration-200 w-full h-full group",
         // NO rounded corners or borders for screen share - shows full content
         isScreenShare ? "overflow-visible bg-black flex items-center justify-center" : "overflow-hidden bg-black/20 backdrop-blur-md rounded-xl",
-        !isScreenShare && "border",
-        !isScreenShare && (isSpeaking ? "border-blue-400 ring-2 ring-blue-400/50" : "border-white/10")
+        isSpeaking && !isScreenShare && "ring-2 ring-blue-400/50"
       )}
       onMouseEnter={() => {
         if (isTutor && !isLocal) setShowControls(true);

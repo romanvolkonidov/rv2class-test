@@ -98,17 +98,17 @@ export default function AnnotationOverlay({
   // Toolbar dragging state
   // Initialize toolbar position to center instead of top-left
   const [toolbarPosition, setToolbarPosition] = useState(() => {
-    // Calculate initial centered position
+    // Calculate initial position based on which side is longer
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
     const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
-    const isPortrait = screenHeight > screenWidth;
     
-    if (isPortrait) {
-      // Portrait: right side, vertically centered (rough estimate)
-      return { x: screenWidth - 80, y: Math.max(200, screenHeight / 2 - 200) };
+    // Check which side is longer
+    if (screenWidth > screenHeight) {
+      // Width is longer - place toolbar at TOP center
+      return { x: screenWidth / 2 - 200, y: 20 };
     } else {
-      // Landscape: bottom center (rough estimate)
-      return { x: screenWidth / 2 - 200, y: screenHeight - 150 };
+      // Height is longer - place toolbar at LEFT center
+      return { x: 20, y: screenHeight / 2 - 100 };
     }
   });
   const [isDraggingToolbar, setIsDraggingToolbar] = useState(false);
@@ -117,7 +117,12 @@ export default function AnnotationOverlay({
   const [isToolbarPositioned, setIsToolbarPositioned] = useState(false);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [showDragHint, setShowDragHint] = useState(false);
-  const [toolbarOrientation, setToolbarOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [toolbarOrientation, setToolbarOrientation] = useState<'horizontal' | 'vertical'>(() => {
+    // Set orientation based on which side is longer
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+    return screenWidth > screenHeight ? 'horizontal' : 'vertical';
+  });
   const lastOrientationChangeRef = useRef<number>(0);
   const orientationDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isOrientationLocked = useRef<boolean>(false);
@@ -244,13 +249,23 @@ export default function AnnotationOverlay({
   const calculateColorPickerPosition = (buttonElement: HTMLElement): 'left' | 'right' => {
     const rect = buttonElement.getBoundingClientRect();
     const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
     const pickerWidth = 250; // Approximate width of color picker
+    const pickerHeight = 150; // Approximate height of color picker
     
-    const spaceOnRight = screenWidth - rect.right;
-    const spaceOnLeft = rect.left;
-    
-    // Return the side with more space
-    return spaceOnLeft > spaceOnRight ? 'left' : 'right';
+    if (toolbarOrientation === 'horizontal') {
+      // For horizontal toolbar: check left vs right alignment
+      // (picker appears above, but aligns to left or right edge)
+      const spaceOnRight = screenWidth - rect.right;
+      const spaceOnLeft = rect.left;
+      return spaceOnLeft > spaceOnRight ? 'left' : 'right';
+    } else {
+      // For vertical toolbar: check top vs bottom alignment
+      // (picker appears to the left, but aligns to top or bottom edge)
+      const spaceOnBottom = screenHeight - rect.bottom;
+      const spaceOnTop = rect.top;
+      return spaceOnTop > spaceOnBottom ? 'left' : 'right'; // 'left' = align to top, 'right' = align to bottom
+    }
   };
 
   // Click outside to close color picker
@@ -2053,9 +2068,14 @@ export default function AnnotationOverlay({
                 {showColorPicker && (
                   <div className={cn(
                     "absolute z-[70] bg-black/95 backdrop-blur-xl border border-white/30 rounded-xl p-3 shadow-2xl",
-                    toolbarOrientation === 'horizontal' 
-                      ? `top-full mt-2 ${colorPickerPosition === 'left' ? 'right-0' : 'left-0'}`
-                      : `top-0 ${colorPickerPosition === 'left' ? 'right-full mr-2' : 'left-full ml-2'}`
+                    // Horizontal toolbar: appear above, aligned to left or right edge
+                    toolbarOrientation === 'horizontal' && "bottom-full mb-2",
+                    toolbarOrientation === 'horizontal' && colorPickerPosition === 'left' && "left-0",
+                    toolbarOrientation === 'horizontal' && colorPickerPosition === 'right' && "right-0",
+                    // Vertical toolbar: appear to the left, aligned to top or bottom edge
+                    toolbarOrientation === 'vertical' && "right-full mr-2",
+                    toolbarOrientation === 'vertical' && colorPickerPosition === 'left' && "top-0",
+                    toolbarOrientation === 'vertical' && colorPickerPosition === 'right' && "bottom-0"
                   )}>
                     <div className="text-xs text-white/80 font-semibold mb-3 text-center">Select Color</div>
                     <div className="grid grid-cols-5 gap-2">
@@ -2279,3 +2299,4 @@ export default function AnnotationOverlay({
     </>
   );
 }
+  

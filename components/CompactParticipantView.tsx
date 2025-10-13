@@ -239,10 +239,13 @@ function DraggableThumbnailContainer({
       {/* Control bar with fixed thickness but scales width to match videos */}
       <div 
         className="bg-black/60 backdrop-blur-md rounded-t px-2 py-1 flex items-center gap-2"
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
         style={{
           borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
           transform: `scaleX(${scale})`,
           transformOrigin: 'left',
+          cursor: isDragging ? 'grabbing' : 'grab',
         }}
       >
         <div className="flex items-center gap-1 ml-auto" style={{
@@ -486,7 +489,7 @@ const ParticipantView = memo(function ParticipantView({
       className={cn(
         "relative w-28 h-20 sm:w-32 sm:h-24 md:w-40 md:h-28 max-w-[30vw] max-h-[25vh] rounded-lg overflow-hidden transition-all duration-200",
         "bg-black/20 backdrop-blur-md",
-        isSpeaking ? "outline outline-2 outline-blue-400 ring-2 ring-blue-400/50" : "outline outline-1 outline-white/10"
+        isSpeaking && "ring-2 ring-blue-400/50"
       )}
       onMouseEnter={() => isTutor && !isLocal && setShowControls(true)}
       onMouseLeave={() => setShowControls(false)}
@@ -514,7 +517,7 @@ const ParticipantView = memo(function ParticipantView({
         </div>
       )}
 
-      <div className="absolute bottom-0 left-0 right-0 h-7 px-2 py-1.5 bg-black/20 backdrop-blur-xl border-t border-white/10 flex items-center justify-between gap-2">
+      <div className="absolute bottom-0 left-0 right-0 h-7 px-2 py-1.5 bg-black/20 backdrop-blur-xl flex items-center justify-between gap-2">
         <p className="text-[10px] font-medium text-white/90 truncate leading-none flex-1">
           {participant.identity} {isLocal && "(You)"}
         </p>

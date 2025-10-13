@@ -53,7 +53,7 @@ export default function CustomControlBar({
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [hasScreenShare, setHasScreenShare] = useState(false);
   const [isControlBarVisible, setIsControlBarVisible] = useState(true);
-  const [isControlBarPinned, setIsControlBarPinned] = useState(true); // Pin by default
+  const [isControlBarPinned, setIsControlBarPinned] = useState(false); // Unpinned by default (auto-hide)
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Source picker state for Electron only
