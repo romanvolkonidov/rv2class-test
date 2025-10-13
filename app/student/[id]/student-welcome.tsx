@@ -374,9 +374,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const handleJoinClass = async () => {
     // Check if permissions are granted
     if (micPermission !== "granted" || videoPermission !== "granted") {
-      // Scroll to top to show permission toggles
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      
       // Pulse the buttons that need attention
       if (micPermission !== "granted") {
         setShouldPulseMic(true);
@@ -547,114 +544,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
         <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-indigo-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Permission Toggles - Fixed at top with refined glass effect */}
-      <div className="w-full max-w-2xl mb-6 relative z-10">
-        <div className="backdrop-blur-2xl bg-white/60 border border-gray-200/50 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] p-5">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-lg shadow-blue-500/50"></div>
-              <span className="text-sm font-medium text-gray-700">
-                Проверьте разрешения перед подключением
-              </span>
-            </div>
-            
-            <div className="flex gap-3 items-center flex-wrap">
-              {/* Microphone Toggle */}
-              <Button
-                size="sm"
-                onClick={requestMicPermission}
-                disabled={micPermission === "granted" || micPermission === "checking"}
-                className={`flex items-center gap-2 transition-all duration-300 backdrop-blur-xl border min-h-[44px] touch-manipulation active:scale-95 select-none ${
-                  shouldPulseMic ? 'animate-pulse ring-4 ring-blue-400/40' : ''
-                } ${
-                  micPermission === "granted"
-                    ? "bg-green-500 hover:bg-green-600 border-green-600 text-white cursor-default shadow-lg shadow-green-500/30"
-                    : micPermission === "denied"
-                    ? "bg-orange-500/90 hover:bg-orange-500 border-orange-500 text-white cursor-pointer shadow-lg shadow-orange-500/20"
-                    : "bg-blue-500/90 hover:bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/20"
-                }`}
-                title={
-                  micPermission === "granted"
-                    ? "Доступ к микрофону разрешён ✓"
-                    : micPermission === "denied"
-                    ? "Нажмите для инструкций по включению микрофона"
-                    : "Нажмите чтобы разрешить микрофон"
-                }
-              >
-                {micPermission === "granted" ? (
-                  <>
-                    <Mic className="h-4 w-4" />
-                    <CheckCircle className="h-4 w-4 text-green-300" />
-                    <span className="font-semibold">Микрофон ✓</span>
-                  </>
-                ) : micPermission === "denied" ? (
-                  <>
-                    <MicOff className="h-4 w-4" />
-                    <span className="font-medium">Включить микрофон</span>
-                  </>
-                ) : micPermission === "checking" ? (
-                  <>
-                    <Mic className="h-4 w-4 animate-pulse" />
-                    <span className="font-medium">Проверяем...</span>
-                  </>
-                ) : (
-                  <>
-                    <Mic className="h-4 w-4" />
-                    <span className="font-medium">Разрешить микрофон</span>
-                  </>
-                )}
-              </Button>
-
-              {/* Video Toggle */}
-              <Button
-                size="sm"
-                onClick={requestVideoPermission}
-                disabled={videoPermission === "granted" || videoPermission === "checking"}
-                className={`flex items-center gap-2 transition-all duration-300 backdrop-blur-xl border min-h-[44px] touch-manipulation active:scale-95 select-none ${
-                  shouldPulseCamera ? 'animate-pulse ring-4 ring-blue-400/40' : ''
-                } ${
-                  videoPermission === "granted"
-                    ? "bg-green-500 hover:bg-green-600 border-green-600 text-white cursor-default shadow-lg shadow-green-500/30"
-                    : videoPermission === "denied"
-                    ? "bg-orange-500/90 hover:bg-orange-500 border-orange-500 text-white cursor-pointer shadow-lg shadow-orange-500/20"
-                    : "bg-blue-500/90 hover:bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/20"
-                }`}
-                title={
-                  videoPermission === "granted"
-                    ? "Доступ к камере разрешён ✓"
-                    : videoPermission === "denied"
-                    ? "Нажмите для инструкций по включению камеры"
-                    : "Нажмите чтобы разрешить камеру"
-                }
-              >
-                {videoPermission === "granted" ? (
-                  <>
-                    <Video className="h-4 w-4" />
-                    <CheckCircle className="h-4 w-4 text-green-300" />
-                    <span className="font-semibold">Камера ✓</span>
-                  </>
-                ) : videoPermission === "denied" ? (
-                  <>
-                    <VideoOff className="h-4 w-4" />
-                    <span className="font-medium">Включить камеру</span>
-                  </>
-                ) : videoPermission === "checking" ? (
-                  <>
-                    <Video className="h-4 w-4 animate-pulse" />
-                    <span className="font-medium">Проверяем...</span>
-                  </>
-                ) : (
-                  <>
-                    <Video className="h-4 w-4" />
-                    <span className="font-medium">Разрешить камеру</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-2xl w-full space-y-6 relative z-10">
         {/* Welcome Card - Apple-style refined glass */}
         <div className="glass-panel rounded-3xl overflow-hidden">
@@ -674,17 +563,30 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
             </div>
           </div>
           <div className="p-8 space-y-6">
-            {/* Student Info */}
+            {/* Student Info with Homework Button */}
             <div className="glass-surface rounded-2xl p-5">
               <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="glass-accent-blue p-2 rounded-xl">
-                    <GraduationCap className="h-5 w-5 text-blue-600" />
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="glass-accent-blue p-2 rounded-xl">
+                      <GraduationCap className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <span className="font-medium text-gray-600">Твой учитель:</span>
+                    <span className="font-semibold text-lg text-gray-900">
+                      {teacherName}
+                    </span>
                   </div>
-                  <span className="font-medium text-gray-600">Твой учитель:</span>
-                  <span className="font-semibold text-lg text-gray-900">
-                    {teacherName}
-                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="glass-card text-gray-700 transition-all duration-300 shadow-md font-medium touch-manipulation active:scale-95 select-none h-10"
+                    onClick={handleHomeworks}
+                  >
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-blue-600" />
+                      <span className="font-semibold text-sm">Домашние задания</span>
+                    </div>
+                  </Button>
                 </div>
                 
                 {activeSubjects.length > 0 && (
@@ -710,11 +612,11 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
               </div>
             </div>
             
-            {/* Action Buttons - Apple-style spacing and refinement */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            {/* Join Button with Integrated Toggles */}
+            <div className="flex gap-3 pt-2">
               <Button
                 size="lg"
-                className={`w-full h-auto py-5 min-h-[64px] bg-gradient-to-r ${colors.gradient} hover:scale-105 hover:shadow-2xl active:scale-100 transition-all duration-300 shadow-xl border border-white/20 backdrop-blur-xl font-medium group touch-manipulation select-none`}
+                className={`flex-1 h-auto py-5 min-h-[64px] bg-gradient-to-r ${colors.gradient} hover:scale-105 hover:shadow-2xl active:scale-100 transition-all duration-300 shadow-xl border border-white/20 backdrop-blur-xl font-medium group touch-manipulation select-none`}
                 onClick={handleJoinClass}
                 disabled={isJoining}
               >
@@ -729,22 +631,74 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 </div>
               </Button>
 
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full h-auto py-5 min-h-[64px] glass-card text-gray-700 transition-all duration-300 shadow-xl font-medium touch-manipulation active:scale-95 select-none"
-                onClick={handleHomeworks}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="glass-accent-blue p-2 rounded-xl">
-                    <BookOpen className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <span className="font-semibold text-base">Домашние задания</span>
-                    <span className="text-xs opacity-70">Посмотреть задания</span>
-                  </div>
-                </div>
-              </Button>
+              {/* Compact Mic/Camera Toggles */}
+              <div className="flex flex-col gap-2">
+                {/* Microphone Toggle */}
+                <Button
+                  size="sm"
+                  onClick={requestMicPermission}
+                  disabled={micPermission === "granted" || micPermission === "checking"}
+                  className={`w-14 h-7 p-0 flex items-center justify-center transition-all duration-300 backdrop-blur-xl border touch-manipulation active:scale-95 select-none ${
+                    shouldPulseMic ? 'animate-pulse ring-4 ring-blue-400/40' : ''
+                  } ${
+                    micPermission === "granted"
+                      ? "bg-green-500 hover:bg-green-600 border-green-600 text-white cursor-default shadow-lg shadow-green-500/30"
+                      : micPermission === "denied"
+                      ? "bg-orange-500/90 hover:bg-orange-500 border-orange-500 text-white cursor-pointer shadow-lg shadow-orange-500/20"
+                      : "bg-blue-500/90 hover:bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/20"
+                  }`}
+                  title={
+                    micPermission === "granted"
+                      ? "Доступ к микрофону разрешён ✓"
+                      : micPermission === "denied"
+                      ? "Нажмите для инструкций по включению микрофона"
+                      : "Нажмите чтобы разрешить микрофон"
+                  }
+                >
+                  {micPermission === "granted" ? (
+                    <Mic className="h-4 w-4" />
+                  ) : micPermission === "denied" ? (
+                    <MicOff className="h-4 w-4" />
+                  ) : micPermission === "checking" ? (
+                    <Mic className="h-4 w-4 animate-pulse" />
+                  ) : (
+                    <Mic className="h-4 w-4" />
+                  )}
+                </Button>
+
+                {/* Video Toggle */}
+                <Button
+                  size="sm"
+                  onClick={requestVideoPermission}
+                  disabled={videoPermission === "granted" || videoPermission === "checking"}
+                  className={`w-14 h-7 p-0 flex items-center justify-center transition-all duration-300 backdrop-blur-xl border touch-manipulation active:scale-95 select-none ${
+                    shouldPulseCamera ? 'animate-pulse ring-4 ring-blue-400/40' : ''
+                  } ${
+                    videoPermission === "granted"
+                      ? "bg-green-500 hover:bg-green-600 border-green-600 text-white cursor-default shadow-lg shadow-green-500/30"
+                      : videoPermission === "denied"
+                      ? "bg-orange-500/90 hover:bg-orange-500 border-orange-500 text-white cursor-pointer shadow-lg shadow-orange-500/20"
+                      : "bg-blue-500/90 hover:bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/20"
+                  }`}
+                  title={
+                    videoPermission === "granted"
+                      ? "Доступ к камере разрешён ✓"
+                      : videoPermission === "denied"
+                      ? "Нажмите для инструкций по включению камеры"
+                      : "Нажмите чтобы разрешить камеру"
+                  }
+                >
+                  {videoPermission === "granted" ? (
+                    <Video className="h-4 w-4" />
+                  ) : videoPermission === "denied" ? (
+                    <VideoOff className="h-4 w-4" />
+                  ) : videoPermission === "checking" ? (
+                    <Video className="h-4 w-4 animate-pulse" />
+                  ) : (
+                    <Video className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
