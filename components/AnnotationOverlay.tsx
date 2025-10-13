@@ -95,7 +95,6 @@ export default function AnnotationOverlay({
   const [expandedControlId, setExpandedControlId] = useState<string | null>(null); // ID of expanded control menu
   const [draggingTextId, setDraggingTextId] = useState<string | null>(null); // ID of text being dragged
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
-  const [showExitConfirmation, setShowExitConfirmation] = useState(false); // Show exit confirmation dialog
   const room = useRoomContext();
   
   // Toolbar dragging state
@@ -1699,22 +1698,6 @@ export default function AnnotationOverlay({
     setEditingTextId(null);
   };
 
-  // Handle exit button click with confirmation
-  const handleExitClick = () => {
-    setShowExitConfirmation(true);
-  };
-
-  const handleConfirmExit = () => {
-    setShowExitConfirmation(false);
-    if (onClose) {
-      onClose();
-    }
-  };
-
-  const handleCancelExit = () => {
-    setShowExitConfirmation(false);
-  };
-
   // Remove the old handleClose function - X button will now use onClose directly
   // This ensures X button and annotation toggle button work exactly the same way
 
@@ -2406,7 +2389,7 @@ export default function AnnotationOverlay({
                   <Button
                     size="icon"
                     variant="ghost"
-                    onClick={handleExitClick}
+                    onClick={onClose}
                     title="Exit Annotations"
                     className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                   >
@@ -2418,42 +2401,6 @@ export default function AnnotationOverlay({
           </div>
         </div>
       
-      {/* Exit Confirmation Modal */}
-      {showExitConfirmation && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-6 max-w-md w-full mx-4 animate-scale-in">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <X className="h-6 w-6 text-red-600 dark:text-red-400" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                  Exit Annotations?
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Are you sure you want to exit? All annotations will remain visible to everyone.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <Button
-                variant="ghost"
-                onClick={handleCancelExit}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleConfirmExit}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white border-0"
-              >
-                Exit
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Add animation styles */}
       <style jsx>{`
         @keyframes slideDown {

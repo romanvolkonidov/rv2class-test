@@ -59,6 +59,7 @@ export default function CustomControlBar({
   const [isControlBarVisible, setIsControlBarVisible] = useState(true);
   const [isControlBarPinned, setIsControlBarPinned] = useState(false); // Unpinned by default (auto-hide)
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false); // Leave meeting confirmation
   
   // Source picker state for Electron only
   const [showSourcePicker, setShowSourcePicker] = useState(false);
@@ -758,9 +759,18 @@ export default function CustomControlBar({
     }
   };
 
-  const handleLeave = async () => {
+  const handleLeave = () => {
+    setShowLeaveConfirmation(true);
+  };
+
+  const handleConfirmLeave = async () => {
+    setShowLeaveConfirmation(false);
     await room.disconnect();
     router.push('/');
+  };
+
+  const handleCancelLeave = () => {
+    setShowLeaveConfirmation(false);
   };
 
   const GlassButton = ({
@@ -1177,6 +1187,41 @@ export default function CustomControlBar({
                 className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white font-medium transition-all"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leave Confirmation Modal */}
+      {showLeaveConfirmation && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-6 max-w-md w-full mx-4 animate-scale-in">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <PhoneOff className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                  Leave Meeting?
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Are you sure you want to leave the meeting? You can rejoin using your link.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancelLeave}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmLeave}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-all"
+              >
+                Leave
               </button>
             </div>
           </div>
