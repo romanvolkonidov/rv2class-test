@@ -7,9 +7,9 @@ import {
   TrackReferenceOrPlaceholder,
   useRoomContext,
 } from "@livekit/components-react";
-import { Track, Participant, RemoteParticipant } from "livekit-client";
+import { Track, Participant, RemoteParticipant, ConnectionQuality } from "livekit-client";
 import { cn } from "@/lib/utils";
-import { X, Minimize2, Maximize2 } from "lucide-react";
+import { X, Minimize2, Maximize2, WifiOff } from "lucide-react";
 
 // Draggable Thumbnail Container - moves all thumbnails as a group
 function DraggableThumbnailContainer({ 
@@ -253,7 +253,6 @@ function DraggableThumbnailContainer({
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         style={{
-          borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
           transform: `scaleX(${scale})`,
           transformOrigin: 'left',
           cursor: isDragging ? 'grabbing' : 'grab',
@@ -455,6 +454,59 @@ const ParticipantView = memo(function ParticipantView({
   const hasScreenShare = participant.getTrackPublications().some(
     (pub) => pub.source === Track.Source.ScreenShare
   );
+
+  // Network quality indicator
+  const renderNetworkQualityIndicator = () => {
+    if (isLocal) return null; // Don't show for local participant
+    
+    const quality = participant.connectionQuality;
+    let color = "text-gray-400";
+    let bars = 0;
+    let title = "Unknown connection";
+
+    switch (quality) {
+      case ConnectionQuality.Excellent:
+        color = "text-green-400";
+        bars = 3;
+        title = "Excellent connection";
+        break;
+      case ConnectionQuality.Good:
+        color = "text-green-400";
+        bars = 2;
+        title = "Good connection";
+        break;
+      case ConnectionQuality.Poor:
+        color = "text-yellow-400";
+        bars = 1;
+        title = "Poor connection";
+        break;
+      case ConnectionQuality.Lost:
+        return (
+          <div title="Connection lost">
+            <WifiOff className="w-4 h-4 text-red-400" />
+          </div>
+        );
+      default:
+        return null;
+    }
+
+    return (
+      <div className="flex items-end gap-[1px]" title={title}>
+        {[1, 2, 3].map((bar) => (
+          <div
+            key={bar}
+            className={cn(
+              "w-1 rounded-sm transition-colors",
+              bar <= bars ? color : "text-white/20"
+            )}
+            style={{ height: `${bar * 4}px` }}
+          >
+            <div className="w-full h-full bg-currentColor rounded-sm" />
+          </div>
+        ))}
+      </div>
+    );
+  };
   
   // Handle click with visual feedback
   const handleVideoClick = (e: React.MouseEvent) => {
@@ -528,12 +580,13 @@ const ParticipantView = memo(function ParticipantView({
         </div>
       )}
 
-      {/* Name overlay - Glass effect (hide for screen share to maximize space) */}
+      {/* Name overlay - Full width bar at bottom like in whiteboard (hide for screen share to maximize space) */}
       {!isScreenShare && (
-        <div className="absolute bottom-2 left-2 px-3 py-1 rounded-lg bg-black/30 backdrop-blur-md border border-white/20">
-          <p className="text-sm font-medium text-white">
+        <div className="absolute bottom-0 left-0 right-0 px-3 py-2 bg-black/30 backdrop-blur-md flex items-center justify-between gap-2">
+          <p className="text-sm font-medium text-white truncate flex-1">
             {participant.identity} {isLocal && "(You)"}
           </p>
+          {renderNetworkQualityIndicator()}
         </div>
       )}
 

@@ -242,7 +242,6 @@ function DraggableThumbnailContainer({
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         style={{
-          borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
           transform: `scaleX(${scale})`,
           transformOrigin: 'left',
           cursor: isDragging ? 'grabbing' : 'grab',
@@ -517,6 +516,7 @@ const ParticipantView = memo(function ParticipantView({
         </div>
       )}
 
+      {/* Name overlay - Full width bar at bottom like in whiteboard */}
       <div className="absolute bottom-0 left-0 right-0 h-7 px-2 py-1.5 bg-black/20 backdrop-blur-xl flex items-center justify-between gap-2">
         <p className="text-[10px] font-medium text-white/90 truncate leading-none flex-1">
           {participant.identity} {isLocal && "(You)"}
