@@ -256,10 +256,8 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-4xl font-bold text-white">{completionPercentage}%</div>
-                  <div className="text-sm text-white/90">Completed</div>
                   {!loadingRating && studentRating && studentRating.overallRating && (
-                    <div className="mt-3">
+                    <div>
                       <div className="flex items-center justify-end gap-2 glass-surface-dark rounded-full px-3 py-1">
                         <Star className="h-4 w-4 text-yellow-300 fill-yellow-300" />
                         <span className="text-lg font-bold text-white">
@@ -482,6 +480,15 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                     )?.answer;
                     const isCorrect = String(submittedAnswer) === String(question.correctAnswer);
                     
+                    // Debug logging to see what data we have
+                    console.log(`Question ${index + 1}:`, {
+                      questionId: question.id,
+                      submittedAnswer,
+                      correctAnswer: question.correctAnswer,
+                      isCorrect,
+                      allSubmittedAnswers: report?.submittedAnswers
+                    });
+                    
                     return (
                       <div
                         key={question.id}
@@ -515,6 +522,32 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                           ) : (
                             <X className="h-6 w-6 text-red-600 flex-shrink-0" />
                           )}
+                        </div>
+                        
+                        {/* Answer Summary Box - Always visible at the top */}
+                        <div className="mb-4 p-4 rounded-xl border-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                          <div className="space-y-2">
+                            <div className="flex items-start gap-2">
+                              <div className="text-sm font-semibold text-blue-700 min-w-[120px]">Your Answer:</div>
+                              <div className={`font-bold text-base flex-1 ${
+                                isCorrect ? "text-green-700" : "text-red-700"
+                              }`}>
+                                {submittedAnswer !== undefined && submittedAnswer !== null && submittedAnswer !== ""
+                                  ? String(submittedAnswer)
+                                  : "(No answer provided)"}
+                                {isCorrect && " ✓"}
+                                {!isCorrect && " ✗"}
+                              </div>
+                            </div>
+                            {!isCorrect && (
+                              <div className="flex items-start gap-2">
+                                <div className="text-sm font-semibold text-green-700 min-w-[120px]">Correct Answer:</div>
+                                <div className="font-bold text-base text-green-700 flex-1">
+                                  {question.correctAnswer}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         
                         {/* Media */}
