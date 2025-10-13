@@ -14,7 +14,6 @@ import CustomVideoConference from "@/components/CustomVideoConference";
 import CompactParticipantView from "@/components/CompactParticipantView";
 import CustomControlBar from "@/components/CustomControlBar";
 import ChatPanel from "@/components/ChatPanel";
-import AudioDiagnostics from "@/components/AudioDiagnostics";
 
 function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: boolean; userName: string; sessionCode: string; roomName: string }) {
   const room = useRoomContext();
@@ -746,9 +745,6 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
             </div>
           </div>
         )}
-        
-        {/* Audio Diagnostics - Press Ctrl+Shift+A to show */}
-        <AudioDiagnostics />
       </div>
 
       <style jsx>{`

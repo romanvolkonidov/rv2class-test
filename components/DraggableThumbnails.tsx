@@ -7,9 +7,9 @@ import {
   TrackReferenceOrPlaceholder,
   useRoomContext,
 } from "@livekit/components-react";
-import { Track, Participant } from "livekit-client";
+import { Track, Participant, ConnectionQuality } from "livekit-client";
 import { cn } from "@/lib/utils";
-import { X, Minimize2, Maximize2, GripHorizontal } from "lucide-react";
+import { X, Minimize2, Maximize2, GripHorizontal, Wifi, WifiOff } from "lucide-react";
 
 // This is the ParticipantView component, moved from CustomVideoConference
 // It's used to render individual participant tiles.
@@ -34,6 +34,26 @@ export const ParticipantView = memo(function ParticipantView({
 }: ParticipantViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [connectionQuality, setConnectionQuality] = useState<ConnectionQuality>(
+    participant.connectionQuality || ConnectionQuality.Unknown
+  );
+
+  // Monitor connection quality changes
+  useEffect(() => {
+    const updateConnectionQuality = () => {
+      setConnectionQuality(participant.connectionQuality || ConnectionQuality.Unknown);
+    };
+
+    // Initial update
+    updateConnectionQuality();
+
+    // Listen for connection quality changes
+    participant.on('connectionQualityChanged', updateConnectionQuality);
+
+    return () => {
+      participant.off('connectionQualityChanged', updateConnectionQuality);
+    };
+  }, [participant]);
 
   useEffect(() => {
     const videoEl = videoRef.current;
@@ -67,6 +87,56 @@ export const ParticipantView = memo(function ParticipantView({
     (pub) => pub.source === Track.Source.ScreenShare
   );
 
+  // Helper function to render network quality indicator
+  const renderNetworkQualityIndicator = () => {
+    let color = "text-gray-400";
+    let bars = 0;
+    let title = "Unknown";
+
+    switch (connectionQuality) {
+      case ConnectionQuality.Excellent:
+        color = "text-green-400";
+        bars = 3;
+        title = "Excellent connection";
+        break;
+      case ConnectionQuality.Good:
+        color = "text-green-400";
+        bars = 2;
+        title = "Good connection";
+        break;
+      case ConnectionQuality.Poor:
+        color = "text-yellow-400";
+        bars = 1;
+        title = "Poor connection";
+        break;
+      case ConnectionQuality.Lost:
+        return (
+          <div title="Connection lost">
+            <WifiOff className="w-3 h-3 text-red-400" />
+          </div>
+        );
+      default:
+        return null;
+    }
+
+    return (
+      <div className="flex items-end gap-[1px]" title={title}>
+        {[1, 2, 3].map((bar) => (
+          <div
+            key={bar}
+            className={cn(
+              "w-[3px] rounded-sm transition-colors",
+              bar <= bars ? color : "text-white/20"
+            )}
+            style={{ height: `${bar * 3}px` }}
+          >
+            <div className="w-full h-full bg-currentColor rounded-sm" />
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   if (isThumbnail) {
     return (
         <div
@@ -99,10 +169,11 @@ export const ParticipantView = memo(function ParticipantView({
             </div>
             </div>
         )}
-        <div className="absolute bottom-0 left-0 right-0 h-7 px-2 py-1.5 bg-black/20 backdrop-blur-xl border-t border-white/10 flex items-center">
-            <p className="text-[10px] font-medium text-white/90 truncate leading-none">
+        <div className="absolute bottom-0 left-0 right-0 h-7 px-2 py-1.5 bg-black/20 backdrop-blur-xl border-t border-white/10 flex items-center justify-between gap-2">
+            <p className="text-[10px] font-medium text-white/90 truncate leading-none flex-1">
             {participant.identity} {isLocal && "(You)"}
             </p>
+            {renderNetworkQualityIndicator()}
         </div>
         {!participant.isMicrophoneEnabled && (
             <div className="absolute top-1 right-1 p-1.5 rounded-md bg-red-500/80 backdrop-blur-sm border border-red-400/50 shadow-lg">
