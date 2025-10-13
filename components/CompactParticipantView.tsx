@@ -158,19 +158,20 @@ function DraggableThumbnailContainer({
       let newX = resizeStart.posX;
       let newY = resizeStart.posY;
 
-      if (resizeMode === 'se') {
+      // All resize modes scale proportionally (maintaining aspect ratio)
+      if (resizeMode === 'se' || resizeMode === 's' || resizeMode === 'e') {
         const scaleX = (resizeStart.width + deltaX) / resizeStart.width;
         const scaleY = (resizeStart.height + deltaY) / resizeStart.height;
         const scaleFactor = Math.max(scaleX, scaleY);
         newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, resizeStart.scale * scaleFactor));
-      } else if (resizeMode === 'ne') {
+      } else if (resizeMode === 'ne' || resizeMode === 'n') {
         const scaleX = (resizeStart.width + deltaX) / resizeStart.width;
         const scaleY = (resizeStart.height - deltaY) / resizeStart.height;
         const scaleFactor = Math.max(scaleX, scaleY);
         newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, resizeStart.scale * scaleFactor));
         const heightDiff = (resizeStart.height * newScale / resizeStart.scale) - resizeStart.height;
         newY = resizeStart.posY - heightDiff;
-      } else if (resizeMode === 'sw') {
+      } else if (resizeMode === 'sw' || resizeMode === 'w') {
         const scaleX = (resizeStart.width - deltaX) / resizeStart.width;
         const scaleY = (resizeStart.height + deltaY) / resizeStart.height;
         const scaleFactor = Math.max(scaleX, scaleY);
@@ -235,14 +236,19 @@ function DraggableThumbnailContainer({
         userSelect: 'none',
       }}
     >
-      {/* Control bar with fixed size */}
+      {/* Control bar with fixed thickness but scales width to match videos */}
       <div 
-        className="bg-black/60 backdrop-blur-md rounded px-2 py-1 flex items-center gap-2 mb-1"
+        className="bg-black/60 backdrop-blur-md rounded-t px-2 py-1 flex items-center gap-2"
         style={{
           borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+          transform: `scaleX(${scale})`,
+          transformOrigin: 'left',
         }}
       >
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex items-center gap-1 ml-auto" style={{
+          transform: `scaleX(${1 / scale})`,
+          transformOrigin: 'right',
+        }}>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -278,9 +284,10 @@ function DraggableThumbnailContainer({
         </div>
       </div>
 
+      {/* Thumbnails container - hidden when minimized */}
       {!isMinimized && (
         <div 
-          className="flex gap-2 items-start relative"
+          className="flex gap-2 items-start relative rounded-b"
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
           style={{
@@ -289,31 +296,58 @@ function DraggableThumbnailContainer({
             cursor: isDragging ? 'grabbing' : 'grab',
           }}
         >
-          {/* Resize handles - only visible on hover */}
+          {/* Resize handles - corners and edges, all proportional */}
           {(isHovered || isResizing) && !isDragging && (
             <>
+              {/* Corner handles */}
               <div
                 data-resize-handle="nw"
-                className="absolute -top-1 -left-1 w-3 h-3 cursor-nw-resize hover:bg-blue-500/50 transition-colors rounded-full border border-white/30 bg-blue-400/30"
+                className="absolute -top-1 -left-1 w-3 h-3 cursor-nw-resize hover:bg-blue-500/70 transition-colors rounded-full border border-white/40 bg-blue-400/40"
                 onMouseDown={(e) => handleResizeStart(e, 'nw')}
                 style={{ zIndex: 1001 }}
               />
               <div
                 data-resize-handle="ne"
-                className="absolute -top-1 -right-1 w-3 h-3 cursor-ne-resize hover:bg-blue-500/50 transition-colors rounded-full border border-white/30 bg-blue-400/30"
+                className="absolute -top-1 -right-1 w-3 h-3 cursor-ne-resize hover:bg-blue-500/70 transition-colors rounded-full border border-white/40 bg-blue-400/40"
                 onMouseDown={(e) => handleResizeStart(e, 'ne')}
                 style={{ zIndex: 1001 }}
               />
               <div
                 data-resize-handle="sw"
-                className="absolute -bottom-1 -left-1 w-3 h-3 cursor-sw-resize hover:bg-blue-500/50 transition-colors rounded-full border border-white/30 bg-blue-400/30"
+                className="absolute -bottom-1 -left-1 w-3 h-3 cursor-sw-resize hover:bg-blue-500/70 transition-colors rounded-full border border-white/40 bg-blue-400/40"
                 onMouseDown={(e) => handleResizeStart(e, 'sw')}
                 style={{ zIndex: 1001 }}
               />
               <div
                 data-resize-handle="se"
-                className="absolute -bottom-1 -right-1 w-3 h-3 cursor-se-resize hover:bg-blue-500/50 transition-colors rounded-full border border-white/30 bg-blue-400/30"
+                className="absolute -bottom-1 -right-1 w-3 h-3 cursor-se-resize hover:bg-blue-500/70 transition-colors rounded-full border border-white/40 bg-blue-400/40"
                 onMouseDown={(e) => handleResizeStart(e, 'se')}
+                style={{ zIndex: 1001 }}
+              />
+              
+              {/* Edge handles - all scale proportionally like corners */}
+              <div
+                data-resize-handle="n"
+                className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-2 cursor-n-resize hover:bg-blue-500/50 transition-colors rounded-full bg-blue-400/30"
+                onMouseDown={(e) => handleResizeStart(e, 'n')}
+                style={{ zIndex: 1001 }}
+              />
+              <div
+                data-resize-handle="s"
+                className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-2 cursor-s-resize hover:bg-blue-500/50 transition-colors rounded-full bg-blue-400/30"
+                onMouseDown={(e) => handleResizeStart(e, 's')}
+                style={{ zIndex: 1001 }}
+              />
+              <div
+                data-resize-handle="e"
+                className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-8 cursor-e-resize hover:bg-blue-500/50 transition-colors rounded-full bg-blue-400/30"
+                onMouseDown={(e) => handleResizeStart(e, 'e')}
+                style={{ zIndex: 1001 }}
+              />
+              <div
+                data-resize-handle="w"
+                className="absolute top-1/2 -translate-y-1/2 -left-1 w-2 h-8 cursor-w-resize hover:bg-blue-500/50 transition-colors rounded-full bg-blue-400/30"
+                onMouseDown={(e) => handleResizeStart(e, 'w')}
                 style={{ zIndex: 1001 }}
               />
             </>
