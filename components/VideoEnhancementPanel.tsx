@@ -76,35 +76,30 @@ export default function VideoEnhancementPanel({
 
   return (
     <div
-      className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${
+      className={`fixed top-20 right-6 z-50 transition-all duration-300 ${
         isClosing
-          ? "opacity-0 translate-y-4"
-          : "opacity-100 translate-y-0"
+          ? "opacity-0 translate-x-4"
+          : "opacity-100 translate-x-0"
       }`}
     >
-      <Card className="backdrop-blur-xl bg-black/40 border-white/10 shadow-2xl p-6 min-w-[500px]">
+      <Card className="backdrop-blur-xl bg-black/40 border-white/10 shadow-2xl p-3 w-[280px]">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-blue-400" />
-            <h3 className="text-white font-semibold text-lg">Video Enhancement</h3>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-blue-400" />
+            <h3 className="text-white font-semibold text-sm">Video Enhancement</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+            className="p-1 rounded-lg hover:bg-white/10 transition-colors"
             title="Close"
           >
-            <X className="w-5 h-5 text-white/80" />
+            <X className="w-4 h-4 text-white/80" />
           </button>
         </div>
 
-        {/* Description */}
-        <p className="text-white/60 text-sm mb-4">
-          Choose a preset to enhance your video quality
-        </p>
-
-        {/* Preset Buttons Grid */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* Preset Buttons Grid - Compact 2-column layout */}
+        <div className="grid grid-cols-2 gap-2">
           {PRESETS.map((preset) => {
             const Icon = preset.icon;
             const isActive = currentPreset === preset.name;
@@ -114,21 +109,20 @@ export default function VideoEnhancementPanel({
               <button
                 key={preset.name}
                 onClick={() => handlePresetClick(preset.name)}
-                className={`${colorClass} text-white rounded-xl p-4 transition-all duration-200 hover:scale-105 active:scale-95 flex flex-col items-center gap-2 shadow-lg`}
+                className={`${colorClass} text-white rounded-lg p-2 transition-all duration-200 hover:scale-105 active:scale-95 flex flex-col items-center gap-1 shadow-lg`}
                 title={preset.description}
               >
-                <Icon className="w-6 h-6" />
-                <span className="font-medium text-sm">{preset.label}</span>
-                <span className="text-xs opacity-80">{preset.description}</span>
+                <Icon className="w-4 h-4" />
+                <span className="font-medium text-xs">{preset.label}</span>
               </button>
             );
           })}
         </div>
 
         {/* Performance Info */}
-        <div className="mt-4 pt-4 border-t border-white/10">
-          <p className="text-white/50 text-xs text-center">
-            GPU-accelerated • ~10ms latency • No server cost
+        <div className="mt-2 pt-2 border-t border-white/10">
+          <p className="text-white/50 text-[10px] text-center">
+            GPU-accelerated • Low latency
           </p>
         </div>
       </Card>

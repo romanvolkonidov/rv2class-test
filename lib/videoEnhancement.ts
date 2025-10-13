@@ -283,62 +283,104 @@ export class WebGLVideoProcessor {
 
   public attachToVideo(video: HTMLVideoElement, settings: VideoEnhancementSettings = DEFAULT_SETTINGS) {
     this.videoElement = video;
-    this.canvas.width = video.videoWidth || 1280;
-    this.canvas.height = video.videoHeight || 720;
+    
+    // Ensure video has dimensions
+    if (!video.videoWidth || !video.videoHeight) {
+      console.warn('⚠️ Video element has no dimensions yet, using defaults');
+      this.canvas.width = 1280;
+      this.canvas.height = 720;
+    } else {
+      this.canvas.width = video.videoWidth;
+      this.canvas.height = video.videoHeight;
+    }
+
+    console.log('📐 Canvas size:', this.canvas.width, 'x', this.canvas.height);
 
     // Start processing loop
     this.startProcessing(settings);
 
-    // Return canvas stream
-    return this.canvas.captureStream(30);
+    // Return canvas stream with appropriate frame rate
+    const stream = this.canvas.captureStream(30);
+    console.log('🎬 Canvas stream created with', stream.getVideoTracks().length, 'video tracks');
+    
+    return stream;
   }
 
   private startProcessing(settings: VideoEnhancementSettings) {
-    if (!this.gl || !this.videoElement || !this.program) return;
+    if (!this.gl || !this.videoElement || !this.program) {
+      console.error('❌ Cannot start processing: missing GL context, video element, or program');
+      return;
+    }
+
+    let frameCount = 0;
+    const startTime = Date.now();
 
     const render = () => {
       if (!this.gl || !this.videoElement || !this.program) return;
 
-      // Update canvas size if video size changed
-      if (this.canvas.width !== this.videoElement.videoWidth || 
-          this.canvas.height !== this.videoElement.videoHeight) {
-        this.canvas.width = this.videoElement.videoWidth;
-        this.canvas.height = this.videoElement.videoHeight;
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+      try {
+        // Check if video is playing and has valid dimensions
+        if (this.videoElement.paused || this.videoElement.ended) {
+          console.warn('⚠️ Video element is paused or ended');
+          this.animationFrameId = requestAnimationFrame(render);
+          return;
+        }
+
+        // Update canvas size if video size changed
+        if (this.canvas.width !== this.videoElement.videoWidth || 
+            this.canvas.height !== this.videoElement.videoHeight) {
+          if (this.videoElement.videoWidth > 0 && this.videoElement.videoHeight > 0) {
+            this.canvas.width = this.videoElement.videoWidth;
+            this.canvas.height = this.videoElement.videoHeight;
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            console.log('📐 Canvas resized to:', this.canvas.width, 'x', this.canvas.height);
+          }
+        }
+
+        // Upload video frame to texture
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
+        this.gl.texImage2D(
+          this.gl.TEXTURE_2D,
+          0,
+          this.gl.RGB,
+          this.gl.RGB,
+          this.gl.UNSIGNED_BYTE,
+          this.videoElement
+        );
+
+        // Use program and set uniforms
+        this.gl.useProgram(this.program);
+        
+        this.gl.uniform1i(this.textureLocation, 0);
+        this.gl.uniform1f(this.uniformLocations.get('u_brightness')!, settings.brightness / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_contrast')!, settings.contrast / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_saturation')!, settings.saturation / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_gamma')!, settings.gamma);
+        this.gl.uniform1f(this.uniformLocations.get('u_exposure')!, settings.exposure);
+        this.gl.uniform1f(this.uniformLocations.get('u_shadows')!, settings.shadows / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_highlights')!, settings.highlights / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_sharpness')!, settings.sharpness / 100);
+        this.gl.uniform1f(this.uniformLocations.get('u_warmth')!, settings.warmth / 100);
+        this.gl.uniform2f(this.uniformLocations.get('u_resolution')!, this.canvas.width, this.canvas.height);
+
+        // Draw
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+
+        // Log performance stats every 30 frames
+        frameCount++;
+        if (frameCount % 30 === 0) {
+          const elapsed = (Date.now() - startTime) / 1000;
+          const fps = frameCount / elapsed;
+          console.log(`🎬 Enhancement FPS: ${fps.toFixed(1)}, Frames: ${frameCount}`);
+        }
+      } catch (error) {
+        console.error('❌ Error in render loop:', error);
       }
-
-      // Upload video frame to texture
-      this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
-      this.gl.texImage2D(
-        this.gl.TEXTURE_2D,
-        0,
-        this.gl.RGB,
-        this.gl.RGB,
-        this.gl.UNSIGNED_BYTE,
-        this.videoElement
-      );
-
-      // Use program and set uniforms
-      this.gl.useProgram(this.program);
-      
-      this.gl.uniform1i(this.textureLocation, 0);
-      this.gl.uniform1f(this.uniformLocations.get('u_brightness')!, settings.brightness / 100);
-      this.gl.uniform1f(this.uniformLocations.get('u_contrast')!, settings.contrast / 100);
-      this.gl.uniform1f(this.uniformLocations.get('u_saturation')!, settings.saturation / 100);
-      this.gl.uniform1f(this.uniformLocations.get('u_gamma')!, settings.gamma);
-      this.gl.uniform1f(this.uniformLocations.get('u_exposure')!, settings.exposure);
-      this.gl.uniform1f(this.uniformLocations.get('u_shadows')!, settings.shadows / 100);
-      this.gl.uniform1f(this.uniformLocations.get('u_highlights')!, settings.highlights / 100);
-      this.gl.uniform1f(this.uniformLocations.get('u_sharpness')!, settings.sharpness / 100);
-      this.gl.uniform1f(this.uniformLocations.get('u_warmth')!, settings.warmth / 100);
-      this.gl.uniform2f(this.uniformLocations.get('u_resolution')!, this.canvas.width, this.canvas.height);
-
-      // Draw
-      this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
 
       this.animationFrameId = requestAnimationFrame(render);
     };
 
+    console.log('▶️ Starting video enhancement render loop');
     render();
   }
 
@@ -347,18 +389,31 @@ export class WebGLVideoProcessor {
   }
 
   public dispose() {
+    console.log('🧹 Disposing video enhancement processor');
+    
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+
+    if (this.videoElement) {
+      this.videoElement.pause();
+      this.videoElement.srcObject = null;
+      this.videoElement = null;
     }
 
     if (this.gl) {
       if (this.program) {
         this.gl.deleteProgram(this.program);
+        this.program = null;
       }
       if (this.texture) {
         this.gl.deleteTexture(this.texture);
+        this.texture = null;
       }
     }
+
+    console.log('✅ Video enhancement processor disposed');
   }
 }
 
