@@ -462,7 +462,11 @@ function DraggableThumbnailContainer({
           />
         </>
       )}
-      <div className="bg-black/60 backdrop-blur-md rounded-t-lg outline outline-1 outline-white/20 px-2 py-1 flex items-center gap-2">
+      <div className="bg-black/60 backdrop-blur-md rounded-t-lg border border-white/20 px-2 py-1 flex items-center gap-2"
+        style={{
+          borderWidth: `${1 / scale}px`, // Inverse scale to keep border at 1px visual thickness
+        }}
+      >
         <div 
           ref={dragHandleRef}
           className={cn(
@@ -513,9 +517,10 @@ function DraggableThumbnailContainer({
 
       {!isMinimized && (
         <div 
-          className="bg-black/40 backdrop-blur-md rounded-b-lg outline outline-1 outline-white/20 p-2 flex flex-wrap gap-2 items-start overflow-auto"
+          className="bg-black/40 backdrop-blur-md rounded-b-lg border border-white/20 p-2 flex flex-wrap gap-2 items-start overflow-auto"
           style={{
             maxWidth: '80vw', // Limit max width to prevent taking over screen
+            borderWidth: `${1 / scale}px`, // Inverse scale to keep border at 1px visual thickness
           }}
         >
           {children}
