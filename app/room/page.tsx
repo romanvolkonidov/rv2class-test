@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { LiveKitRoom, RoomAudioRenderer, useRoomContext, useDataChannel, useChat } from "@livekit/components-react";
-import { VideoPresets, VideoCodec, Track } from "livekit-client";
+import { VideoPresets, VideoCodec, Track, LocalVideoTrack } from "livekit-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { X, MessageSquare } from "lucide-react";
@@ -37,6 +37,8 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   const [currentPreset, setCurrentPreset] = useState<EnhancementPreset>(EnhancementPreset.OFF);
   const videoProcessorRef = useRef<WebGLVideoProcessor | null>(null);
   const originalVideoTrackRef = useRef<MediaStreamTrack | null>(null);
+  const enhancedTrackRef = useRef<MediaStreamTrack | null>(null);
+  const enhancementRunRef = useRef(0);
   const [cameraReady, setCameraReady] = useState(false);
 
   // Monitor for new chat messages when chat is closed
@@ -619,13 +621,18 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   useEffect(() => {
     if (!room || !room.localParticipant) return;
 
-    // Don't apply enhancement until camera is ready
     if (!cameraReady) {
       console.log('⏳ Waiting for camera to be ready before applying enhancement');
       return;
     }
 
+    let isCancelled = false;
+    const runId = ++enhancementRunRef.current;
+
     const setupEnhancement = async () => {
+      let localVideoTrack: LocalVideoTrack | undefined;
+      let videoElement: HTMLVideoElement | null = null;
+      let enhancedStream: MediaStream | null = null;
       try {
         const cameraPublication = room.localParticipant.getTrackPublication(Track.Source.Camera);
         if (!cameraPublication || !cameraPublication.track) {
@@ -633,141 +640,167 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
           return;
         }
 
+        localVideoTrack = cameraPublication.track as LocalVideoTrack | undefined;
+        if (!localVideoTrack) {
+          console.log('⚠️ Local camera track is not available');
+          return;
+        }
+
         if (currentPreset === EnhancementPreset.OFF) {
-          // Clean up enhancement and restore original track
           console.log('🔄 Turning off video enhancement');
-          
+
+          if (originalVideoTrackRef.current && localVideoTrack.mediaStreamTrack !== originalVideoTrackRef.current) {
+            try {
+              await localVideoTrack.replaceTrack(originalVideoTrackRef.current, { userProvidedTrack: false });
+              console.log('🎥 Original camera track restored');
+            } catch (restoreError) {
+              console.error('❌ Failed to restore original track:', restoreError);
+            }
+          }
+
           if (videoProcessorRef.current) {
             videoProcessorRef.current.dispose();
             videoProcessorRef.current = null;
           }
 
-          // If we have an enhanced track, replace it with original
-          if (originalVideoTrackRef.current) {
-            const currentTrack = cameraPublication.track.mediaStreamTrack;
-            
-            // Only unpublish if it's different from original (i.e., it's enhanced)
-            if (currentTrack !== originalVideoTrackRef.current) {
-              console.log('🔌 Detaching enhanced track:', cameraPublication.trackSid);
-              await room.localParticipant.unpublishTrack(currentTrack);
-              
-              // Wait a bit to ensure unpublish completes
-              await new Promise(resolve => setTimeout(resolve, 100));
-              
-              // Publish original track back
-              await room.localParticipant.publishTrack(originalVideoTrackRef.current, {
-                source: Track.Source.Camera,
-                name: 'camera',
-              });
-              console.log('🎥 Original camera track restored');
-            }
-            
-            originalVideoTrackRef.current = null;
-          }
+          enhancedTrackRef.current?.stop();
+          enhancedTrackRef.current = null;
+          originalVideoTrackRef.current = null;
           return;
         }
 
-        // Enhancement is ON - set up WebGL processor
-        const currentMediaStreamTrack = cameraPublication.track.mediaStreamTrack;
+        const currentMediaStreamTrack = localVideoTrack.mediaStreamTrack;
         if (!currentMediaStreamTrack) {
           console.log('⚠️ No media stream track found');
           return;
         }
 
-        // Store original track only if not already stored
         if (!originalVideoTrackRef.current) {
           originalVideoTrackRef.current = currentMediaStreamTrack;
           console.log('💾 Stored original camera track');
         }
 
-        // If we already have a processor, just update its settings (much faster!)
+        const settings = PRESETS[currentPreset];
+
         if (videoProcessorRef.current) {
-          console.log('🔄 Updating existing processor settings for preset:', currentPreset);
-          const settings = PRESETS[currentPreset];
           videoProcessorRef.current.updateSettings(settings);
           console.log('✅ Enhancement settings updated to preset:', currentPreset);
           return;
         }
 
-        // First time enabling enhancement - create processor and republish track
-        // Create video element from ORIGINAL track
-        const videoElement = document.createElement('video');
+        videoElement = document.createElement('video');
         videoElement.srcObject = new MediaStream([originalVideoTrackRef.current]);
         videoElement.autoplay = true;
         videoElement.muted = true;
         videoElement.playsInline = true;
-        
-        // Wait for video to be ready
+
         await new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(() => reject(new Error('Video load timeout')), 5000);
-          
-          videoElement.onloadedmetadata = () => {
+          const element = videoElement;
+
+          if (!element) {
+            reject(new Error('Video element not initialized'));
+            return;
+          }
+
+          if (element.readyState >= 1) {
             clearTimeout(timeout);
-            videoElement.play().then(() => resolve()).catch(reject);
+            element
+              .play()
+              .then(() => resolve())
+              .catch(reject);
+            return;
+          }
+
+          element.onloadedmetadata = () => {
+            clearTimeout(timeout);
+            element
+              .play()
+              .then(() => resolve())
+              .catch(reject);
           };
         });
-        
+
+        if (isCancelled || runId !== enhancementRunRef.current) {
+          if (videoElement) {
+            videoElement.pause();
+            videoElement.srcObject = null;
+          }
+          return;
+        }
+
         console.log('🎥 Video element created and playing');
 
-        // Create new processor
         videoProcessorRef.current = new WebGLVideoProcessor();
         console.log('✨ Video enhancement processor created');
 
-        // Attach processor and get enhanced stream
-        const settings = PRESETS[currentPreset];
-        const enhancedStream = videoProcessorRef.current.attachToVideo(videoElement, settings);
+        enhancedStream = videoProcessorRef.current.attachToVideo(videoElement, settings);
         console.log('✅ Enhancement applied with preset:', currentPreset);
 
-        // Wait for the processor to generate several frames
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
-        // Get the enhanced track
+        if (isCancelled || runId !== enhancementRunRef.current) {
+          enhancedStream.getTracks().forEach((track) => track.stop());
+          videoProcessorRef.current?.dispose();
+          videoProcessorRef.current = null;
+          return;
+        }
+
         const enhancedTrack = enhancedStream.getVideoTracks()[0];
         if (!enhancedTrack) {
           throw new Error('No enhanced video track available');
         }
 
-        // Verify track has valid dimensions
         const trackSettings = enhancedTrack.getSettings();
         if (!trackSettings.width || !trackSettings.height) {
           console.warn('⚠️ Enhanced track has no dimensions, waiting longer...');
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise((resolve) => setTimeout(resolve, 300));
         }
-        
-        console.log('🎬 Enhanced track settings:', trackSettings);
 
-        // Publish the new enhanced track
-        await room.localParticipant.publishTrack(enhancedTrack, {
-          source: Track.Source.Camera,
-          name: 'enhanced-camera',
-        });
+        const previousEnhancedTrack = enhancedTrackRef.current;
 
+  await localVideoTrack.replaceTrack(enhancedTrack, { userProvidedTrack: true });
+        enhancedTrackRef.current = enhancedTrack;
+
+        const finalSettings = enhancedTrack.getSettings();
+        console.log('🎬 Enhanced track settings:', finalSettings);
         console.log('🎨 Enhanced video track published');
+
+        previousEnhancedTrack?.stop();
       } catch (error) {
         console.error('❌ Error setting up video enhancement:', error);
-        
-        // On error, clean up and try to restore original
+
         if (videoProcessorRef.current) {
           videoProcessorRef.current.dispose();
           videoProcessorRef.current = null;
         }
-        
-        // Restore original track if we have it
-        if (originalVideoTrackRef.current) {
+
+        if (enhancedStream) {
+          enhancedStream.getTracks().forEach((track) => track.stop());
+        }
+
+        if (videoElement) {
+          videoElement.pause();
+          videoElement.srcObject = null;
+        }
+
+        enhancedTrackRef.current?.stop();
+        enhancedTrackRef.current = null;
+
+        if (originalVideoTrackRef.current && localVideoTrack && !isCancelled) {
           try {
-            await room.localParticipant.publishTrack(originalVideoTrackRef.current, {
-              source: Track.Source.Camera,
-              name: 'camera',
-            });
+            await localVideoTrack.replaceTrack(originalVideoTrackRef.current, { userProvidedTrack: false });
             console.log('🔄 Restored original track after error');
           } catch (restoreError) {
             console.error('❌ Failed to restore original track:', restoreError);
           }
         }
-        
-        // Set preset back to OFF
-        setCurrentPreset(EnhancementPreset.OFF);
-        alert('Failed to apply video enhancement. Please try again.');
+
+        originalVideoTrackRef.current = null;
+        if (!isCancelled) {
+          setCurrentPreset(EnhancementPreset.OFF);
+          alert('Failed to apply video enhancement. Please try again.');
+        }
       }
     };
 
@@ -775,14 +808,23 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
       setupEnhancement();
     }
 
-    // Cleanup on unmount
+    return () => {
+      isCancelled = true;
+    };
+  }, [room, room?.state, currentPreset, cameraReady]);
+
+  useEffect(() => {
     return () => {
       if (videoProcessorRef.current) {
         videoProcessorRef.current.dispose();
         videoProcessorRef.current = null;
       }
+
+      enhancedTrackRef.current?.stop();
+      enhancedTrackRef.current = null;
+      originalVideoTrackRef.current = null;
     };
-  }, [room, room?.state, currentPreset, cameraReady]);
+  }, []);
 
   // Handle preset change
   const handlePresetChange = (preset: EnhancementPreset) => {

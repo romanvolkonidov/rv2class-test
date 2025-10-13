@@ -258,13 +258,13 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                 <div className="text-right">
                   {!loadingRating && studentRating && studentRating.overallRating && (
                     <div>
-                      <div className="flex items-center justify-end gap-2 glass-surface-dark rounded-full px-3 py-1">
-                        <Star className="h-4 w-4 text-yellow-300 fill-yellow-300" />
-                        <span className="text-lg font-bold text-white">
-                          {studentRating.overallRating.toFixed(1)}
-                        </span>
-                        <span className="text-sm text-white/80">/10</span>
-                      </div>
+                        <div className="flex items-center justify-end gap-3 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 px-4 py-2 shadow-lg shadow-amber-400/40">
+                        <Star className="h-5 w-5 text-white fill-white drop-shadow-sm" />
+                        <div className="flex items-baseline gap-1 text-white">
+                          <span className="text-2xl font-extrabold">{studentRating.overallRating.toFixed(1)}</span>
+                          <span className="text-sm font-semibold text-white/80">/10</span>
+                        </div>
+                        </div>
                       <Button
                         size="sm"
                         onClick={handleShowRatingDetails}
