@@ -2019,9 +2019,9 @@ export default function AnnotationOverlay({
                   variant="ghost"
                   onClick={() => setToolbarCollapsed(false)}
                   title="Expand Toolbar"
-                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/90 hover:bg-white shadow-lg hover:shadow-xl text-gray-900 transition-all active:scale-95 touch-manipulation select-none"
+                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                 >
-                  <ChevronDown className="h-5 w-5 stroke-[2.5]" />
+                  <ChevronDown className="h-5 w-5 stroke-[2.5] fill-current" />
                 </Button>
                 
                 {!viewOnly && (
@@ -2037,13 +2037,13 @@ export default function AnnotationOverlay({
                       variant={tool === "pencil" ? "default" : "ghost"}
                       onClick={() => setTool("pencil")}
                       title="Pencil"
-                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all active:scale-95 touch-manipulation select-none shadow-lg ${
+                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                         tool === "pencil" 
-                          ? 'bg-blue-500/90 hover:bg-blue-500 text-white shadow-blue-500/40' 
-                          : 'bg-white/90 hover:bg-white text-gray-900 hover:shadow-xl'
+                          ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                          : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                       }`}
                     >
-                      <Pencil className="h-5 w-5 stroke-[2.5]" />
+                      <Pencil className="h-5 w-5 stroke-[2.5] fill-current" />
                     </Button>
                     
                     <Button
@@ -2051,13 +2051,13 @@ export default function AnnotationOverlay({
                       variant={tool === "text" ? "default" : "ghost"}
                       onClick={() => setTool("text")}
                       title="Text"
-                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all active:scale-95 touch-manipulation select-none shadow-lg ${
+                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                         tool === "text" 
-                          ? 'bg-blue-500/90 hover:bg-blue-500 text-white shadow-blue-500/40' 
-                          : 'bg-white/90 hover:bg-white text-gray-900 hover:shadow-xl'
+                          ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                          : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                       }`}
                     >
-                      <Type className="h-5 w-5 stroke-[2.5]" />
+                      <Type className="h-5 w-5 stroke-[2.5] fill-current" />
                     </Button>
                     
                     <Button
@@ -2065,13 +2065,13 @@ export default function AnnotationOverlay({
                       variant={tool === "eraser" ? "default" : "ghost"}
                       onClick={() => setTool("eraser")}
                       title="Eraser"
-                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all active:scale-95 touch-manipulation select-none shadow-lg ${
+                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                         tool === "eraser" 
-                          ? 'bg-blue-500/90 hover:bg-blue-500 text-white shadow-blue-500/40' 
-                          : 'bg-white/90 hover:bg-white text-gray-900 hover:shadow-xl'
+                          ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                          : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                       }`}
                     >
-                      <Eraser className="h-5 w-5 stroke-[2.5]" />
+                      <Eraser className="h-5 w-5 stroke-[2.5] fill-current" />
                     </Button>
                     
                     <div className={cn(
@@ -2086,9 +2086,9 @@ export default function AnnotationOverlay({
                           variant="ghost"
                           onClick={() => setShowClearOptions(!showClearOptions)}
                           title="Clear Options"
-                          className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-red-500/90 hover:bg-red-500 text-white shadow-lg shadow-red-500/30 transition-all active:scale-95 touch-manipulation select-none"
+                          className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                         >
-                          <Trash2 className="h-5 w-5 stroke-[2.5]" />
+                          <Trash2 className="h-5 w-5 stroke-[2.5] fill-current" />
                         </Button>
                         {showClearOptions && (
                           <div className="absolute top-full mt-2 left-0 bg-black/90 backdrop-blur-xl border border-white/20 rounded-lg p-2 shadow-2xl min-w-[180px] z-[70]">
@@ -2097,7 +2097,7 @@ export default function AnnotationOverlay({
                               size="sm"
                               variant="ghost"
                               onClick={() => clearByAuthor("all")}
-                              className="w-full justify-start text-white hover:bg-white/10 shadow-sm mb-1"
+                              className="w-full justify-start text-white hover:bg-white/10 border border-white/10 mb-1"
                             >
                               All Drawings
                             </Button>
@@ -2105,7 +2105,7 @@ export default function AnnotationOverlay({
                               size="sm"
                               variant="ghost"
                               onClick={() => clearByAuthor("teacher")}
-                              className="w-full justify-start text-white hover:bg-white/10 shadow-sm mb-1"
+                              className="w-full justify-start text-white hover:bg-white/10 border border-white/10 mb-1"
                             >
                               Teacher's Drawings
                             </Button>
@@ -2113,7 +2113,7 @@ export default function AnnotationOverlay({
                               size="sm"
                               variant="ghost"
                               onClick={() => clearByAuthor("students")}
-                              className="w-full justify-start text-white hover:bg-white/10 shadow-sm"
+                              className="w-full justify-start text-white hover:bg-white/10 border border-white/10"
                             >
                               Students' Drawings
                             </Button>
@@ -2126,9 +2126,9 @@ export default function AnnotationOverlay({
                         variant="ghost"
                         onClick={clearAndBroadcast}
                         title="Clear All"
-                        className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-red-500/90 hover:bg-red-500 text-white shadow-lg shadow-red-500/30 transition-all active:scale-95 touch-manipulation select-none"
+                        className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                       >
-                        <Trash2 className="h-5 w-5 stroke-[2.5]" />
+                        <Trash2 className="h-5 w-5 stroke-[2.5] fill-current" />
                       </Button>
                     )}
                   </>
@@ -2162,9 +2162,9 @@ export default function AnnotationOverlay({
                   variant="ghost"
                   onClick={() => setToolbarCollapsed(true)}
                   title="Collapse Toolbar"
-                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/90 hover:bg-white shadow-lg hover:shadow-xl text-gray-900 transition-all active:scale-95 touch-manipulation select-none"
+                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
                 >
-                  <ChevronUp className="h-5 w-5 stroke-[2.5]" />
+                  <ChevronUp className="h-5 w-5 stroke-[2.5] fill-current" />
                 </Button>
 
                 <div className={cn(
@@ -2182,78 +2182,78 @@ export default function AnnotationOverlay({
                     variant={tool === "pointer" ? "default" : "ghost"}
                     onClick={() => setTool("pointer")}
                     title="Pointer - Click text to edit"
-                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all active:scale-95 touch-manipulation select-none shadow-lg ${
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                       tool === "pointer" 
-                        ? 'bg-blue-500/90 hover:bg-blue-500 text-white shadow-blue-500/40' 
-                        : 'bg-white/90 hover:bg-white text-gray-900 hover:shadow-xl'
+                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
-                    <MousePointer2 className="h-5 w-5 stroke-[2.5]" />
+                    <MousePointer2 className="h-5 w-5 stroke-[2.5] fill-current" />
                   </Button>
                   <Button
                     size="icon"
                     variant={tool === "pencil" ? "default" : "ghost"}
                     onClick={() => setTool("pencil")}
                     title="Pencil"
-                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all active:scale-95 touch-manipulation select-none shadow-lg ${
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                       tool === "pencil" 
-                        ? 'bg-blue-500/90 hover:bg-blue-500 text-white shadow-blue-500/40' 
-                        : 'bg-white/90 hover:bg-white text-gray-900 hover:shadow-xl'
+                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
-                    <Pencil className="h-5 w-5 stroke-[2.5]" />
+                    <Pencil className="h-5 w-5 stroke-[2.5] fill-current" />
                   </Button>
                   <Button
                     size="icon"
                     variant={tool === "eraser" ? "default" : "ghost"}
                     onClick={() => setTool("eraser")}
                     title="Eraser"
-                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all active:scale-95 touch-manipulation select-none shadow-lg ${
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                       tool === "eraser" 
-                        ? 'bg-blue-500/90 hover:bg-blue-500 text-white shadow-blue-500/40' 
-                        : 'bg-white/90 hover:bg-white text-gray-900 hover:shadow-xl'
+                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
-                    <Eraser className="h-5 w-5 stroke-[2.5]" />
+                    <Eraser className="h-5 w-5 stroke-[2.5] fill-current" />
                   </Button>
                   <Button
                     size="icon"
                     variant={tool === "rectangle" ? "default" : "ghost"}
                     onClick={() => setTool("rectangle")}
                     title="Rectangle"
-                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all active:scale-95 touch-manipulation select-none shadow-lg ${
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                       tool === "rectangle" 
-                        ? 'bg-blue-500/90 hover:bg-blue-500 text-white shadow-blue-500/40' 
-                        : 'bg-white/90 hover:bg-white text-gray-900 hover:shadow-xl'
+                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
-                    <Square className="h-5 w-5 stroke-[2.5]" />
+                    <Square className="h-5 w-5 stroke-[2.5] fill-current" />
                   </Button>
                   <Button
                     size="icon"
                     variant={tool === "circle" ? "default" : "ghost"}
                     onClick={() => setTool("circle")}
                     title="Circle"
-                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all active:scale-95 touch-manipulation select-none shadow-lg ${
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                       tool === "circle" 
-                        ? 'bg-blue-500/90 hover:bg-blue-500 text-white shadow-blue-500/40' 
-                        : 'bg-white/90 hover:bg-white text-gray-900 hover:shadow-xl'
+                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
-                    <Circle className="h-5 w-5 stroke-[2.5]" />
+                    <Circle className="h-5 w-5 stroke-[2.5] fill-current" />
                   </Button>
                   <Button
                     size="icon"
                     variant={tool === "text" ? "default" : "ghost"}
                     onClick={() => setTool("text")}
                     title="Text"
-                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all active:scale-95 touch-manipulation select-none shadow-lg ${
+                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
                       tool === "text" 
-                        ? 'bg-blue-500/90 hover:bg-blue-500 text-white shadow-blue-500/40' 
-                        : 'bg-white/90 hover:bg-white text-gray-900 hover:shadow-xl'
+                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                     }`}
                   >
-                    <Type className="h-5 w-5 stroke-[2.5]" />
+                    <Type className="h-5 w-5 stroke-[2.5] fill-current" />
                   </Button>
                 </div>
 
@@ -2265,7 +2265,7 @@ export default function AnnotationOverlay({
                 {/* Color Picker */}
                 <div className="relative color-picker-container">
                   <button
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg transition-all border-4 border-white/90 hover:border-white active:scale-95 touch-manipulation select-none shadow-lg hover:shadow-xl"
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg transition-all border-2 border-white/40 hover:border-white/60 active:scale-95 touch-manipulation select-none shadow-md"
                     style={{ backgroundColor: color }}
                     onClick={() => setShowColorPicker(!showColorPicker)}
                     title={`Current color: ${availableColors.find(c => c.value === color)?.label || color}`}

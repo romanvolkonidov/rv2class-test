@@ -779,22 +779,19 @@ export default function CustomControlBar({
       title={title}
       className={cn(
         "group relative p-4 rounded-xl transition-all duration-200",
-        "bg-white/90 backdrop-blur-md shadow-lg",
-        "hover:bg-white hover:-translate-y-0.5 hover:scale-110 hover:shadow-xl",
+        "bg-white/10 backdrop-blur-md border border-white/20",
+        "hover:bg-white/20 hover:border-white/30 hover:-translate-y-0.5 hover:scale-110",
         "active:translate-y-0 active:scale-95",  // Better touch feedback
         // Larger touch target for mobile
         "min-w-[48px] min-h-[48px] flex items-center justify-center",
         // Touch-friendly spacing
         "touch-manipulation select-none",
-        danger && "bg-red-500/90 hover:bg-red-500 shadow-red-500/30",
-        success && "bg-green-500/90 hover:bg-green-500 shadow-lg shadow-green-500/40",
-        active && !success && "bg-blue-500/90 hover:bg-blue-500 shadow-blue-500/30"
+        danger && "bg-red-500/20 border-red-400/30 hover:bg-red-500/30",
+        success && "bg-green-500/50 border-green-400/60 hover:bg-green-500/60 shadow-lg shadow-green-500/30",
+        active && !success && "bg-white/25 border-white/40"
       )}
     >
-      <div className={cn(
-        "transition-transform",
-        danger ? "text-white" : success ? "text-white" : active ? "text-white" : "text-gray-900"
-      )}>
+      <div className={cn("text-white transition-transform")}>
         {children}
       </div>
     </button>
@@ -823,7 +820,7 @@ export default function CustomControlBar({
               active={!isMuted}
               title={isMuted ? "Unmute" : "Mute"}
             >
-              {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              {isMuted ? <MicOff className="w-5 h-5" fill="currentColor" /> : <Mic className="w-5 h-5" fill="currentColor" />}
             </GlassButton>
             
             {audioDevices.length > 1 && (
@@ -836,17 +833,14 @@ export default function CustomControlBar({
                 }}
                 className={cn(
                   "w-8 h-12 flex items-center justify-center rounded-lg",
-                  "bg-white/90 backdrop-blur-md shadow-lg",
-                  "hover:bg-white hover:shadow-xl",
+                  "bg-white/10 backdrop-blur-md border border-white/20",
+                  "hover:bg-white/20 hover:border-white/30",
                   "transition-all duration-200 touch-manipulation select-none",
-                  showMicMenu && "bg-blue-500/90 shadow-blue-500/30"
+                  showMicMenu && "bg-white/25 border-white/40"
                 )}
                 title="Select Microphone"
               >
-                <ChevronDown className={cn(
-                  "w-4 h-4 transition-colors",
-                  showMicMenu ? "text-white" : "text-gray-900"
-                )} />
+                <ChevronDown className="w-4 h-4 text-white" />
               </button>
             )}
           </div>
@@ -858,7 +852,7 @@ export default function CustomControlBar({
               active={!isCameraOff}
               title={isCameraOff ? "Turn Camera On" : "Turn Camera Off"}
             >
-              {isCameraOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+              {isCameraOff ? <VideoOff className="w-5 h-5" fill="currentColor" /> : <Video className="w-5 h-5" fill="currentColor" />}
             </GlassButton>
             
             {videoDevices.length > 1 && (
@@ -871,17 +865,14 @@ export default function CustomControlBar({
                 }}
                 className={cn(
                   "w-8 h-12 flex items-center justify-center rounded-lg",
-                  "bg-white/90 backdrop-blur-md shadow-lg",
-                  "hover:bg-white hover:shadow-xl",
+                  "bg-white/10 backdrop-blur-md border border-white/20",
+                  "hover:bg-white/20 hover:border-white/30",
                   "transition-all duration-200 touch-manipulation select-none",
-                  showCameraMenu && "bg-blue-500/90 shadow-blue-500/30"
+                  showCameraMenu && "bg-white/25 border-white/40"
                 )}
                 title="Select Camera"
               >
-                <ChevronDown className={cn(
-                  "w-4 h-4 transition-colors",
-                  showCameraMenu ? "text-white" : "text-gray-900"
-                )} />
+                <ChevronDown className="w-4 h-4 text-white" />
               </button>
             )}
           </div>
@@ -891,7 +882,7 @@ export default function CustomControlBar({
             active={isScreenSharing}
             title={isScreenSharing ? "Stop Sharing Screen" : "Share Screen"}
           >
-            <Monitor className="w-5 h-5" />
+            <Monitor className="w-5 h-5" fill="currentColor" />
           </GlassButton>
 
           <div className="w-px h-10 bg-white/20 mx-2" />
@@ -904,7 +895,7 @@ export default function CustomControlBar({
                 active={showChat}
                 title={showChat ? "Close Chat" : "Open Chat"}
               >
-                <MessageSquare className="w-5 h-5" />
+                <MessageSquare className="w-5 h-5" fill="currentColor" />
               </GlassButton>
               {unreadChatCount > 0 && !showChat && (
                 <div className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center border-2 border-black/50 animate-pulse">
@@ -926,7 +917,7 @@ export default function CustomControlBar({
                 success={hasScreenShare}
                 title={showAnnotations ? "Hide Annotations" : "Annotate Screen"}
               >
-                <Pencil className="w-5 h-5" />
+                <Pencil className="w-5 h-5" fill="currentColor" />
               </GlassButton>
             </>
           )}
@@ -938,7 +929,7 @@ export default function CustomControlBar({
                 active={showWhiteboard}
                 title={showWhiteboard ? "Show Video" : "Open Whiteboard"}
               >
-                <Square className="w-5 h-5" />
+                <Square className="w-5 h-5" fill="currentColor" />
               </GlassButton>
             </>
           )}
@@ -951,13 +942,13 @@ export default function CustomControlBar({
             active={isControlBarPinned}
             title={isControlBarPinned ? "Unpin Control Bar (Auto-hide)" : "Pin Control Bar (Always visible)"}
           >
-            {isControlBarPinned ? <Pin className="w-5 h-5" /> : <PinOff className="w-5 h-5" />}
+            {isControlBarPinned ? <Pin className="w-5 h-5" fill="currentColor" /> : <PinOff className="w-5 h-5" fill="currentColor" />}
           </GlassButton>
 
           <div className="w-px h-10 bg-white/20 mx-2" />
 
           <GlassButton onClick={handleLeave} danger title="Leave Session">
-            <PhoneOff className="w-5 h-5" />
+            <PhoneOff className="w-5 h-5" fill="currentColor" />
           </GlassButton>
         </div>
       </div>
@@ -1168,7 +1159,7 @@ export default function CustomControlBar({
             <div className="p-4 border-t border-white/10 flex justify-end">
               <button
                 onClick={() => setShowSourcePicker(false)}
-                className="px-6 py-2 bg-white/90 hover:bg-white shadow-lg hover:shadow-xl rounded-lg text-gray-900 font-medium transition-all"
+                className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white font-medium transition-all"
               >
                 Cancel
               </button>
