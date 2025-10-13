@@ -612,88 +612,89 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
             </div>
             
             {/* Join Button with Integrated Toggles */}
-            <div className="relative pt-2">
-              <Button
-                size="lg"
-                className={`w-full h-auto py-5 min-h-[64px] bg-gradient-to-r ${colors.gradient} hover:scale-[1.02] hover:shadow-2xl active:scale-100 transition-all duration-300 shadow-xl border border-white/20 backdrop-blur-xl font-medium group touch-manipulation select-none`}
-                onClick={handleJoinClass}
-                disabled={isJoining}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="backdrop-blur-xl bg-white/10 p-2 rounded-xl group-hover:bg-white/20 transition-all duration-300">
-                    <Video className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <span className="font-semibold text-base">Войти на урок</span>
-                    <span className="text-xs opacity-80">Подключиться к {teacherName}</span>
-                  </div>
-                </div>
-              </Button>
-
-              {/* Elegant Mic/Camera Toggles - Positioned on button edge */}
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2">
-                {/* Microphone Toggle */}
+            <div className="pt-2">
+              <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${colors.gradient} shadow-xl hover:shadow-2xl transition-all duration-300 border border-white/20`}>
                 <button
-                  onClick={requestMicPermission}
-                  disabled={micPermission === "granted" || micPermission === "checking"}
-                  className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 backdrop-blur-xl border-2 touch-manipulation active:scale-90 select-none shadow-lg ${
-                    shouldPulseMic ? 'animate-pulse ring-4 ring-white/30' : ''
-                  } ${
-                    micPermission === "granted"
-                      ? "bg-white/20 border-white/30 text-white cursor-default hover:bg-white/25"
-                      : micPermission === "denied"
-                      ? "bg-orange-500/80 border-orange-400/50 text-white cursor-pointer hover:bg-orange-500"
-                      : "bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30"
-                  }`}
-                  title={
-                    micPermission === "granted"
-                      ? "Микрофон разрешён ✓"
-                      : micPermission === "denied"
-                      ? "Включить микрофон"
-                      : "Разрешить микрофон"
-                  }
+                  onClick={handleJoinClass}
+                  disabled={isJoining}
+                  className="w-full h-auto py-5 min-h-[64px] px-6 flex items-center justify-between bg-transparent hover:bg-white/5 active:bg-white/10 transition-all duration-300 touch-manipulation select-none group"
                 >
-                  {micPermission === "granted" ? (
-                    <Mic className="h-5 w-5" />
-                  ) : micPermission === "denied" ? (
-                    <MicOff className="h-4 w-4" />
-                  ) : micPermission === "checking" ? (
-                    <Mic className="h-5 w-5 animate-pulse" />
-                  ) : (
-                    <Mic className="h-5 w-5 opacity-70" />
-                  )}
-                </button>
+                  <div className="flex items-center gap-3">
+                    <div className="backdrop-blur-xl bg-white/10 p-2 rounded-xl group-hover:bg-white/20 transition-all duration-300">
+                      <Video className="h-5 w-5 text-white group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    <div className="flex flex-col items-start text-white">
+                      <span className="font-semibold text-base">Войти на урок</span>
+                      <span className="text-xs opacity-80">Подключиться к {teacherName}</span>
+                    </div>
+                  </div>
 
-                {/* Video Toggle */}
-                <button
-                  onClick={requestVideoPermission}
-                  disabled={videoPermission === "granted" || videoPermission === "checking"}
-                  className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 backdrop-blur-xl border-2 touch-manipulation active:scale-90 select-none shadow-lg ${
-                    shouldPulseCamera ? 'animate-pulse ring-4 ring-white/30' : ''
-                  } ${
-                    videoPermission === "granted"
-                      ? "bg-white/20 border-white/30 text-white cursor-default hover:bg-white/25"
-                      : videoPermission === "denied"
-                      ? "bg-orange-500/80 border-orange-400/50 text-white cursor-pointer hover:bg-orange-500"
-                      : "bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30"
-                  }`}
-                  title={
-                    videoPermission === "granted"
-                      ? "Камера разрешена ✓"
-                      : videoPermission === "denied"
-                      ? "Включить камеру"
-                      : "Разрешить камеру"
-                  }
-                >
-                  {videoPermission === "granted" ? (
-                    <Video className="h-5 w-5" />
-                  ) : videoPermission === "denied" ? (
-                    <VideoOff className="h-4 w-4" />
-                  ) : videoPermission === "checking" ? (
-                    <Video className="h-5 w-5 animate-pulse" />
-                  ) : (
-                    <Video className="h-5 w-5 opacity-70" />
-                  )}
+                  {/* Integrated Mic/Camera Toggles */}
+                  <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+                    {/* Microphone Toggle */}
+                    <button
+                      onClick={requestMicPermission}
+                      disabled={micPermission === "granted" || micPermission === "checking"}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 backdrop-blur-sm border touch-manipulation select-none ${
+                        shouldPulseMic ? 'animate-pulse ring-2 ring-white/50' : ''
+                      } ${
+                        micPermission === "granted"
+                          ? "bg-white/25 border-white/40 text-white cursor-default hover:bg-white/30"
+                          : micPermission === "denied"
+                          ? "bg-red-500/60 border-red-400/60 text-white cursor-pointer hover:bg-red-500/80 shadow-lg shadow-red-500/20"
+                          : "bg-white/15 border-white/30 text-white hover:bg-white/25 cursor-pointer"
+                      }`}
+                      title={
+                        micPermission === "granted"
+                          ? "Микрофон разрешён ✓"
+                          : micPermission === "denied"
+                          ? "Включить микрофон"
+                          : "Разрешить микрофон"
+                      }
+                    >
+                      {micPermission === "granted" ? (
+                        <Mic className="h-4 w-4" />
+                      ) : micPermission === "denied" ? (
+                        <MicOff className="h-4 w-4" />
+                      ) : micPermission === "checking" ? (
+                        <Mic className="h-4 w-4 animate-pulse" />
+                      ) : (
+                        <Mic className="h-4 w-4" />
+                      )}
+                    </button>
+
+                    {/* Video Toggle */}
+                    <button
+                      onClick={requestVideoPermission}
+                      disabled={videoPermission === "granted" || videoPermission === "checking"}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 backdrop-blur-sm border touch-manipulation select-none ${
+                        shouldPulseCamera ? 'animate-pulse ring-2 ring-white/50' : ''
+                      } ${
+                        videoPermission === "granted"
+                          ? "bg-white/25 border-white/40 text-white cursor-default hover:bg-white/30"
+                          : videoPermission === "denied"
+                          ? "bg-red-500/60 border-red-400/60 text-white cursor-pointer hover:bg-red-500/80 shadow-lg shadow-red-500/20"
+                          : "bg-white/15 border-white/30 text-white hover:bg-white/25 cursor-pointer"
+                      }`}
+                      title={
+                        videoPermission === "granted"
+                          ? "Камера разрешена ✓"
+                          : videoPermission === "denied"
+                          ? "Включить камеру"
+                          : "Разрешить камеру"
+                      }
+                    >
+                      {videoPermission === "granted" ? (
+                        <Video className="h-4 w-4" />
+                      ) : videoPermission === "denied" ? (
+                        <VideoOff className="h-4 w-4" />
+                      ) : videoPermission === "checking" ? (
+                        <Video className="h-4 w-4 animate-pulse" />
+                      ) : (
+                        <Video className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </button>
               </div>
             </div>
