@@ -277,8 +277,13 @@ function DraggableThumbnailContainer({
             style={{ zIndex: 1001 }}
           />
         </>
-      )}      {/* Control bar with buttons */}
-      <div className="bg-black/60 backdrop-blur-md rounded-t-lg border border-white/20 border-b-0 px-2 py-1 flex items-center gap-2">
+      )}
+      {/* Control bar with buttons */}
+      <div className="bg-black/60 backdrop-blur-md rounded-t-lg border border-white/20 border-b-0 px-2 py-1 flex items-center gap-2"
+        style={{
+          borderWidth: `${1 / scale}px`, // Inverse scale to maintain 1px visual border
+        }}
+      >
         {/* Drag handle */}
         <div 
           ref={dragHandleRef}
@@ -337,6 +342,7 @@ function DraggableThumbnailContainer({
           className="bg-black/40 backdrop-blur-md rounded-b-lg border border-white/20 p-2 flex gap-2 items-start overflow-auto"
           style={{
             maxWidth: '100%',
+            borderWidth: `${1 / scale}px`, // Inverse scale to maintain 1px visual border
           }}
         >
           {children}
