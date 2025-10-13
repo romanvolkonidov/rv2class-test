@@ -783,38 +783,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 </div>
               </div>
             )}
-            
-            {!loadingRating && !isExcludedFromRating && studentRating && (
-              <div className="glass-accent-amber rounded-2xl p-5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="glass-surface-dark p-2 rounded-xl">
-                      <Star className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-600 text-sm">Твой рейтинг</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-2xl text-amber-600">
-                          {studentRating.averagePercentage ? studentRating.averagePercentage.toFixed(1) : "N/A"}%
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Место: {studentRating.rank} из {studentRating.totalStudents}
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleShowRatingDetails}
-                    className="glass-button-dark text-amber-700 font-medium"
-                  >
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Подробнее
-                  </Button>
-                </div>
-              </div>
-            )}
 
             {/* Action Buttons - Apple-style spacing and refinement */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -925,15 +893,12 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                                 )}
                               </div>
                               <div className="text-sm text-gray-600 mt-1">
-                                {rating.completedHomeworks} из {rating.totalAssigned} заданий ({rating.completionRate.toFixed(0)}%)
+                                {rating.completedHomeworks} из {rating.totalAssigned} заданий
                               </div>
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className={`text-2xl font-bold ${isCurrentStudent ? "text-amber-600" : "text-gray-900"}`}>
-                              {rating.averagePercentage.toFixed(1)}%
-                            </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-sm text-gray-600">
                               балл: {rating.overallRating.toFixed(1)}/10
                             </div>
                           </div>
