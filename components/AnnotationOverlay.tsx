@@ -115,6 +115,7 @@ export default function AnnotationOverlay({
   const colorPickerRef = useRef<HTMLDivElement>(null);
   const [showSizePicker, setShowSizePicker] = useState(false);
   const sizePickerRef = useRef<HTMLDivElement>(null);
+  const initialOrientationRef = useRef<'portrait' | 'landscape' | null>(null);
   
   // Zoom detection
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -441,19 +442,92 @@ export default function AnnotationOverlay({
     };
   }, [screenShareElement, zoomLevel]); // Re-run when zoom changes
 
-  // Initialize toolbar position - center it horizontally
+  // Initialize toolbar position - center it on the longer side of the screen
   useEffect(() => {
     if (!isToolbarPositioned && toolbarRef.current) {
       const toolbar = toolbarRef.current;
       const toolbarRect = toolbar.getBoundingClientRect();
       
-      // Center horizontally, position at the bottom
-      const x = (window.innerWidth - toolbarRect.width) / 2;
-      const y = window.innerHeight - toolbarRect.height - 80; // Above control bar
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      
+      // Determine if device is portrait or landscape based on longer side
+      const isPortrait = screenHeight > screenWidth;
+      
+      // Store initial orientation
+      initialOrientationRef.current = isPortrait ? 'portrait' : 'landscape';
+      
+      let x, y;
+      
+      if (isPortrait) {
+        // Portrait: Position on the right side (vertical orientation), centered vertically
+        // Adjust to avoid thumbnail area (top-left typically has thumbnails at ~10px)
+        x = screenWidth - toolbarRect.width - 10; // 10px from right edge
+        y = Math.max(200, (screenHeight - toolbarRect.height) / 2); // Centered, but at least 200px from top
+        setToolbarOrientation('vertical'); // Set orientation immediately for portrait
+      } else {
+        // Landscape: Position at the bottom (horizontal orientation), centered horizontally
+        x = (screenWidth - toolbarRect.width) / 2; // Centered horizontally
+        y = screenHeight - toolbarRect.height - 80; // 80px from bottom (above control bar)
+        setToolbarOrientation('horizontal'); // Set orientation immediately for landscape
+      }
       
       setToolbarPosition({ x, y });
       setIsToolbarPositioned(true);
     }
+  }, [isToolbarPositioned]);
+
+  // Handle screen orientation/resize changes to reposition toolbar intelligently
+  useEffect(() => {
+    if (!isToolbarPositioned || !toolbarRef.current) return;
+
+    const handleOrientationResize = () => {
+      const toolbar = toolbarRef.current;
+      if (!toolbar) return;
+
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const toolbarRect = toolbar.getBoundingClientRect();
+      
+      const isPortrait = screenHeight > screenWidth;
+      const currentOrientation = isPortrait ? 'portrait' : 'landscape';
+      
+      // Only reposition if orientation changed (not just window resize)
+      if (initialOrientationRef.current && initialOrientationRef.current !== currentOrientation) {
+        let x, y;
+        
+        if (isPortrait) {
+          // Switched to portrait: move to right side, vertical center
+          x = screenWidth - toolbarRect.width - 10;
+          y = Math.max(200, (screenHeight - toolbarRect.height) / 2);
+          setToolbarOrientation('vertical');
+        } else {
+          // Switched to landscape: move to bottom, horizontal center
+          x = (screenWidth - toolbarRect.width) / 2;
+          y = screenHeight - toolbarRect.height - 80;
+          setToolbarOrientation('horizontal');
+        }
+        
+        setToolbarPosition({ x, y });
+        initialOrientationRef.current = currentOrientation;
+      }
+    };
+
+    // Debounce to avoid too frequent updates
+    let resizeTimeout: NodeJS.Timeout;
+    const debouncedResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(handleOrientationResize, 300);
+    };
+
+    window.addEventListener('resize', debouncedResize);
+    window.addEventListener('orientationchange', handleOrientationResize);
+
+    return () => {
+      window.removeEventListener('resize', debouncedResize);
+      window.removeEventListener('orientationchange', handleOrientationResize);
+      clearTimeout(resizeTimeout);
+    };
   }, [isToolbarPositioned]);
 
   // Adjust toolbar position after orientation changes to maintain edge snapping
