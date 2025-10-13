@@ -856,18 +856,18 @@ function RoomPage() {
       options={{
         audioCaptureDefaults: {
           echoCancellation: true,
-          noiseSuppression: true,
+          noiseSuppression: true,     // Browser's built-in noise suppression
           autoGainControl: true,
           // CRITICAL: Highest audio quality settings
           sampleRate: 48000,        // Professional audio quality (48kHz)
-          channelCount: 2,           // Stereo audio
+          channelCount: 1,           // Mono for better noise suppression (less data = less noise)
           sampleSize: 16,            // High quality bit depth
         },
         publishDefaults: {
           // CRITICAL: Enable RED (Redundant Audio) for reliability under packet loss
           red: true,                  // Redundant encoding for audio - prevents dropouts
-          // CRITICAL: Disable DTX to maintain constant audio quality
-          dtx: false,                 // Don't use discontinuous transmission - always send audio
+          // CRITICAL: Enable DTX to eliminate noise floor during silence
+          dtx: true,                  // Discontinuous transmission - stops sending audio during silence
           
           // Audio bitrate configuration (applied via audioPresets)
           audioPreset: {
