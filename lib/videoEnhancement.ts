@@ -300,6 +300,12 @@ export class WebGLVideoProcessor {
 
     console.log('📐 Canvas size:', this.canvas.width, 'x', this.canvas.height);
 
+    // CRITICAL: Set WebGL viewport to match canvas dimensions
+    if (this.gl) {
+      this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+      console.log('✅ WebGL viewport set to:', this.canvas.width, 'x', this.canvas.height);
+    }
+
     // Reset frame counter for new processing session
     this.frameCount = 0;
     this.startTime = Date.now();

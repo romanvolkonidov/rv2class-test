@@ -621,6 +621,8 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   useEffect(() => {
     if (!room || !room.localParticipant) return;
 
+    console.log('🎬 Video enhancement effect triggered - Preset:', currentPreset, 'Camera Ready:', cameraReady);
+
     if (!cameraReady) {
       console.log('⏳ Waiting for camera to be ready before applying enhancement');
       return;
@@ -731,6 +733,18 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
 
         console.log('🎥 Video element created and playing');
 
+        // CRITICAL: Wait for video element to have proper dimensions
+        if (!videoElement.videoWidth || !videoElement.videoHeight) {
+          console.log('⏳ Waiting for video dimensions...');
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          
+          if (!videoElement.videoWidth || !videoElement.videoHeight) {
+            console.warn('⚠️ Video element still has no dimensions after waiting');
+          }
+        }
+        
+        console.log('📐 Video element dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
+
         videoProcessorRef.current = new WebGLVideoProcessor();
         console.log('✨ Video enhancement processor created');
 
@@ -834,12 +848,12 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     console.log('🎨 Video enhancement preset changed to:', preset);
   };
 
-  // Load saved preset on mount (but don't apply it until user interacts)
+  // Load saved preset on mount (will apply when camera becomes ready)
   useEffect(() => {
     const savedPreset = localStorage.getItem('videoEnhancementPreset') as EnhancementPreset | null;
     if (savedPreset && Object.values(EnhancementPreset).includes(savedPreset)) {
       setCurrentPreset(savedPreset);
-      console.log('📁 Loaded saved preset (will not auto-apply):', savedPreset);
+      console.log('📁 Loaded saved preset from localStorage:', savedPreset);
     }
   }, []);
 
