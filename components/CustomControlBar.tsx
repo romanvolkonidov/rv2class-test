@@ -878,8 +878,8 @@ export default function CustomControlBar({
               {isCameraOff ? <VideoOff className="w-5 h-5" fill="currentColor" /> : <Video className="w-5 h-5" fill="currentColor" />}
             </GlassButton>
             
-            {/* Device/Enhancement dropdown button */}
-            <button
+            {/* Device/Enhancement dropdown button - TEMPORARILY HIDDEN */}
+            {/* <button
               ref={enhancementButtonRef}
               onClick={(e) => {
                 e.stopPropagation();
@@ -897,7 +897,7 @@ export default function CustomControlBar({
               title="Video Enhancement"
             >
               <ChevronDown className="w-4 h-4 text-white" />
-            </button>
+            </button> */}
           </div>
 
           <GlassButton
@@ -1038,8 +1038,8 @@ export default function CustomControlBar({
         </div>
       )}
 
-      {/* Enhancement Menu Dropdown (Portal) */}
-      {showEnhancementMenu && enhancementButtonRef.current && onPresetChange && (
+      {/* Enhancement Menu Dropdown (Portal) - TEMPORARILY HIDDEN */}
+      {false && showEnhancementMenu && enhancementButtonRef.current && onPresetChange && (
         <div 
           ref={enhancementMenuRef}
           className="fixed w-64 bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-200"
