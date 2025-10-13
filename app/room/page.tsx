@@ -14,6 +14,8 @@ import CustomVideoConference from "@/components/CustomVideoConference";
 import CompactParticipantView from "@/components/CompactParticipantView";
 import CustomControlBar from "@/components/CustomControlBar";
 import ChatPanel from "@/components/ChatPanel";
+import VideoEnhancementPanel from "@/components/VideoEnhancementPanel";
+import { WebGLVideoProcessor, EnhancementPreset, PRESETS } from "@/lib/videoEnhancement";
 
 function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: boolean; userName: string; sessionCode: string; roomName: string }) {
   const room = useRoomContext();
@@ -28,6 +30,13 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   const [showMessageToast, setShowMessageToast] = useState(false);
   const lastMessageCountRef = useRef(0);
   const { chatMessages } = useChat();
+  
+  // Video enhancement state
+  const [showEnhancement, setShowEnhancement] = useState(false);
+  const [enhancementClosing, setEnhancementClosing] = useState(false);
+  const [currentPreset, setCurrentPreset] = useState<EnhancementPreset>(EnhancementPreset.OFF);
+  const videoProcessorRef = useRef<WebGLVideoProcessor | null>(null);
+  const originalVideoTrackRef = useRef<MediaStreamTrack | null>(null);
 
   // Monitor for new chat messages when chat is closed
   useEffect(() => {
@@ -600,6 +609,111 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     }
   });
 
+  // Video enhancement - Apply WebGL processor to camera track
+  useEffect(() => {
+    if (!room || !room.localParticipant || currentPreset === EnhancementPreset.OFF) {
+      // Clean up if enhancement is OFF
+      if (videoProcessorRef.current) {
+        videoProcessorRef.current.dispose();
+        videoProcessorRef.current = null;
+      }
+      
+      // Restore original track if we have it
+      if (originalVideoTrackRef.current && room && room.localParticipant) {
+        const cameraPublication = room.localParticipant.getTrackPublication(Track.Source.Camera);
+        if (cameraPublication && cameraPublication.track) {
+          console.log('🎥 Restoring original camera track');
+          // The original track is already published, just ensure processor is disposed
+        }
+        originalVideoTrackRef.current = null;
+      }
+      return;
+    }
+
+    const setupEnhancement = async () => {
+      try {
+        const cameraPublication = room.localParticipant.getTrackPublication(Track.Source.Camera);
+        if (!cameraPublication || !cameraPublication.track) {
+          console.log('⚠️ No camera track found to enhance');
+          return;
+        }
+
+        const mediaStreamTrack = cameraPublication.track.mediaStreamTrack;
+        if (!mediaStreamTrack) {
+          console.log('⚠️ No media stream track found');
+          return;
+        }
+
+        // Store original track
+        originalVideoTrackRef.current = mediaStreamTrack;
+
+        // Create video element from track
+        const videoElement = document.createElement('video');
+        videoElement.srcObject = new MediaStream([mediaStreamTrack]);
+        videoElement.autoplay = true;
+        videoElement.muted = true;
+        
+        await videoElement.play();
+        console.log('🎥 Video element created and playing');
+
+        // Wait for video metadata to load
+        await new Promise((resolve) => {
+          if (videoElement.videoWidth > 0) {
+            resolve(null);
+          } else {
+            videoElement.addEventListener('loadedmetadata', () => resolve(null), { once: true });
+          }
+        });
+
+        // Create processor if needed
+        if (!videoProcessorRef.current) {
+          videoProcessorRef.current = new WebGLVideoProcessor();
+          console.log('✨ Video enhancement processor created');
+        }
+
+        // Attach processor and get enhanced stream
+        const settings = PRESETS[currentPreset];
+        const enhancedStream = videoProcessorRef.current.attachToVideo(videoElement, settings);
+        console.log('✅ Enhancement applied with preset:', currentPreset);
+
+        // Replace camera track with enhanced stream
+        const enhancedTrack = enhancedStream.getVideoTracks()[0];
+        
+        // Unpublish old track and publish new one
+        await room.localParticipant.unpublishTrack(mediaStreamTrack);
+        await room.localParticipant.publishTrack(enhancedTrack, {
+          source: Track.Source.Camera,
+          name: 'enhanced-camera',
+        });
+
+        console.log('🎨 Enhanced video track published');
+      } catch (error) {
+        console.error('❌ Error setting up video enhancement:', error);
+      }
+    };
+
+    if (room.state === 'connected') {
+      setupEnhancement();
+    }
+  }, [room, room?.state, currentPreset]);
+
+  // Handle preset change
+  const handlePresetChange = (preset: EnhancementPreset) => {
+    setCurrentPreset(preset);
+    // Save to localStorage
+    localStorage.setItem('videoEnhancementPreset', preset);
+    console.log('🎨 Video enhancement preset changed to:', preset);
+  };
+
+  // Load saved preset on mount
+  useEffect(() => {
+    const savedPreset = localStorage.getItem('videoEnhancementPreset') as EnhancementPreset | null;
+    if (savedPreset && Object.values(EnhancementPreset).includes(savedPreset)) {
+      setCurrentPreset(savedPreset);
+      console.log('📁 Loaded saved preset:', savedPreset);
+    }
+  }, []);
+
   const toggleWhiteboard = () => {
     const newState = !showWhiteboard;
     setShowWhiteboard(newState);
@@ -651,6 +765,21 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     }
   };
 
+  const toggleEnhancement = () => {
+    if (showEnhancement) {
+      // Trigger closing animation
+      setEnhancementClosing(true);
+      // Wait for animation to complete before hiding
+      setTimeout(() => {
+        setShowEnhancement(false);
+        setEnhancementClosing(false);
+      }, 300);
+    } else {
+      // Open immediately
+      setShowEnhancement(true);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col relative">
       {/* Join Requests Panel - Only visible to tutors */}
@@ -685,9 +814,11 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               showWhiteboard={showWhiteboard}
               showAnnotations={showAnnotations}
               showChat={showChat}
+              showEnhancement={showEnhancement}
               onToggleWhiteboard={toggleWhiteboard}
               onToggleAnnotations={toggleAnnotations}
               onToggleChat={toggleChat}
+              onToggleEnhancement={toggleEnhancement}
               unreadChatCount={unreadCount}
             />
           </>
@@ -699,9 +830,11 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               showWhiteboard={showWhiteboard}
               showAnnotations={showAnnotations}
               showChat={showChat}
+              showEnhancement={showEnhancement}
               onToggleWhiteboard={toggleWhiteboard}
               onToggleAnnotations={toggleAnnotations}
               onToggleChat={toggleChat}
+              onToggleEnhancement={toggleEnhancement}
               unreadChatCount={unreadCount}
             />
             {/* Show annotations for everyone when active - tutor gets close button, students don't */}
@@ -723,6 +856,16 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
             isClosing={chatClosing}
             roomName={roomName}
             isTutor={isTutor}
+          />
+        )}
+
+        {/* Video Enhancement Panel - Available in all modes */}
+        {(showEnhancement || enhancementClosing) && (
+          <VideoEnhancementPanel
+            onClose={toggleEnhancement}
+            onPresetChange={handlePresetChange}
+            currentPreset={currentPreset}
+            isClosing={enhancementClosing}
           />
         )}
 
@@ -858,13 +1001,18 @@ function RoomPage() {
       }}
       options={{
         audioCaptureDefaults: {
-          echoCancellation: true,
-          noiseSuppression: true,     // Browser's built-in noise suppression
-          autoGainControl: true,
+          // CRITICAL: Maximum echo cancellation settings (Zoom-level)
+          echoCancellation: { exact: true },  // Force echo cancellation (not just "ideal")
+          noiseSuppression: { exact: true },  // Force noise suppression
+          autoGainControl: { exact: true },   // Force auto gain control
+          
           // CRITICAL: Highest audio quality settings
           sampleRate: 48000,        // Professional audio quality (48kHz)
-          channelCount: 1,           // Mono for better noise suppression (less data = less noise)
+          channelCount: 1,           // Mono for better echo suppression 
           sampleSize: 16,            // High quality bit depth
+          
+          // Latency hint - balanced for echo cancellation
+          latency: 0.02,             // 20ms latency for better echo cancellation processing
         },
         publishDefaults: {
           // CRITICAL: Enable RED (Redundant Audio) for reliability under packet loss

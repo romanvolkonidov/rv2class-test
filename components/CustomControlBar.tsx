@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
 import { Track, VideoPresets } from "livekit-client";
-import { Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, PhoneOff, Pencil, Square, ChevronDown, Check, Pin, PinOff } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, PhoneOff, Pencil, Square, ChevronDown, Check, Pin, PinOff, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
@@ -31,9 +31,11 @@ interface CustomControlBarProps {
   showWhiteboard?: boolean;
   showAnnotations?: boolean;
   showChat?: boolean;
+  showEnhancement?: boolean;
   onToggleWhiteboard?: () => void;
   onToggleAnnotations?: () => void;
   onToggleChat?: () => void;
+  onToggleEnhancement?: () => void;
   unreadChatCount?: number;
 }
 
@@ -42,9 +44,11 @@ export default function CustomControlBar({
   showWhiteboard = false,
   showAnnotations = false,
   showChat = false,
+  showEnhancement = false,
   onToggleWhiteboard,
   onToggleAnnotations,
   onToggleChat,
+  onToggleEnhancement,
   unreadChatCount = 0,
 }: CustomControlBarProps) {
   const { localParticipant } = useLocalParticipant();
@@ -905,6 +909,17 @@ export default function CustomControlBar({
                 </div>
               )}
             </div>
+          )}
+
+          {/* Video Enhancement Button */}
+          {onToggleEnhancement && (
+            <GlassButton
+              onClick={onToggleEnhancement}
+              active={showEnhancement}
+              title={showEnhancement ? "Close Enhancement" : "Enhance Video"}
+            >
+              <Sparkles className="w-5 h-5" fill="currentColor" />
+            </GlassButton>
           )}
 
           {/* Annotation & Whiteboard Buttons */}
