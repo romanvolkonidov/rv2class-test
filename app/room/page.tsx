@@ -815,6 +815,9 @@ function RoomPage() {
     );
   }
 
+  // Debug: Log the LiveKit URL being used
+  console.log('🌐 LiveKit Server URL:', process.env.NEXT_PUBLIC_LIVEKIT_URL);
+
   return (
     <LiveKitRoom
       video={true} // CRITICAL: Enable video by default for all participants
