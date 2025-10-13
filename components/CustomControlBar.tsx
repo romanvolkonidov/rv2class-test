@@ -1183,6 +1183,7 @@ export default function CustomControlBar({
           </div>
         </div>
       )}
+      */}
 
       {/* Floating Thumbnail (Teams-like) - Only in Electron during screen share */}
       {showFloatingThumbnail && isScreenSharing && (
