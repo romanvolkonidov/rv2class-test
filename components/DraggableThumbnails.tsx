@@ -99,8 +99,8 @@ export const ParticipantView = memo(function ParticipantView({
             </div>
             </div>
         )}
-        <div className="absolute bottom-0.5 left-0.5 right-0.5 px-1.5 py-0.5 rounded bg-black/50 backdrop-blur-sm">
-            <p className="text-[10px] font-medium text-white/90 truncate leading-tight">
+        <div className="absolute bottom-0 left-0 right-0 h-7 px-2 py-1.5 bg-black/20 backdrop-blur-xl border-t border-white/10 flex items-center">
+            <p className="text-[10px] font-medium text-white/90 truncate leading-none">
             {participant.identity} {isLocal && "(You)"}
             </p>
         </div>
