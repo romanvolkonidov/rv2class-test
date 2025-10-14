@@ -46,6 +46,10 @@ export default function Home() {
             console.log(`❌ Room ${existingSession.roomName} no longer exists on LiveKit server`);
             console.log(`🆕 Creating new session...`);
           }
+        } else {
+          // API error - log it but continue (room connection will fail later with better error)
+          console.error('⚠️ Failed to check room status:', await roomCheckResponse.text());
+          console.log('⚠️ Proceeding without room verification...');
         }
       }
       
