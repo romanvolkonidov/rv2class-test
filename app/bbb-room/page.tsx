@@ -6,20 +6,18 @@ import BBBRoom from "@/components/BBBRoom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
-function RoomContent() {
+function BBBRoomContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const roomName = searchParams?.get("room") || "";
-  const userName = searchParams?.get("name") || "";
-  const isTutor = searchParams?.get("isTutor") === "true" || searchParams?.get("tutor") === "true";
-  const studentId = searchParams?.get("studentId") || searchParams?.get("sessionCode") || undefined;
-
-  console.log("Room Page - BBB Integration", { roomName, userName, isTutor, studentId });
+  const roomName = searchParams.get("room");
+  const userName = searchParams.get("name");
+  const isTutor = searchParams.get("tutor") === "true";
+  const studentId = searchParams.get("studentId") || undefined;
 
   if (!roomName || !userName) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-red-50 to-pink-100">
+      <div className="flex items-center justify-center h-screen">
         <Card className="w-96">
           <CardContent className="p-8">
             <h2 className="text-xl font-semibold text-red-600 mb-2">
@@ -35,11 +33,11 @@ function RoomContent() {
   }
 
   const handleLeave = () => {
-    console.log("Leaving room...");
+    // Navigate back to appropriate page
     if (isTutor) {
-      router.push(`/${userName}`);
+      router.push(`/${userName}`); // Tutor home page
     } else {
-      router.push('/');
+      router.push('/'); // Student landing page
     }
   };
 
@@ -54,19 +52,16 @@ function RoomContent() {
   );
 }
 
-export default function RoomPage() {
+export default function BBBRoomPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-          <div className="text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600">Loading room...</p>
-          </div>
+        <div className="flex items-center justify-center h-screen">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
         </div>
       }
     >
-      <RoomContent />
+      <BBBRoomContent />
     </Suspense>
   );
 }

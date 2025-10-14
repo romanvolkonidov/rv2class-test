@@ -243,7 +243,7 @@ class AudioAgent:
                 room=room_name,
                 can_publish=True,
                 can_subscribe=True,
-                hidden=True  # Hide agent from participant list
+                hidden=False  # Must be visible to receive participant events (client filters it from UI)
             ))
             
             jwt_token = token.to_jwt()
@@ -253,14 +253,43 @@ class AudioAgent:
             self.rooms[room_name] = room
             
             # Set up event handlers
+            @room.on("participant_connected")
+            def on_participant_connected(participant: rtc.RemoteParticipant):
+                logger.info(f"👋 New participant joined: {participant.identity}")
+                # Tracks will be handled by track_published event
+            
+            @room.on("track_published")
+            def on_track_published(
+                publication: rtc.RemoteTrackPublication,
+                participant: rtc.RemoteParticipant,
+            ):
+                logger.info(f"📢 Track published - Kind: {publication.kind}, Participant: {participant.identity}, Name: {publication.name}")
+                
+                # Skip agent participants
+                if participant.identity.startswith(self.config.agent_identity):
+                    logger.info(f"⏭️ Skipping agent track: {participant.identity}")
+                    return
+                
+                # Only process audio tracks
+                if publication.kind == rtc.TrackKind.KIND_AUDIO:
+                    # Subscribe to the track
+                    publication.set_subscribed(True)
+                    logger.info(f"📡 Subscribing to audio track from: {participant.identity}")
+            
             @room.on("track_subscribed")
             def on_track_subscribed(
                 track: rtc.Track,
                 publication: rtc.RemoteTrackPublication,
                 participant: rtc.RemoteParticipant,
             ):
+                logger.info(f"📡 Track subscribed - Kind: {track.kind}, Participant: {participant.identity}")
                 if track.kind == rtc.TrackKind.KIND_AUDIO:
                     participant_key = f"{room_name}_{participant.identity}"
+                    
+                    # Skip agent participants
+                    if participant.identity.startswith(self.config.agent_identity):
+                        logger.info(f"⏭️ Skipping agent audio: {participant.identity}")
+                        return
                     
                     if participant_key in self.processing_tracks:
                         logger.warning(f"⚠️ Already processing {participant.identity}")
@@ -287,7 +316,7 @@ class AudioAgent:
             await room.connect(self.config.livekit_url, jwt_token)
             logger.info(f"✅ Connected to room: {room_name}")
             
-            # Check for existing participants
+            # Check for existing participants and their tracks
             participants = list(room.remote_participants.values())
             logger.info(f"📊 Found {len(participants)} existing participants")
             
@@ -296,17 +325,26 @@ class AudioAgent:
                 if participant.identity.startswith(self.config.agent_identity):
                     logger.info(f"⏭️ Skipping agent participant: {participant.identity}")
                     continue
-                    
+                
+                logger.info(f"👤 Existing participant: {participant.identity}")
                 participant_key = f"{room_name}_{participant.identity}"
                 
+                # Subscribe to all audio track publications
                 for track_sid, publication in participant.track_publications.items():
+                    logger.info(f"   📋 Track: {publication.name or 'unnamed'}, Kind: {publication.kind}, Subscribed: {publication.subscribed}")
+                    
                     if publication.kind == rtc.TrackKind.KIND_AUDIO:
                         if not publication.subscribed:
+                            logger.info(f"   📡 Subscribing to audio from: {participant.identity}")
                             publication.set_subscribed(True)
                             await asyncio.sleep(0.5)
                         
                         if publication.track and participant_key not in self.processing_tracks:
-                            logger.info(f"🎤 Processing existing participant: {participant.identity}")
+                            logger.info(f"   🎤 Processing existing participant: {participant.identity}")
+                            self.processing_tracks.add(participant_key)
+                            asyncio.create_task(
+                                self.process_audio_track(room_name, publication.track, participant, participant_key)
+                            )
                             self.processing_tracks.add(participant_key)
                             asyncio.create_task(
                                 self.process_audio_track(room_name, publication.track, participant, participant_key)
