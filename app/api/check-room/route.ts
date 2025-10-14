@@ -74,7 +74,8 @@ export async function POST(req: NextRequest) {
           exists: true,
           numParticipants: room.numParticipants || 0,
           participants: room.numParticipants || 0,
-          creationTime: room.creationTime,
+          // Convert BigInt to string to avoid serialization error
+          creationTime: room.creationTime ? String(room.creationTime) : undefined,
         });
       } else {
         return NextResponse.json({
