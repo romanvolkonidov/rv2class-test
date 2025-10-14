@@ -173,6 +173,15 @@ export function generateJoinUrl(options: JoinMeetingOptions): string {
     userID: options.userID,
     redirect: options.redirect !== undefined ? options.redirect : true,
     guest: options.guest || false,
+    // Auto-join audio and enable webcam
+    userdata_bbb_auto_join_audio: 'true',
+    userdata_bbb_listen_only_mode: 'false',
+    userdata_bbb_force_listen_only: 'false',
+    userdata_bbb_skip_check_audio: 'true',
+    // Hide presentation by default - show participants instead
+    userdata_bbb_hide_presentation_on_join: 'true',
+    userdata_bbb_auto_share_webcam: 'true',
+    userdata_bbb_enable_video: 'true',
   };
 
   if (options.avatarURL) {

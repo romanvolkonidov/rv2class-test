@@ -161,31 +161,6 @@ export default function BBBRoom({
         allow="camera; microphone; fullscreen; speaker; display-capture"
         title="BigBlueButton Meeting"
       />
-
-      {/* Optional: Exit button overlay */}
-      <div className="absolute top-4 right-4 z-50">
-        <Button
-          onClick={handleLeave}
-          variant="destructive"
-          size="sm"
-          className="shadow-lg"
-        >
-          {isTutor ? 'End Meeting' : 'Leave Meeting'}
-        </Button>
-      </div>
-
-      {/* Open in new tab button (useful for better experience) */}
-      <div className="absolute top-4 left-4 z-50">
-        <Button
-          onClick={() => window.open(joinUrl, '_blank')}
-          variant="secondary"
-          size="sm"
-          className="shadow-lg"
-        >
-          <ExternalLink className="w-4 h-4 mr-2" />
-          Open in New Tab
-        </Button>
-      </div>
     </div>
   );
 }
