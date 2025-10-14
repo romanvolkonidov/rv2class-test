@@ -45,8 +45,9 @@ function buildBBBUrl(endpoint: string, params: Record<string, any>): string {
   // Generate checksum
   const checksum = generateChecksum(endpoint, queryString);
 
-  // Build final URL
-  return `${BBB_URL}api/${endpoint}?${queryString}&checksum=${checksum}`;
+  // Build final URL (BBB_URL already includes /api/)
+  const baseUrl = BBB_URL.endsWith('/') ? BBB_URL : `${BBB_URL}/`;
+  return `${baseUrl}${endpoint}?${queryString}&checksum=${checksum}`;
 }
 
 export interface CreateMeetingOptions {
