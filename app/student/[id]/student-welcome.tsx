@@ -3,11 +3,11 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle } from "lucide-react";
+import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import WaitingRoom, { WaitingRoomHandle } from "@/components/WaitingRoom";
 import { db } from "@/lib/firebase";
-import { doc, onSnapshot, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, getDoc, deleteDoc } from "firebase/firestore";
 
 interface StudentData {
   id: string;
@@ -418,39 +418,9 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     
     console.log(`🚀 Joining ${teacherName}'s room: ${roomName}`);
     
-    // Verify the room actually exists on LiveKit server (teacher must be active)
-    try {
-      console.log(`🔍 Checking if room ${roomName} exists on LiveKit...`);
-      const roomCheckResponse = await fetch("/api/check-room", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomName }),
-      });
-      
-      if (roomCheckResponse.ok) {
-        const roomStatus = await roomCheckResponse.json();
-        
-        if (!roomStatus.exists) {
-          console.log(`❌ Room ${roomName} doesn't exist on LiveKit server`);
-          alert(`${teacherName} еще не начал урок или урок уже завершился.\n\nПопробуйте позже.`);
-          setIsJoining(false);
-          setIsWaitingForTeacher(false);
-          return;
-        }
-        
-        console.log(`✅ Room ${roomName} exists with ${roomStatus.numParticipants} participants`);
-      } else {
-        console.warn("⚠️ Failed to check room status, proceeding anyway...");
-      }
-    } catch (error) {
-      console.error("Error checking room:", error);
-      alert("Не удалось проверить статус урока. Попробуйте снова.");
-      setIsJoining(false);
-      setIsWaitingForTeacher(false);
-      return;
-    }
+    // Create join request (even if room doesn't exist yet - teacher will see it when they start)
+    console.log(`� Creating join request for ${teacherName}'s room: ${roomName}`);
     
-    // Send join request to get approval
     try {
       const response = await fetch("/api/join-request", {
         method: "POST",
@@ -464,7 +434,8 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       const data = await response.json();
 
       if (response.ok) {
-        console.log("📝 Join request created:", data.requestId);
+        console.log("✅ Join request created:", data.requestId);
+        console.log("⏳ Waiting for teacher to start and approve...");
         // Store the request ID to start listening for approval
         setJoinRequestId(data.requestId);
         // The useEffect hook will now listen for status changes
@@ -478,6 +449,25 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       alert("Не удалось подключиться к уроку. Попробуйте снова.");
       setIsJoining(false);
       setIsWaitingForTeacher(false);
+    }
+  };
+
+  const handleCancelRequest = async () => {
+    if (!joinRequestId) return;
+
+    try {
+      console.log("❌ Cancelling join request:", joinRequestId);
+      
+      // Delete the join request from Firestore
+      await deleteDoc(doc(db, "joinRequests", joinRequestId));
+      
+      console.log("✅ Join request cancelled");
+      setJoinRequestId(null);
+      setIsWaitingForTeacher(false);
+      setIsJoining(false);
+    } catch (error) {
+      console.error("Error cancelling request:", error);
+      alert("Не удалось отменить запрос. Попробуйте снова.");
     }
   };
 
@@ -585,7 +575,31 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
             
             {/* Join Button with Integrated Toggles */}
             <div className="pt-2">
-              <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${colors.gradient} shadow-xl hover:shadow-2xl transition-all duration-300 border border-white/20`}>
+              {/* Waiting for Approval State */}
+              {isWaitingForTeacher && joinRequestId ? (
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-yellow-500 to-orange-600 shadow-xl border border-white/20 p-6">
+                  <div className="flex flex-col items-center gap-4 text-white">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 bg-white rounded-full animate-pulse" />
+                      <div className="text-center">
+                        <p className="font-semibold text-lg">Ожидание учителя...</p>
+                        <p className="text-sm opacity-90 mt-1">
+                          Учитель увидит ваш запрос, когда начнет урок
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleCancelRequest}
+                      variant="outline"
+                      className="bg-white/20 hover:bg-white/30 text-white border-white/40 hover:border-white/60"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Отменить запрос
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${colors.gradient} shadow-xl hover:shadow-2xl transition-all duration-300 border border-white/20`}>
                 <button
                   onClick={handleJoinClass}
                   disabled={isJoining}
@@ -669,6 +683,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                   </div>
                 </button>
               </div>
+              )}
             </div>
           </div>
         </div>

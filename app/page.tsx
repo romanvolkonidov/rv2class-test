@@ -26,8 +26,30 @@ export default function Home() {
     fetchActiveRooms();
     // Refresh every 5 seconds
     const interval = setInterval(fetchActiveRooms, 5000);
+    
+    // Cleanup old join requests on mount
+    cleanupOldRequests();
+    
     return () => clearInterval(interval);
   }, []);
+
+  const cleanupOldRequests = async () => {
+    try {
+      console.log("🧹 Cleaning up old join requests...");
+      const response = await fetch("/api/cleanup-requests", {
+        method: "POST",
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.deleted > 0) {
+          console.log(`✅ Cleaned up ${data.deleted} old requests`);
+        }
+      }
+    } catch (error) {
+      console.error("Error cleaning up requests:", error);
+    }
+  };
 
   const fetchActiveRooms = async () => {
     try {
