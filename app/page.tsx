@@ -16,71 +16,16 @@ export default function Home() {
   const startLessonAs = async (teacher: "Roman" | "Violet") => {
     setIsStarting(true);
     try {
-      const teacherKey = teacher.toLowerCase();
+      const teacherKey = teacher.toLowerCase(); // "roman" or "violet"
+      const room = teacherKey; // Simple room name: just "roman" or "violet"
       
-      // Check if there's an existing active session
-      const existingSessionDoc = await getDoc(doc(db, "activeSessions", teacherKey));
-      
-      if (existingSessionDoc.exists()) {
-        const existingSession = existingSessionDoc.data();
-        console.log(`📋 Found existing session for ${teacher}:`, existingSession);
-        
-        // Check if the LiveKit room actually still exists
-        const roomCheckResponse = await fetch("/api/check-room", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ roomName: existingSession.roomName }),
-        });
-        
-        if (roomCheckResponse.ok) {
-          const roomStatus = await roomCheckResponse.json();
-          
-          if (roomStatus.exists) {
-            console.log(`✅ Room ${existingSession.roomName} still exists with ${roomStatus.numParticipants} participants`);
-            console.log(`🔄 Rejoining existing session...`);
-            
-            // Rejoin the existing room
-            router.push(`/room?room=${existingSession.roomName}&name=${teacher}&isTutor=true&sessionCode=${existingSession.sessionCode}`);
-            return;
-          } else {
-            console.log(`❌ Room ${existingSession.roomName} no longer exists on LiveKit server`);
-            console.log(`🆕 Creating new session...`);
-          }
-        } else {
-          // API error - log it but continue (room connection will fail later with better error)
-          console.error('⚠️ Failed to check room status:', await roomCheckResponse.text());
-          console.log('⚠️ Proceeding without room verification...');
-        }
-      }
-      
-      // No existing session or room is dead - create new session
-      const sessionCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const room = `${teacherKey}-${sessionCode}`; // e.g., "roman-123456"
-      
-      console.log(`🆕 Creating NEW session for ${teacher}:`, {
-        sessionCode,
+      console.log(`🚀 Starting lesson for ${teacher}:`, {
         roomName: room,
-        teacherKey,
-        format: `${teacherKey}-${sessionCode}`
+        teacherKey
       });
       
-      // Store the active session in Firestore
-      await setDoc(doc(db, "activeSessions", teacherKey), {
-        sessionCode,
-        roomName: room,
-        teacherName: teacher,
-        startedAt: serverTimestamp(),
-        isActive: true,
-      });
-      
-      console.log(`✅ Session created and stored in Firestore:`, {
-        docPath: `activeSessions/${teacherKey}`,
-        sessionCode,
-        roomName: room
-      });
-      
-      // Join the room with the session code
-      router.push(`/room?room=${room}&name=${teacher}&isTutor=true&sessionCode=${sessionCode}`);
+      // Join the room directly - no session codes needed
+      router.push(`/room?room=${room}&name=${teacher}&isTutor=true`);
     } catch (error) {
       console.error("Error starting lesson:", error);
       alert("Failed to start lesson. Please try again.");

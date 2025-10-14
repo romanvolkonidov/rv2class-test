@@ -16,7 +16,7 @@ import CompactParticipantView from "@/components/CompactParticipantView";
 import CustomControlBar from "@/components/CustomControlBar";
 import ChatPanel from "@/components/ChatPanel";
 
-function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: boolean; userName: string; sessionCode: string; roomName: string }) {
+function RoomContent({ isTutor, userName, roomName }: { isTutor: boolean; userName: string; roomName: string }) {
   const room = useRoomContext();
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(false);
@@ -796,14 +796,13 @@ function RoomPage() {
   const roomName = searchParams?.get("room") || "";
   const userName = searchParams?.get("name") || "";
   const isTutor = searchParams?.get("isTutor") === "true";
-  const sessionCode = searchParams?.get("sessionCode") || searchParams?.get("code") || "";
 
   const [token, setToken] = useState("");
 
   useEffect(() => {
     if (!roomName || !userName) return;
 
-    console.log("🔵 Connecting to room:", { roomName, userName, isTutor, sessionCode });
+    console.log("🔵 Connecting to room:", { roomName, userName, isTutor });
 
     (async () => {
       try {
@@ -819,7 +818,7 @@ function RoomPage() {
         console.error("❌ Error fetching token:", e);
       }
     })();
-  }, [roomName, userName, isTutor, sessionCode]);
+  }, [roomName, userName, isTutor]);
 
   if (token === "") {
     return (
@@ -928,7 +927,7 @@ function RoomPage() {
         console.log('❌ Disconnected from room');
       }}
     >
-      <RoomContent isTutor={isTutor} userName={userName} sessionCode={sessionCode} roomName={roomName} />
+      <RoomContent isTutor={isTutor} userName={userName} roomName={roomName} />
     </LiveKitRoom>
   );
 }

@@ -111,29 +111,12 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
         if (data.status === "approved") {
           console.log("✅ Join request approved! Redirecting to room...");
           
-          // Fetch the active session to get the room name and session code
+          // Simple room name: just the teacher's name
           const teacherKey = teacherName.toLowerCase();
-          try {
-            const sessionDoc = await getDoc(doc(db, "activeSessions", teacherKey));
-            
-            if (sessionDoc.exists() && sessionDoc.data().isActive) {
-              const sessionData = sessionDoc.data();
-              const roomUrl = `/room?room=${encodeURIComponent(sessionData.roomName)}&name=${encodeURIComponent(student.name)}&isTutor=false&sessionCode=${sessionData.sessionCode}`;
-              console.log("🚀 Joining room:", roomUrl);
-              router.push(roomUrl);
-            } else {
-              alert("Урок завершился. Попробуйте позже.");
-              setIsWaitingForTeacher(false);
-              setIsJoining(false);
-              setJoinRequestId(null);
-            }
-          } catch (error) {
-            console.error("Error fetching session:", error);
-            alert("Не удалось подключиться к уроку.");
-            setIsWaitingForTeacher(false);
-            setIsJoining(false);
-            setJoinRequestId(null);
-          }
+          const roomName = teacherKey; // "roman" or "violet"
+          const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&isTutor=false`;
+          console.log("🚀 Joining room:", roomUrl);
+          router.push(roomUrl);
         } else if (data.status === "denied") {
           console.log("❌ Join request denied");
           alert("😔 Учитель отклонил ваш запрос на подключение.\n\nПожалуйста, свяжитесь с учителем или попробуйте позже.");
@@ -429,53 +412,39 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       console.warn("⚠️ Error during device enumeration:", err);
     }
     
-    // Fetch the active session code for this teacher from Firestore
+    // Simple room name: just the teacher's name (e.g., "roman" or "violet")
     const teacherKey = teacherName.toLowerCase();
-    let sessionCode = "";
-    let roomName = "";
+    const roomName = teacherKey; // Simple: "roman" or "violet"
     
+    console.log(`🚀 Joining ${teacherName}'s room: ${roomName}`);
+    
+    // Verify the room actually exists on LiveKit server (teacher must be active)
     try {
-      const sessionDoc = await getDoc(doc(db, "activeSessions", teacherKey));
+      console.log(`🔍 Checking if room ${roomName} exists on LiveKit...`);
+      const roomCheckResponse = await fetch("/api/check-room", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomName }),
+      });
       
-      if (sessionDoc.exists() && sessionDoc.data().isActive) {
-        const sessionData = sessionDoc.data();
-        sessionCode = sessionData.sessionCode;
-        roomName = sessionData.roomName;
-        console.log(`✅ Found active session for ${teacherName}: ${sessionCode}`);
+      if (roomCheckResponse.ok) {
+        const roomStatus = await roomCheckResponse.json();
         
-        // Verify the room actually exists on LiveKit server
-        console.log(`🔍 Checking if room ${roomName} exists on LiveKit...`);
-        const roomCheckResponse = await fetch("/api/check-room", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ roomName }),
-        });
-        
-        if (roomCheckResponse.ok) {
-          const roomStatus = await roomCheckResponse.json();
-          
-          if (!roomStatus.exists) {
-            console.log(`❌ Room ${roomName} doesn't exist on LiveKit server`);
-            alert(`${teacherName} еще не начал урок или урок уже завершился.\n\nПопробуйте позже.`);
-            setIsJoining(false);
-            setIsWaitingForTeacher(false);
-            return;
-          }
-          
-          console.log(`✅ Room ${roomName} exists with ${roomStatus.numParticipants} participants`);
-        } else {
-          console.warn("⚠️ Failed to check room status, proceeding anyway...");
+        if (!roomStatus.exists) {
+          console.log(`❌ Room ${roomName} doesn't exist on LiveKit server`);
+          alert(`${teacherName} еще не начал урок или урок уже завершился.\n\nПопробуйте позже.`);
+          setIsJoining(false);
+          setIsWaitingForTeacher(false);
+          return;
         }
+        
+        console.log(`✅ Room ${roomName} exists with ${roomStatus.numParticipants} participants`);
       } else {
-        // No active session - teacher hasn't started yet
-        alert(`${teacherName} еще не начал урок. Попробуйте позже.`);
-        setIsJoining(false);
-        setIsWaitingForTeacher(false);
-        return;
+        console.warn("⚠️ Failed to check room status, proceeding anyway...");
       }
     } catch (error) {
-      console.error("Error fetching active session:", error);
-      alert("Не удалось подключиться к уроку. Попробуйте снова.");
+      console.error("Error checking room:", error);
+      alert("Не удалось проверить статус урока. Попробуйте снова.");
       setIsJoining(false);
       setIsWaitingForTeacher(false);
       return;
@@ -489,7 +458,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
         body: JSON.stringify({
           roomName: roomName,
           studentName: student.name,
-          sessionCode: sessionCode, // Include session code
         }),
       });
 
