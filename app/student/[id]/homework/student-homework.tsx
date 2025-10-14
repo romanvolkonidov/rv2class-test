@@ -478,13 +478,27 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                     const submittedAnswer = report?.submittedAnswers?.find(
                       (a: any) => a.questionId === question.id
                     )?.answer;
-                    const isCorrect = String(submittedAnswer) === String(question.correctAnswer);
+                    
+                    // More robust correctness check
+                    let isCorrect = false;
+                    if (submittedAnswer !== undefined && submittedAnswer !== null && submittedAnswer !== "") {
+                      // If correctAnswer is a number (index), compare it with the option at that index
+                      if (typeof question.correctAnswer === 'number' && question.options) {
+                        const correctOption = question.options[question.correctAnswer];
+                        isCorrect = String(submittedAnswer) === String(correctOption);
+                      } else {
+                        // Direct string comparison
+                        isCorrect = String(submittedAnswer) === String(question.correctAnswer);
+                      }
+                    }
                     
                     // Debug logging to see what data we have
                     console.log(`Question ${index + 1}:`, {
                       questionId: question.id,
                       submittedAnswer,
                       correctAnswer: question.correctAnswer,
+                      correctAnswerType: typeof question.correctAnswer,
+                      options: question.options,
                       isCorrect,
                       allSubmittedAnswers: report?.submittedAnswers
                     });
@@ -524,32 +538,6 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                           )}
                         </div>
                         
-                        {/* Answer Summary Box - Always visible at the top */}
-                        <div className="mb-4 p-4 rounded-xl border-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-                          <div className="space-y-2">
-                            <div className="flex items-start gap-2">
-                              <div className="text-sm font-semibold text-blue-700 min-w-[120px]">Your Answer:</div>
-                              <div className={`font-bold text-base flex-1 ${
-                                isCorrect ? "text-green-700" : "text-red-700"
-                              }`}>
-                                {submittedAnswer !== undefined && submittedAnswer !== null && submittedAnswer !== ""
-                                  ? String(submittedAnswer)
-                                  : "(No answer provided)"}
-                                {isCorrect && " ✓"}
-                                {!isCorrect && " ✗"}
-                              </div>
-                            </div>
-                            {!isCorrect && (
-                              <div className="flex items-start gap-2">
-                                <div className="text-sm font-semibold text-green-700 min-w-[120px]">Correct Answer:</div>
-                                <div className="font-bold text-base text-green-700 flex-1">
-                                  {question.correctAnswer}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
                         {/* Media */}
                         {(question.mediaUrl || question.imageUrl || question.audioUrl || question.videoUrl) && (
                           <div className="mb-4">
@@ -577,10 +565,18 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                         {question.options && question.options.length > 0 && (
                           <div className="space-y-2 mb-4">
                             {question.options.map((option, optIndex) => {
-                              const isThisCorrect = String(question.correctAnswer) === String(optIndex) || 
-                                                   String(question.correctAnswer) === String(option);
-                              const isThisSelected = String(submittedAnswer) === String(optIndex) ||
-                                                    String(submittedAnswer) === String(option);
+                              // Determine if this option is the correct answer
+                              let isThisCorrect = false;
+                              if (typeof question.correctAnswer === 'number') {
+                                // correctAnswer is an index
+                                isThisCorrect = optIndex === question.correctAnswer;
+                              } else {
+                                // correctAnswer is the text
+                                isThisCorrect = String(question.correctAnswer) === String(option);
+                              }
+                              
+                              // Determine if this option was selected by the student
+                              const isThisSelected = String(submittedAnswer) === String(option);
                               
                               return (
                                 <div
@@ -658,7 +654,11 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                                   <Check className="h-5 w-5 text-green-600" />
                                   <div className="text-sm font-bold text-green-700">Correct Answer:</div>
                                 </div>
-                                <div className="font-bold text-lg text-green-900">{question.correctAnswer}</div>
+                                <div className="font-bold text-lg text-green-900">
+                                  {typeof question.correctAnswer === 'number' && question.options 
+                                    ? question.options[question.correctAnswer] 
+                                    : question.correctAnswer}
+                                </div>
                               </div>
                             )}
                           </div>

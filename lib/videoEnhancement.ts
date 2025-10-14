@@ -315,7 +315,6 @@ export class WebGLVideoProcessor {
 
     // Return canvas stream with appropriate frame rate
     const stream = this.canvas.captureStream(30);
-    console.log('🎬 Canvas stream created with', stream.getVideoTracks().length, 'video tracks');
     
     return stream;
   }
@@ -377,13 +376,8 @@ export class WebGLVideoProcessor {
         // Draw
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
 
-        // Log performance stats every 30 frames
+        // Track performance stats (logging removed)
         this.frameCount++;
-        if (this.frameCount % 30 === 0) {
-          const elapsed = (Date.now() - this.startTime) / 1000;
-          const fps = this.frameCount / elapsed;
-          console.log(`🎬 Enhancement FPS: ${fps.toFixed(1)}, Frames: ${this.frameCount}`);
-        }
       } catch (error) {
         console.error('❌ Error in render loop:', error);
       }
@@ -391,18 +385,15 @@ export class WebGLVideoProcessor {
       this.animationFrameId = requestAnimationFrame(render);
     };
 
-    console.log('▶️ Starting video enhancement render loop');
     render();
   }
 
   public updateSettings(settings: Partial<VideoEnhancementSettings>) {
     // Merge new settings with existing settings
     this.settings = { ...this.settings, ...settings };
-    console.log('🔄 Settings updated:', this.settings);
   }
 
   public dispose() {
-    console.log('🧹 Disposing video enhancement processor');
     
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);

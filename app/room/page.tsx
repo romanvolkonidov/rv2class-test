@@ -467,7 +467,6 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
         
         // Monitor periodically to ensure audio quality is maintained
         const interval = setInterval(() => {
-          console.log('🎤 Audio quality check - ensuring priority settings...');
           monitorRemoteAudio();
         }, 30000); // Every 30 seconds
 
