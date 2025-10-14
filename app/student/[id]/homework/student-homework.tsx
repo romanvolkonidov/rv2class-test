@@ -572,45 +572,61 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                                 isThisCorrect = optIndex === question.correctAnswer;
                               } else {
                                 // correctAnswer is the text
-                                isThisCorrect = String(question.correctAnswer) === String(option);
+                                isThisCorrect = String(question.correctAnswer).trim().toLowerCase() === String(option).trim().toLowerCase();
                               }
                               
                               // Determine if this option was selected by the student
-                              const isThisSelected = String(submittedAnswer) === String(option);
+                              // More robust comparison with trimming and case-insensitive matching
+                              const isThisSelected = submittedAnswer !== undefined && 
+                                submittedAnswer !== null && 
+                                String(submittedAnswer).trim().toLowerCase() === String(option).trim().toLowerCase();
+                              
+                              // Debug log for troubleshooting
+                              if (index === 0 && optIndex === 0) {
+                                console.log(`Q${index + 1} Option comparison:`, {
+                                  option,
+                                  submittedAnswer,
+                                  isThisSelected,
+                                  isThisCorrect,
+                                  comparison: `"${String(submittedAnswer || '').trim().toLowerCase()}" === "${String(option).trim().toLowerCase()}"`
+                                });
+                              }
                               
                               return (
                                 <div
                                   key={optIndex}
-                                  className={`p-3 rounded-lg border-2 ${
+                                  className={`p-3 rounded-lg border-2 transition-all ${
                                     isThisCorrect && isThisSelected
-                                      ? "bg-green-100 border-green-400 font-semibold"
+                                      ? "bg-green-100 border-green-400 font-semibold shadow-md"
                                       : isThisCorrect
                                       ? "bg-green-50 border-green-300"
                                       : isThisSelected
-                                      ? "bg-red-100 border-red-400"
+                                      ? "bg-red-100 border-red-400 shadow-md"
                                       : "bg-white border-gray-200"
                                   }`}
                                 >
-                                  <div className="flex items-center justify-between">
-                                    <span className={isThisSelected ? "font-bold" : ""}>{option}</span>
-                                    <div className="flex items-center gap-2">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className={isThisSelected ? "font-bold text-gray-900" : "text-gray-700"}>{option}</span>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
                                       {isThisSelected && (
-                                        <span className={`text-sm font-bold flex items-center gap-1 ${
-                                          isThisCorrect ? "text-green-700" : "text-red-700"
+                                        <span className={`text-sm font-bold flex items-center gap-1 px-2 py-1 rounded-md ${
+                                          isThisCorrect 
+                                            ? "text-green-700 bg-green-200" 
+                                            : "text-red-700 bg-red-200"
                                         }`}>
                                           {isThisCorrect ? (
                                             <>
-                                              <Check className="h-4 w-4" /> Your Answer ✓
+                                              <Check className="h-4 w-4" /> Your Answer
                                             </>
                                           ) : (
                                             <>
-                                              <X className="h-4 w-4" /> Your Answer ✗
+                                              <X className="h-4 w-4" /> Your Answer
                                             </>
                                           )}
                                         </span>
                                       )}
                                       {isThisCorrect && !isThisSelected && (
-                                        <span className="text-green-700 text-sm font-bold flex items-center gap-1">
+                                        <span className="text-green-700 text-sm font-bold flex items-center gap-1 px-2 py-1 rounded-md bg-green-200">
                                           <Check className="h-4 w-4" /> Correct Answer
                                         </span>
                                       )}
