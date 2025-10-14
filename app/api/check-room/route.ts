@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AccessToken } from "livekit-server-sdk";
+import { RoomServiceClient } from "livekit-server-sdk";
 
 const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY;
 const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET;
@@ -30,47 +30,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Extract the base URL without the protocol
-    // Handle both ws:// and wss:// (convert to http/https for API calls)
-    const baseUrl = LIVEKIT_URL.replace(/^(wss?:\/\/)/, '').replace(/^(https?:\/\/)/, '');
-    const protocol = LIVEKIT_URL.startsWith('wss://') || LIVEKIT_URL.startsWith('https://') ? 'https' : 'http';
-    
-    const apiUrl = `${protocol}://${baseUrl}/twirp/livekit.RoomService/ListRooms`;
-    console.log('📡 Calling LiveKit API:', apiUrl);
+    // Convert WebSocket URL to HTTP/HTTPS for API calls
+    const apiUrl = LIVEKIT_URL.replace(/^ws/, 'http');
+    console.log('📡 Connecting to LiveKit:', apiUrl);
 
-    // Call LiveKit API to check if room exists
+    // Use the official LiveKit SDK - much more reliable than manual HTTP
+    const roomService = new RoomServiceClient(apiUrl, LIVEKIT_API_KEY, LIVEKIT_API_SECRET);
+
     try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${await generateServerToken()}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ names: [roomName] }),
-      });
+      // List rooms with the specific room name
+      const rooms = await roomService.listRooms([roomName]);
+      console.log('✅ LiveKit SDK response:', { roomCount: rooms.length, rooms });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("LiveKit API error:", {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText,
-        });
-        
-        // Return a graceful response instead of 500
-        return NextResponse.json({
-          exists: false,
-          numParticipants: 0,
-          error: "Could not verify room status",
-        });
-      }
-
-      const data = await response.json();
-      console.log('✅ LiveKit response:', data);
-      const rooms = data.rooms || [];
-      const room = rooms.find((r: any) => r.name === roomName);
-
-      if (room) {
+      if (rooms.length > 0) {
+        const room = rooms[0];
         return NextResponse.json({
           exists: true,
           numParticipants: room.numParticipants || 0,
@@ -83,38 +56,35 @@ export async function POST(req: NextRequest) {
           numParticipants: 0,
         });
       }
-    } catch (fetchError) {
-      console.error("Failed to fetch from LiveKit API:", fetchError);
-      // Return graceful response on network error
-      return NextResponse.json({
-        exists: false,
-        numParticipants: 0,
-        error: "Network error connecting to LiveKit",
+    } catch (sdkError: any) {
+      console.error("❌ LiveKit SDK error:", {
+        message: sdkError.message,
+        code: sdkError.code,
+        stack: sdkError.stack,
       });
+
+      // Provide helpful error messages
+      if (sdkError.message?.includes('401') || sdkError.message?.includes('403')) {
+        console.error("🔐 Authentication failed! Verify your LIVEKIT_API_KEY and LIVEKIT_API_SECRET");
+      }
+
+      return NextResponse.json(
+        {
+          error: "Failed to check room status",
+          details: sdkError.message,
+          hint: "Check LiveKit server connection and credentials"
+        },
+        { status: 500 }
+      );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error checking room:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error",
+        details: error?.message || "Unknown error"
+      },
       { status: 500 }
     );
   }
-}
-
-// Generate a server token for API authentication
-async function generateServerToken() {
-  if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
-    throw new Error("Missing LiveKit credentials");
-  }
-
-  const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
-    identity: "server-api",
-  });
-  
-  at.addGrant({
-    roomAdmin: true,
-    room: "*",
-  });
-
-  return at.toJwt();
 }
