@@ -39,44 +39,57 @@ export async function POST(req: NextRequest) {
     console.log('📡 Calling LiveKit API:', apiUrl);
 
     // Call LiveKit API to check if room exists
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${await generateServerToken()}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ names: [roomName] }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("LiveKit API error:", {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText,
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${await generateServerToken()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ names: [roomName] }),
       });
-      return NextResponse.json(
-        { error: "Failed to check room status", details: errorText },
-        { status: 500 }
-      );
-    }
 
-    const data = await response.json();
-    console.log('✅ LiveKit response:', data);
-    const rooms = data.rooms || [];
-    const room = rooms.find((r: any) => r.name === roomName);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("LiveKit API error:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+        
+        // Return a graceful response instead of 500
+        return NextResponse.json({
+          exists: false,
+          numParticipants: 0,
+          error: "Could not verify room status",
+        });
+      }
 
-    if (room) {
-      return NextResponse.json({
-        exists: true,
-        numParticipants: room.numParticipants || 0,
-        participants: room.numParticipants || 0,
-        creationTime: room.creationTime,
-      });
-    } else {
+      const data = await response.json();
+      console.log('✅ LiveKit response:', data);
+      const rooms = data.rooms || [];
+      const room = rooms.find((r: any) => r.name === roomName);
+
+      if (room) {
+        return NextResponse.json({
+          exists: true,
+          numParticipants: room.numParticipants || 0,
+          participants: room.numParticipants || 0,
+          creationTime: room.creationTime,
+        });
+      } else {
+        return NextResponse.json({
+          exists: false,
+          numParticipants: 0,
+        });
+      }
+    } catch (fetchError) {
+      console.error("Failed to fetch from LiveKit API:", fetchError);
+      // Return graceful response on network error
       return NextResponse.json({
         exists: false,
         numParticipants: 0,
+        error: "Network error connecting to LiveKit",
       });
     }
   } catch (error) {

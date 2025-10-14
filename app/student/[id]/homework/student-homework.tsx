@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { fetchStudentHomework, fetchHomeworkReports, fetchAllHomework, fetchQuestionsForHomework, fetchStudentRatings, fetchAllStudentRatings, HomeworkAssignment, HomeworkReport, Question } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,8 +26,10 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
   const [showRatingDetails, setShowRatingDetails] = useState(false);
   const [allStudentRatings, setAllStudentRatings] = useState<any[]>([]);
   const [loadingAllRatings, setLoadingAllRatings] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     loadHomework();
     loadRatings();
   }, [studentId]);
@@ -178,6 +180,8 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
   };
 
   const formatDate = (dateValue: any) => {
+    // Return placeholder during SSR to prevent hydration mismatch
+    if (!isClient) return "Loading...";
     if (!dateValue) return "Unknown date";
     
     try {

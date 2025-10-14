@@ -30,6 +30,7 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   const [lastMessagePreview, setLastMessagePreview] = useState<{ from: string; message: string } | null>(null);
   const [showMessageToast, setShowMessageToast] = useState(false);
   const lastMessageCountRef = useRef(0);
+  const mediaInitializedRef = useRef(false);
   const { chatMessages } = useChat();
 
   // Monitor for new chat messages when chat is closed
@@ -83,9 +84,16 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
       return;
     }
 
+    // Prevent running multiple times
+    if (mediaInitializedRef.current) {
+      console.log('✅ Media already initialized, skipping...');
+      return;
+    }
+
     const enableMediaOnConnect = async () => {
       try {
         console.log('🎥 Room connected! Enabling camera and microphone...');
+        mediaInitializedRef.current = true;
         
         // Small delay to ensure LiveKitRoom has finished its initial setup
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -119,13 +127,6 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               
               if (cameraTrack && cameraTrack.track) {
                 console.log('✅ Camera enabled and published successfully');
-                console.log('📹 Camera track details:', {
-                  sid: cameraTrack.trackSid,
-                  name: cameraTrack.trackName,
-                  muted: cameraTrack.isMuted,
-                  enabled: cameraTrack.track.mediaStreamTrack?.enabled,
-                  deviceId: cameraTrack.track.mediaStreamTrack?.getSettings().deviceId,
-                });
                 cameraEnabled = true;
               } else {
                 throw new Error('Camera track not published after enabling');
@@ -168,25 +169,19 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
         } else {
           console.log('✅ Camera already enabled');
           
-          // Still verify it's published
+          // Verify it's published
           const cameraTrack = room.localParticipant.getTrackPublication(Track.Source.Camera);
           if (cameraTrack && cameraTrack.track) {
             console.log('✅ Camera track verified and published');
           } else {
-            console.warn('⚠️ Camera shows enabled but track not published - attempting to republish...');
-            try {
-              // Try toggling camera to force republish
-              await room.localParticipant.setCameraEnabled(false);
-              await new Promise(resolve => setTimeout(resolve, 300));
-              await room.localParticipant.setCameraEnabled(true);
-              console.log('✅ Camera republished successfully');
-            } catch (err) {
-              console.error('❌ Failed to republish camera:', err);
-            }
+            console.log('⚠️ Camera enabled but track not yet published - will be handled by LiveKit');
           }
         }
+        
+        console.log('✅ Successfully connected to room - audio and video should be enabled');
       } catch (error) {
         console.error('❌ Error in enableMediaOnConnect:', error);
+        mediaInitializedRef.current = false; // Reset on error so it can retry
       }
     };
 
@@ -194,14 +189,7 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     if (room.state === 'connected') {
       enableMediaOnConnect();
     }
-
-    // Also enable when connection state changes to connected
-    room.on('connected', enableMediaOnConnect);
-
-    return () => {
-      room.off('connected', enableMediaOnConnect);
-    };
-  }, [room, room?.state]); // Re-run when room state changes
+  }, [room]); // Only depend on room object, not state
 
   // Debug: Log room participants
   useEffect(() => {
