@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
 import { Track, VideoPresets } from "livekit-client";
-import { Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, PhoneOff, Pencil, Square, ChevronDown, Check, Pin, PinOff, Sun, CloudSun, Briefcase, Palette, X } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, Monitor, MessageSquare, PhoneOff, Pencil, Square, ChevronDown, Check, Pin, PinOff, Sun, CloudSun, Briefcase, Palette, X, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { EnhancementPreset } from "@/lib/videoEnhancement";
@@ -32,9 +32,11 @@ interface CustomControlBarProps {
   showWhiteboard?: boolean;
   showAnnotations?: boolean;
   showChat?: boolean;
+  showTranslation?: boolean;
   onToggleWhiteboard?: () => void;
   onToggleAnnotations?: () => void;
   onToggleChat?: () => void;
+  onToggleTranslation?: () => void;
   unreadChatCount?: number;
   currentPreset?: EnhancementPreset;
   onPresetChange?: (preset: EnhancementPreset) => void;
@@ -45,9 +47,11 @@ export default function CustomControlBar({
   showWhiteboard = false,
   showAnnotations = false,
   showChat = false,
+  showTranslation = false,
   onToggleWhiteboard,
   onToggleAnnotations,
   onToggleChat,
+  onToggleTranslation,
   unreadChatCount = 0,
   currentPreset = EnhancementPreset.OFF,
   onPresetChange,
@@ -944,6 +948,22 @@ export default function CustomControlBar({
               </GlassButton>
             </>
           )}
+          
+          {/* Translation Tool Button - Only for students during screen share */}
+          {!isTutor && hasScreenShare && onToggleTranslation && (
+            <>
+              <div className="w-px h-10 bg-white/20 mx-2" />
+              <GlassButton
+                onClick={onToggleTranslation}
+                active={showTranslation}
+                success={hasScreenShare}
+                title={showTranslation ? "Close Translation Tool" : "Translate Text (Circle words)"}
+              >
+                <Languages className="w-5 h-5" />
+              </GlassButton>
+            </>
+          )}
+          
           {isTutor && onToggleWhiteboard && (
             <>
               <div className="w-px h-10 bg-white/20 mx-2" />

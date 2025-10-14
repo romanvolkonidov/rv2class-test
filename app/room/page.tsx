@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { X, MessageSquare } from "lucide-react";
 import Whiteboard from "@/components/Whiteboard";
 import AnnotationOverlay from "@/components/AnnotationOverlay";
+import TranslationOverlay from "@/components/TranslationOverlay";
 import JoinRequestsPanel from "@/components/JoinRequestsPanel";
 import CustomVideoConference from "@/components/CustomVideoConference";
 import CompactParticipantView from "@/components/CompactParticipantView";
@@ -21,6 +22,8 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(false);
   const [annotationsClosing, setAnnotationsClosing] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [translationClosing, setTranslationClosing] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [chatClosing, setChatClosing] = useState(false);
   const [hasScreenShare, setHasScreenShare] = useState(false);
@@ -890,6 +893,21 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
     }
   };
 
+  const toggleTranslation = () => {
+    if (showTranslation) {
+      // Trigger closing animation
+      setTranslationClosing(true);
+      // Wait for animation to complete before hiding
+      setTimeout(() => {
+        setShowTranslation(false);
+        setTranslationClosing(false);
+      }, 300);
+    } else {
+      // Open immediately
+      setShowTranslation(true);
+    }
+  };
+
   const toggleChat = () => {
     if (showChat) {
       // Trigger closing animation
@@ -939,9 +957,11 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               showWhiteboard={showWhiteboard}
               showAnnotations={showAnnotations}
               showChat={showChat}
+              showTranslation={showTranslation}
               onToggleWhiteboard={toggleWhiteboard}
               onToggleAnnotations={toggleAnnotations}
               onToggleChat={toggleChat}
+              onToggleTranslation={toggleTranslation}
               unreadChatCount={unreadCount}
               currentPreset={currentPreset}
               onPresetChange={handlePresetChange}
@@ -955,9 +975,11 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
               showWhiteboard={showWhiteboard}
               showAnnotations={showAnnotations}
               showChat={showChat}
+              showTranslation={showTranslation}
               onToggleWhiteboard={toggleWhiteboard}
               onToggleAnnotations={toggleAnnotations}
               onToggleChat={toggleChat}
+              onToggleTranslation={toggleTranslation}
               unreadChatCount={unreadCount}
               currentPreset={currentPreset}
               onPresetChange={handlePresetChange}
@@ -969,6 +991,14 @@ function RoomContent({ isTutor, userName, sessionCode, roomName }: { isTutor: bo
                 viewOnly={false}
                 isClosing={annotationsClosing}
                 isTutor={isTutor}
+              />
+            )}
+            
+            {/* Translation Tool - Only for students */}
+            {!isTutor && (showTranslation || translationClosing) && (
+              <TranslationOverlay 
+                onClose={() => toggleTranslation()} 
+                isClosing={translationClosing}
               />
             )}
           </>
