@@ -48,7 +48,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate meeting passwords (stored in Firebase for consistency)
+    // BBB Native Approach: Same meeting ID forever, stored passwords
+    // BBB will auto-recreate meetings after they naturally end (all participants leave)
     const meetingRef = doc(db, 'bbb_meetings', roomName);
     let meetingDoc = await getDoc(meetingRef);
     
@@ -56,11 +57,10 @@ export async function POST(req: NextRequest) {
     let moderatorPW: string;
 
     if (!meetingDoc.exists()) {
-      // First time creating this meeting - generate passwords
+      // First time - generate and store passwords permanently
       attendeePW = generateSecurePassword();
       moderatorPW = generateSecurePassword();
 
-      // Store meeting credentials in Firebase
       await setDoc(meetingRef, {
         meetingID: roomName,
         attendeePW,
@@ -68,42 +68,43 @@ export async function POST(req: NextRequest) {
         createdAt: new Date().toISOString(),
         createdBy: isTutor ? participantName : 'system',
       });
-
-      // Create the meeting in BBB
-      const meetingName = `Lesson: ${roomName}`;
-      const createResult = await createMeeting({
-        meetingID: roomName,
-        meetingName,
-        attendeePW,
-        moderatorPW,
-        welcome: isTutor 
-          ? `Welcome to your lesson, ${participantName}!` 
-          : `Welcome! Your tutor will join shortly.`,
-        maxParticipants: 10, // Adjust as needed
-        record: true, // Enable recording
-        autoStartRecording: false, // Let tutor start recording manually
-        allowStartStopRecording: true,
-        muteOnStart: false,
-        guestPolicy: 'ASK_MODERATOR', // Students need approval to join
-        meta: {
-          tutorName: isTutor ? participantName : '',
-          studentId: studentId || '',
-          platform: 'rv2class',
-        },
-      });
-
-      if (!createResult.success) {
-        console.error('Failed to create BBB meeting:', createResult.error);
-        return NextResponse.json(
-          { error: `Failed to create meeting: ${createResult.error}` },
-          { status: 500 }
-        );
-      }
     } else {
-      // Meeting already exists - retrieve passwords
+      // Use existing passwords for this room
       const data = meetingDoc.data();
       attendeePW = data.attendeePW;
       moderatorPW = data.moderatorPW;
+    }
+
+    // Always call create - BBB handles idempotency
+    // This will succeed if meeting doesn't exist or already running
+    const meetingName = `Lesson: ${roomName}`;
+    const createResult = await createMeeting({
+      meetingID: roomName,
+      meetingName,
+      attendeePW,
+      moderatorPW,
+      welcome: isTutor 
+        ? `Welcome to your lesson, ${participantName}!` 
+        : `Welcome! Your tutor will join shortly.`,
+      maxParticipants: 10,
+      record: true,
+      autoStartRecording: false,
+      allowStartStopRecording: true,
+      muteOnStart: false,
+      guestPolicy: 'ASK_MODERATOR',
+      meta: {
+        tutorName: isTutor ? participantName : '',
+        studentId: studentId || '',
+        platform: 'rv2class',
+      },
+    });
+
+    if (!createResult.success) {
+      console.error('Failed to create BBB meeting:', createResult.error);
+      return NextResponse.json(
+        { error: `Failed to create meeting: ${createResult.error}` },
+        { status: 500 }
+      );
     }
 
     // Generate join URL based on role
