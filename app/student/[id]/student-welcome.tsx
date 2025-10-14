@@ -576,16 +576,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                       {teacherName}
                     </span>
                   </div>
-                  <Button
-                    size="sm"
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl font-semibold touch-manipulation active:scale-95 select-none h-10 px-4 border-0"
-                    onClick={handleHomeworks}
-                  >
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
-                      <span className="text-sm">Домашние задания</span>
-                    </div>
-                  </Button>
                 </div>
                 
                 {activeSubjects.length > 0 && (
@@ -608,6 +598,20 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                     ))}
                   </div>
                 )}
+                
+                {/* Homework Button - moved below subjects */}
+                <div className="pt-2">
+                  <Button
+                    size="sm"
+                    className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl font-semibold touch-manipulation active:scale-95 select-none h-12 px-4 border-0"
+                    onClick={handleHomeworks}
+                  >
+                    <div className="flex items-center gap-2 justify-center">
+                      <BookOpen className="h-5 w-5" />
+                      <span className="text-base">Домашние задания</span>
+                    </div>
+                  </Button>
+                </div>
               </div>
             </div>
             

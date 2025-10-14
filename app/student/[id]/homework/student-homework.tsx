@@ -240,35 +240,35 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
 
           {/* Glass morphism card */}
           <div className="glass-panel rounded-3xl overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-500/90 via-purple-600/90 to-indigo-600/90 p-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="glass-surface-dark p-3 rounded-2xl">
-                    <BookOpen className="h-10 w-10 text-white" />
+            <div className="bg-gradient-to-r from-purple-500/90 via-purple-600/90 to-indigo-600/90 p-4 sm:p-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="glass-surface-dark p-2 sm:p-3 rounded-2xl">
+                    <BookOpen className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-semibold text-white tracking-tight">
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">
                       {studentName}'s Homework
                     </h1>
-                    <p className="text-white/90 text-base mt-1">
+                    <p className="text-white/90 text-sm sm:text-base mt-1">
                       Track your assignments and progress
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="w-full sm:w-auto sm:text-right">
                   {!loadingRating && studentRating && studentRating.overallRating && (
-                    <div>
-                        <div className="flex items-center justify-end gap-3 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 px-4 py-2 shadow-lg shadow-amber-400/40">
-                        <Star className="h-5 w-5 text-white fill-white drop-shadow-sm" />
+                    <div className="w-full sm:w-auto">
+                        <div className="flex items-center justify-center sm:justify-end gap-2 sm:gap-3 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 px-3 sm:px-4 py-1.5 sm:py-2 shadow-lg shadow-amber-400/40">
+                        <Star className="h-4 w-4 sm:h-5 sm:w-5 text-white fill-white drop-shadow-sm" />
                         <div className="flex items-baseline gap-1 text-white">
-                          <span className="text-2xl font-extrabold">{studentRating.overallRating.toFixed(1)}</span>
-                          <span className="text-sm font-semibold text-white/80">/10</span>
+                          <span className="text-xl sm:text-2xl font-extrabold">{studentRating.overallRating.toFixed(1)}</span>
+                          <span className="text-xs sm:text-sm font-semibold text-white/80">/10</span>
                         </div>
                         </div>
                       <Button
                         size="sm"
                         onClick={handleShowRatingDetails}
-                        className="mt-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold shadow-md min-h-[36px] text-xs"
+                        className="mt-2 w-full sm:w-auto bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold shadow-md min-h-[36px] text-xs"
                       >
                         <TrendingUp className="mr-1 h-3 w-3" />
                         Подробнее
@@ -278,19 +278,19 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                 </div>
               </div>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="text-center p-4 rounded-xl glass-accent-blue">
-                  <div className="text-2xl font-bold text-blue-600">{totalCount}</div>
-                  <div className="text-sm text-gray-600">Total</div>
+            <div className="p-4 sm:p-6">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+                <div className="text-center p-2 sm:p-4 rounded-xl glass-accent-blue">
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{totalCount}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Total</div>
                 </div>
-                <div className="text-center p-4 rounded-xl glass-accent-green">
-                  <div className="text-2xl font-bold text-green-600">{completedCount}</div>
-                  <div className="text-sm text-gray-600">Completed</div>
+                <div className="text-center p-2 sm:p-4 rounded-xl glass-accent-green">
+                  <div className="text-xl sm:text-2xl font-bold text-green-600">{completedCount}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Completed</div>
                 </div>
-                <div className="text-center p-4 rounded-xl glass-accent-amber">
-                  <div className="text-2xl font-bold text-orange-600">{totalCount - completedCount}</div>
-                  <div className="text-sm text-gray-600">Pending</div>
+                <div className="text-center p-2 sm:p-4 rounded-xl glass-accent-amber">
+                  <div className="text-xl sm:text-2xl font-bold text-orange-600">{totalCount - completedCount}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Pending</div>
                 </div>
               </div>
             </div>
@@ -436,20 +436,20 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
       
       {/* Results Modal */}
       {viewingResultsFor && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Trophy className="h-8 w-8" />
-                  <div>
-                    <h2 className="text-2xl font-bold">Homework Results</h2>
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 sm:p-6 text-white">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <Trophy className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-lg sm:text-2xl font-bold truncate">Homework Results</h2>
                     {(() => {
                       const assignment = assignments.find(a => a.id === viewingResultsFor);
                       const report = getReportForAssignment(viewingResultsFor);
                       return (
-                        <p className="text-blue-100 mt-1">
+                        <p className="text-blue-100 mt-1 text-sm sm:text-base truncate">
                           {assignment?.topicName || "Homework"} - Score: {report?.score}%
                         </p>
                       );
@@ -458,15 +458,15 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                 </div>
                 <button
                   onClick={() => setViewingResultsFor(null)}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                  className="p-1.5 sm:p-2 hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
               </div>
             </div>
             
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               {loadingResults ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
