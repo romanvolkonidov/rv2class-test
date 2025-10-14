@@ -765,6 +765,22 @@ export default function CustomControlBar({
 
   const handleConfirmLeave = async () => {
     setShowLeaveConfirmation(false);
+    
+    // If tutor is leaving, close the entire room on LiveKit server
+    if (isTutor && room.name) {
+      try {
+        console.log(`🗑️ Teacher leaving - closing room: ${room.name}`);
+        await fetch("/api/close-room", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomName: room.name }),
+        });
+        console.log(`✅ Room ${room.name} closed successfully`);
+      } catch (error) {
+        console.error("❌ Error closing room:", error);
+      }
+    }
+    
     await room.disconnect();
     router.push('/');
   };

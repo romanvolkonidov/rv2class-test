@@ -1,17 +1,73 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Video, Users, BookOpen, Calendar, Play, User } from "lucide-react";
+import { Video, Users, BookOpen, Calendar, Play, User, X, LogIn } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+
+interface ActiveRoom {
+  name: string;
+  numParticipants: number;
+  teacher: string;
+}
 
 export default function Home() {
   const router = useRouter();
   const [showTeacherSelect, setShowTeacherSelect] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [activeRooms, setActiveRooms] = useState<ActiveRoom[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+
+  // Fetch active rooms on component mount
+  useEffect(() => {
+    fetchActiveRooms();
+    // Refresh every 5 seconds
+    const interval = setInterval(fetchActiveRooms, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchActiveRooms = async () => {
+    try {
+      setLoadingRooms(true);
+      const response = await fetch("/api/list-rooms");
+      if (response.ok) {
+        const data = await response.json();
+        setActiveRooms(data.rooms || []);
+      }
+    } catch (error) {
+      console.error("Error fetching rooms:", error);
+    } finally {
+      setLoadingRooms(false);
+    }
+  };
+
+  const closeRoom = async (roomName: string) => {
+    if (!confirm(`Close room "${roomName}"? All participants will be disconnected.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/close-room", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomName }),
+      });
+
+      if (response.ok) {
+        console.log(`✅ Room ${roomName} closed`);
+        // Refresh the room list
+        await fetchActiveRooms();
+      } else {
+        alert("Failed to close room. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error closing room:", error);
+      alert("Failed to close room. Please try again.");
+    }
+  };
 
   const startLessonAs = async (teacher: "Roman" | "Violet") => {
     setIsStarting(true);
@@ -24,6 +80,17 @@ export default function Home() {
         teacherKey
       });
       
+      // Check if there are any other rooms for this teacher and close them
+      const otherRooms = activeRooms.filter(r => r.teacher === room);
+      for (const otherRoom of otherRooms) {
+        console.log(`🗑️ Closing existing room: ${otherRoom.name}`);
+        await fetch("/api/close-room", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomName: otherRoom.name }),
+        });
+      }
+      
       // Join the room directly - no session codes needed
       router.push(`/room?room=${room}&name=${teacher}&isTutor=true`);
     } catch (error) {
@@ -31,6 +98,11 @@ export default function Home() {
       alert("Failed to start lesson. Please try again.");
       setIsStarting(false);
     }
+  };
+
+  const rejoinRoom = (roomName: string, teacher: string) => {
+    const teacherName = teacher.charAt(0).toUpperCase() + teacher.slice(1); // "roman" -> "Roman"
+    router.push(`/room?room=${roomName}&name=${teacherName}&isTutor=true`);
   };
 
   return (
@@ -107,6 +179,66 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Active Rooms Section */}
+        {activeRooms.length > 0 && (
+          <div className="mb-8">
+            <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Video className="h-6 w-6 text-green-600" />
+                  Active Rooms
+                  {loadingRooms && <span className="text-sm font-normal text-gray-500">(updating...)</span>}
+                </CardTitle>
+                <CardDescription>
+                  Rooms currently open on LiveKit server
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {activeRooms.map((room) => (
+                    <div
+                      key={room.name}
+                      className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-lg border border-blue-200 dark:border-gray-600"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+                          <div>
+                            <div className="font-semibold text-gray-900 dark:text-white">
+                              {room.teacher.charAt(0).toUpperCase() + room.teacher.slice(1)}'s Room
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {room.numParticipants} participant{room.numParticipants !== 1 ? 's' : ''}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => rejoinRoom(room.name, room.teacher)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          <LogIn className="h-4 w-4 mr-2" />
+                          Rejoin
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => closeRoom(room.name)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-3 gap-6">
           <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/students")}>
