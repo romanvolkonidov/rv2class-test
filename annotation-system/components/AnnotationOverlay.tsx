@@ -8,8 +8,18 @@ import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, Che
 import { cn } from "@/lib/utils";
 
 // Placeholder hooks for LiveKit functionality (not used with BBB/Jitsi)
-const useRoomContext = () => null;
-const useDataChannel = (callback: any) => {};
+// Returns a mock room object to prevent null errors
+const useRoomContext = () => ({
+  localParticipant: {
+    identity: 'local-user',
+    publishData: (data: Uint8Array, options?: any) => {
+      console.log('Mock publishData (LiveKit not active):', data);
+    }
+  }
+});
+const useDataChannel = (callback: (message: any) => void) => {
+  // Mock implementation - does nothing since we're not using LiveKit
+};
 
 type AnnotationTool = "pointer" | "pencil" | "eraser" | "rectangle" | "circle" | "text";
 
