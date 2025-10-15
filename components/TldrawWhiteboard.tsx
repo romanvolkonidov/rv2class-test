@@ -12,9 +12,9 @@ interface TldrawWhiteboardProps {
 
 export default function TldrawWhiteboard({ roomId, onClose }: TldrawWhiteboardProps) {
   return (
-    <div className="fixed inset-0 z-50 bg-white">
+    <div className="fixed inset-0 z-50 bg-white flex flex-col">
       {/* Header with close button */}
-      <div className="absolute top-0 left-0 right-0 h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-10">
+      <div className="flex-shrink-0 h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4">
         <h2 className="text-lg font-semibold text-gray-800">
           Collaborative Whiteboard
         </h2>
@@ -28,8 +28,8 @@ export default function TldrawWhiteboard({ roomId, onClose }: TldrawWhiteboardPr
         </Button>
       </div>
 
-      {/* tldraw canvas */}
-      <div className="absolute top-14 left-0 right-0 bottom-0">
+      {/* tldraw canvas - flex-1 takes remaining space */}
+      <div className="flex-1 overflow-hidden">
         <Tldraw
           persistenceKey={`rv2class-${roomId}`}
           autoFocus
