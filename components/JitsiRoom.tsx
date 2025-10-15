@@ -256,8 +256,8 @@ export default function JitsiRoom({
             disableDeepLinking: true,
             defaultLanguage: "en",
             enableClosePage: false,
-            // Set meeting title: "English with Roman" or "English with Violeta"
-            subject: `${subject} with ${isTutor ? participantName : (teacherName || 'Teacher')}`,
+            // Set meeting title: "English with Roman" or "English with Violet"
+            subject: `${subject} with ${teacherName || (isTutor ? participantName : 'Teacher')}`,
             
             // 🔒 CRITICAL FIX: Disable lobby entirely - we handle waiting room via Firebase
             // The lobby causes "membersOnly" errors for approved students
