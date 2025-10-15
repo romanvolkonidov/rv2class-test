@@ -109,14 +109,30 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
         console.log("📄 Join request status:", data.status);
 
         if (data.status === "approved") {
-          console.log("✅ Join request approved! Redirecting to BBB room...");
+          console.log("✅ Join request approved! Redirecting to room...");
           
           // Simple room name: just the teacher's name
           const teacherKey = teacherName.toLowerCase();
           const roomName = teacherKey; // "roman" or "violet"
-          const roomUrl = `/bbb-room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}`;
-          console.log("🚀 Joining BBB room:", roomUrl);
-          router.push(roomUrl);
+          
+          // Check which platform the teacher is using
+          try {
+            const roomDoc = await getDoc(doc(db, 'activeRooms', roomName));
+            const platform = roomDoc.exists() ? roomDoc.data().platform || 'bbb' : 'bbb';
+            
+            console.log(`📡 Teacher is using platform: ${platform}`);
+            
+            // Use unified /room route which handles both platforms
+            const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&isTutor=false&platform=${platform}`;
+            console.log("🚀 Joining room:", roomUrl);
+            router.push(roomUrl);
+          } catch (error) {
+            console.error("Error checking room platform:", error);
+            // Fallback to BBB with old route
+            const roomUrl = `/bbb-room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}`;
+            console.log("🚀 Joining BBB room (fallback):", roomUrl);
+            router.push(roomUrl);
+          }
         } else if (data.status === "denied") {
           console.log("❌ Join request denied");
           alert("😔 Учитель отклонил ваш запрос на подключение.\n\nПожалуйста, свяжитесь с учителем или попробуйте позже.");
@@ -376,12 +392,26 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     const teacherKey = teacherName.toLowerCase();
     const roomName = teacherKey; // Simple: "roman" or "violet"
     
-    console.log(`🚀 Joining ${teacherName}'s BBB room directly: ${roomName}`);
+    console.log(`🚀 Joining ${teacherName}'s room: ${roomName}`);
     
-    // Join BBB directly - explicitly mark as student (not tutor)
-    const roomUrl = `/bbb-room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&tutor=false`;
-    console.log("🚀 Redirecting to BBB:", roomUrl);
-    router.push(roomUrl);
+    // Check which platform the teacher is using
+    try {
+      const roomDoc = await getDoc(doc(db, 'activeRooms', roomName));
+      const platform = roomDoc.exists() ? roomDoc.data().platform || 'bbb' : 'bbb';
+      
+      console.log(`📡 Teacher is using platform: ${platform}`);
+      
+      // Join the appropriate room - use /room route which handles both platforms
+      const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&isTutor=false&platform=${platform}`;
+      console.log("🚀 Redirecting to room:", roomUrl);
+      router.push(roomUrl);
+    } catch (error) {
+      console.error("Error checking room platform:", error);
+      // Fallback to BBB
+      const roomUrl = `/bbb-room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&tutor=false`;
+      console.log("🚀 Redirecting to BBB (fallback):", roomUrl);
+      router.push(roomUrl);
+    }
   };
 
   const handleCancelRequest = async () => {

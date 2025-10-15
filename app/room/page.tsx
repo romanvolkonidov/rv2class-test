@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import BBBRoom from "@/components/BBBRoom";
+import JitsiRoom from "@/components/JitsiRoom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
@@ -14,8 +15,15 @@ function RoomContent() {
   const userName = searchParams?.get("name") || "";
   const isTutor = searchParams?.get("isTutor") === "true" || searchParams?.get("tutor") === "true";
   const studentId = searchParams?.get("studentId") || searchParams?.get("sessionCode") || undefined;
+  const platform = searchParams?.get("platform") || "bbb"; // Default to BBB for backward compatibility
 
-  console.log("Room Page - BBB Integration", { roomName, userName, isTutor, studentId });
+  console.log("Room Page - Platform Integration", { 
+    roomName, 
+    userName, 
+    isTutor, 
+    studentId, 
+    platform 
+  });
 
   if (!roomName || !userName) {
     return (
@@ -43,6 +51,20 @@ function RoomContent() {
     }
   };
 
+  // Render appropriate platform component
+  if (platform === "jitsi") {
+    return (
+      <JitsiRoom
+        meetingID={roomName}
+        participantName={userName}
+        isTutor={isTutor}
+        studentId={studentId}
+        onLeave={handleLeave}
+      />
+    );
+  }
+
+  // Default to BBB
   return (
     <BBBRoom
       meetingID={roomName}
