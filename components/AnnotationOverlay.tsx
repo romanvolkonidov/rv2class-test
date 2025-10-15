@@ -419,9 +419,12 @@ export default function AnnotationOverlay({
       let offsetY = 0;
 
       // Only try to get video dimensions if it's actually a video element
+      let naturalWidth = 0;
+      let naturalHeight = 0;
+      
       if (!isJitsiIframe && screenShareElement.tagName === 'VIDEO') {
-        const naturalWidth = (screenShareElement as HTMLVideoElement).videoWidth;
-        const naturalHeight = (screenShareElement as HTMLVideoElement).videoHeight;
+        naturalWidth = (screenShareElement as HTMLVideoElement).videoWidth;
+        naturalHeight = (screenShareElement as HTMLVideoElement).videoHeight;
 
         if (naturalWidth && naturalHeight && cssWidth && cssHeight) {
           // Check object-fit style (default is 'contain' for LiveKit)
@@ -434,12 +437,13 @@ export default function AnnotationOverlay({
             offsetX = (cssWidth - contentWidth) / 2;
             offsetY = (cssHeight - contentHeight) / 2;
           } else {
-          // 'contain' or 'fill'
-          const scale = Math.min(cssWidth / naturalWidth, cssHeight / naturalHeight);
-          contentWidth = naturalWidth * scale;
-          contentHeight = naturalHeight * scale;
-          offsetX = (cssWidth - contentWidth) / 2;
-          offsetY = (cssHeight - contentHeight) / 2;
+            // 'contain' or 'fill'
+            const scale = Math.min(cssWidth / naturalWidth, cssHeight / naturalHeight);
+            contentWidth = naturalWidth * scale;
+            contentHeight = naturalHeight * scale;
+            offsetX = (cssWidth - contentWidth) / 2;
+            offsetY = (cssHeight - contentHeight) / 2;
+          }
         }
       }
 
