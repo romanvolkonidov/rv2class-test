@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Pencil } from "lucide-react";
+import AnnotationOverlay from "@/components/AnnotationOverlay";
+import { cn } from "@/lib/utils";
 
 interface JitsiRoomProps {
   meetingID: string;
@@ -36,6 +38,7 @@ export default function JitsiRoom({
   const jitsiApiRef = useRef<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAnnotations, setShowAnnotations] = useState(false);
   const router = useRouter();
 
   // Handle redirects when meeting ends or errors occur
@@ -313,6 +316,37 @@ export default function JitsiRoom({
           </div>
         </div>
       )}
+      
+      {/* Annotation Toggle Button */}
+      {!loading && (
+        <div className="absolute top-4 right-4 z-50">
+          <Button
+            onClick={() => setShowAnnotations(!showAnnotations)}
+            variant={showAnnotations ? "default" : "secondary"}
+            size="lg"
+            className={cn(
+              "shadow-lg transition-all duration-300",
+              showAnnotations 
+                ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                : "bg-white hover:bg-gray-100 text-gray-800"
+            )}
+          >
+            <Pencil className="w-5 h-5 mr-2" />
+            {showAnnotations ? "Hide Annotations" : "Show Annotations"}
+          </Button>
+        </div>
+      )}
+      
+      {/* Annotation Overlay */}
+      {showAnnotations && (
+        <AnnotationOverlay
+          onClose={() => setShowAnnotations(false)}
+          viewOnly={false}
+          isClosing={false}
+          isTutor={isTutor}
+        />
+      )}
+      
       <div ref={containerRef} className="w-full h-full" />
     </div>
   );
