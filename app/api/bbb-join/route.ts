@@ -77,15 +77,13 @@ export async function POST(req: NextRequest) {
 
     // Always call create - BBB handles idempotency
     // This will succeed if meeting doesn't exist or already running
-    const meetingName = `Lesson: ${roomName}`;
+    const meetingName = `Урок: ${roomName}`;
     const createResult = await createMeeting({
       meetingID: roomName,
       meetingName,
       attendeePW,
       moderatorPW,
-      welcome: isTutor 
-        ? `Welcome to your lesson, ${participantName}!` 
-        : `Welcome! Your tutor will join shortly.`,
+      welcome: `Добро пожаловать на урок!`,
       maxParticipants: 10,
       record: true,
       autoStartRecording: false,

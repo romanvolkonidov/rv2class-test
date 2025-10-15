@@ -378,8 +378,8 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     
     console.log(`🚀 Joining ${teacherName}'s BBB room directly: ${roomName}`);
     
-    // Join BBB directly - no waiting room, no approval needed
-    const roomUrl = `/bbb-room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}`;
+    // Join BBB directly - explicitly mark as student (not tutor)
+    const roomUrl = `/bbb-room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&tutor=false`;
     console.log("🚀 Redirecting to BBB:", roomUrl);
     router.push(roomUrl);
   };

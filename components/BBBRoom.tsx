@@ -80,10 +80,39 @@ export default function BBBRoom({
       }
     };
 
+    // Check if iframe navigates to logout/goodbye page
+    const checkIframeUrl = setInterval(() => {
+      try {
+        const iframe = iframeRef.current;
+        if (iframe?.contentWindow) {
+          // Try to check if URL contains logout or goodbye
+          // This will work for same-origin, but BBB redirects might trigger navigation
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+          if (iframeDoc) {
+            const currentSrc = iframe.src || '';
+            // Check if redirected to goodbye page
+            if (currentSrc.includes('/home') || 
+                currentSrc.includes('/goodbye') ||
+                currentSrc.includes('/bye')) {
+              console.log('BBB: Detected goodbye/home redirect');
+              if (onLeave) {
+                onLeave();
+              }
+              clearInterval(checkIframeUrl);
+            }
+          }
+        }
+      } catch (e) {
+        // Cross-origin restriction - can't access iframe content
+        // This is expected for BBB
+      }
+    }, 1000);
+
     window.addEventListener('message', handleMessage);
     
     return () => {
       window.removeEventListener('message', handleMessage);
+      clearInterval(checkIframeUrl);
     };
   }, [onLeave]);
 
@@ -184,6 +213,18 @@ export default function BBBRoom({
         allow="camera; microphone; fullscreen; speaker; display-capture"
         title="BigBlueButton Meeting"
       />
+      
+      {/* Leave button - always available */}
+      {onLeave && (
+        <button
+          onClick={onLeave}
+          className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-200 z-50 flex items-center gap-2"
+          title="Покинуть урок"
+        >
+          <ExternalLink className="w-4 h-4" />
+          Выйти
+        </button>
+      )}
     </div>
   );
 }
