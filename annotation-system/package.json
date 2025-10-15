@@ -1,0 +1,33 @@
+{
+  "name": "screen-share-annotation-system",
+  "version": "1.0.0",
+  "description": "A complete, reusable annotation system for LiveKit screen sharing with real-time collaboration support",
+  "main": "components/AnnotationOverlay.tsx",
+  "scripts": {
+    "copy-to-project": "echo 'Copy files to your project manually or use: cp -r components lib <your-project-path>'"
+  },
+  "keywords": [
+    "livekit",
+    "annotations",
+    "screen-share",
+    "drawing",
+    "whiteboard",
+    "collaboration",
+    "real-time",
+    "react",
+    "typescript",
+    "video-conferencing"
+  ],
+  "peerDependencies": {
+    "@livekit/components-react": "^2.x.x",
+    "livekit-client": "^2.x.x",
+    "lucide-react": "^0.x.x",
+    "react": "^18.x.x",
+    "react-dom": "^18.x.x",
+    "tailwindcss": "^3.x.x",
+    "clsx": "^2.x.x",
+    "tailwind-merge": "^2.x.x"
+  },
+  "author": "",
+  "license": "MIT"
+}

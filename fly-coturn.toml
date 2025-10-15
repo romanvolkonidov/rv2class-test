@@ -1,0 +1,49 @@
+app = "rv2class-coturn"
+primary_region = "jnb"
+
+[build]
+  dockerfile = "Dockerfile.coturn"
+
+[env]
+  REALM = "rv2class.com"
+  VERBOSE = "1"
+
+# Services configuration for UDP/TCP
+[[services]]
+  internal_port = 3478
+  protocol = "tcp"
+  
+  [[services.ports]]
+    port = 3478
+
+[[services]]
+  internal_port = 3478
+  protocol = "udp"
+  
+  [[services.ports]]
+    port = 3478
+
+[[services]]
+  internal_port = 5349
+  protocol = "tcp"
+  
+  [[services.ports]]
+    port = 5349
+
+[[services]]
+  internal_port = 5349
+  protocol = "udp"
+  
+  [[services.ports]]
+    port = 5349
+
+# Relay port range - Fly.io limitation: can't expose 49152-65535 easily
+# For full Coturn functionality, consider:
+# 1. Using a dedicated VPS (DigitalOcean, Linode)
+# 2. Using Twilio TURN service
+# 3. Deploying Coturn on a VM with full UDP support
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

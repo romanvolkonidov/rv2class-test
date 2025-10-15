@@ -82,6 +82,14 @@ export default function JitsiRoom({
             defaultLanguage: "en",
             enableClosePage: false,
             
+            // ⭐ Fix broken URLs from server config
+            hosts: {
+              domain: 'jitsi.rv2class.com',
+              muc: 'conference.jitsi.rv2class.com',
+            },
+            bosh: 'https://jitsi.rv2class.com/http-bind', // Fixed BOSH URL
+            websocket: 'wss://jitsi.rv2class.com/xmpp-websocket', // Fixed WebSocket URL
+            
             // ⭐ STUN/TURN Configuration - uses YOUR Coturn server!
             p2p: {
               enabled: true,
@@ -143,9 +151,19 @@ export default function JitsiRoom({
         const api = new window.JitsiMeetExternalAPI(domain, options);
         jitsiApiRef.current = api;
 
+        // Add timeout for connection (30 seconds)
+        const connectionTimeout = setTimeout(() => {
+          if (loading) {
+            console.error("Jitsi: Connection timeout after 30 seconds");
+            setError("Connection timeout. The Jitsi server may be experiencing issues. Please try again.");
+            setLoading(false);
+          }
+        }, 30000);
+
         // Wait for the conference to be joined
         api.addEventListener("videoConferenceJoined", () => {
           console.log("Jitsi: User joined conference");
+          clearTimeout(connectionTimeout);
           setLoading(false);
 
           // If tutor, grant moderator rights

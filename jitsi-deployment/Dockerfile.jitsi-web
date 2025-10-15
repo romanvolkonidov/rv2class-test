@@ -1,0 +1,20 @@
+# Jitsi Meet Dockerfile for Fly.io
+FROM jitsi/web:stable
+
+# Set environment variables
+ENV PUBLIC_URL=https://jitsi.rv2class.com
+ENV ENABLE_GUESTS=1
+ENV ENABLE_LETSENCRYPT=0
+ENV ENABLE_HTTP_REDIRECT=1
+ENV DISABLE_HTTPS=0
+ENV TZ=UTC
+
+# Expose port
+EXPOSE 80 443
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:80/ || exit 1
+
+# Start Jitsi web
+CMD ["/init"]

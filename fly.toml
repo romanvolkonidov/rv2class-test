@@ -2,10 +2,14 @@ app = "rv2class-bbb"
 primary_region = "jnb"
 
 [build]
+  dockerfile = "Dockerfile"
 
 [env]
   PORT = "8080"
   NODE_ENV = "production"
+  NEXT_TELEMETRY_DISABLED = "1"
+  # Add your environment variables here
+  # BBB_URL and BBB_SECRET should be set via: fly secrets set
 
 [http_service]
   internal_port = 8080
@@ -13,8 +17,16 @@ primary_region = "jnb"
   auto_stop_machines = true
   auto_start_machines = true
   min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "10s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/"
 
 [[vm]]
-  memory = "512mb"
+  memory = "1024mb"
   cpu_kind = "shared"
   cpus = 1

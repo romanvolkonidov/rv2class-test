@@ -1,0 +1,15 @@
+# Coturn Dockerfile
+FROM coturn/coturn:latest
+
+# Copy configuration
+COPY coturn.conf /etc/coturn/turnserver.conf
+
+# Expose ports
+# STUN/TURN
+EXPOSE 3478 3478/udp
+EXPOSE 5349 5349/udp
+# Relay ports range
+EXPOSE 49152-65535/udp
+
+# Run coturn
+CMD ["-c", "/etc/coturn/turnserver.conf", "-v"]
