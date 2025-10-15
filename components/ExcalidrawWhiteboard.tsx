@@ -1,9 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { Excalidraw, MainMenu, WelcomeScreen } from '@excalidraw/excalidraw';
+import dynamic from 'next/dynamic';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+// Dynamically import Excalidraw to avoid SSR issues
+const Excalidraw = dynamic(
+  async () => (await import('@excalidraw/excalidraw')).Excalidraw,
+  { ssr: false }
+);
 
 interface ExcalidrawWhiteboardProps {
   roomId: string;
@@ -14,13 +20,21 @@ interface ExcalidrawWhiteboardProps {
 export default function ExcalidrawWhiteboard({ roomId, onClose, jitsiApi }: ExcalidrawWhiteboardProps) {
   const [excalidrawAPI, setExcalidrawAPI] = useState<any | null>(null);
   const [isCollaborating, setIsCollaborating] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure we're on the client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Prevent body scroll when whiteboard is open
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
+    if (typeof window !== 'undefined') {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
   }, []);
 
   // Load saved state from localStorage
@@ -104,6 +118,11 @@ export default function ExcalidrawWhiteboard({ roomId, onClose, jitsiApi }: Exca
     };
   }, [jitsiApi, excalidrawAPI, roomId]);
 
+  // Don't render on server
+  if (!isClient) {
+    return null;
+  }
+
   return (
     <div 
       className="fixed inset-0 z-50 bg-white flex flex-col"
@@ -162,28 +181,7 @@ export default function ExcalidrawWhiteboard({ roomId, onClose, jitsiApi }: Exca
               saveAsImage: true,
             },
           }}
-        >
-          <MainMenu>
-            <MainMenu.DefaultItems.SaveAsImage />
-            <MainMenu.DefaultItems.Export />
-            <MainMenu.DefaultItems.LoadScene />
-            <MainMenu.DefaultItems.ClearCanvas />
-            <MainMenu.DefaultItems.ToggleTheme />
-            <MainMenu.DefaultItems.ChangeCanvasBackground />
-          </MainMenu>
-          <WelcomeScreen>
-            <WelcomeScreen.Hints.MenuHint />
-            <WelcomeScreen.Hints.ToolbarHint />
-            <WelcomeScreen.Center>
-              <WelcomeScreen.Center.Heading>
-                Welcome to the Whiteboard!
-              </WelcomeScreen.Center.Heading>
-              <WelcomeScreen.Center.Menu>
-                <WelcomeScreen.Center.MenuItemHelp />
-              </WelcomeScreen.Center.Menu>
-            </WelcomeScreen.Center>
-          </WelcomeScreen>
-        </Excalidraw>
+        />
       </div>
     </div>
   );
