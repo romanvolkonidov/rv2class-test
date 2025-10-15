@@ -173,6 +173,8 @@ export function generateJoinUrl(options: JoinMeetingOptions): string {
     userID: options.userID,
     redirect: options.redirect !== undefined ? options.redirect : true,
     guest: options.guest || false,
+    // Set Russian interface
+    userdata_bbb_override_default_locale: 'ru',
     // Auto-join audio and enable webcam
     userdata_bbb_auto_join_audio: 'true',
     userdata_bbb_listen_only_mode: 'false',
