@@ -734,25 +734,22 @@ export default function JitsiRoom({
         </div>
       )}
       
-      {/* Whiteboard Toggle Button - Teachers Only, Styled to match Jitsi Toolbar */}
+      {/* Whiteboard Toggle Button - Teachers Only, Round Icon in Bottom Left */}
       {!loading && isTutor && (
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-[9999] pointer-events-none">
-          <div className="pointer-events-auto">
-            <Button
-              onClick={() => setShowWhiteboard(!showWhiteboard)}
-              size="lg"
-              className={cn(
-                "h-12 px-6 rounded-lg shadow-xl transition-all duration-200 font-medium backdrop-blur-sm",
-                showWhiteboard 
-                  ? "bg-blue-600/95 hover:bg-blue-700 text-white border border-blue-500" 
-                  : "bg-gray-800/90 hover:bg-gray-700/90 text-white border border-gray-600"
-              )}
-              title={showWhiteboard ? "Hide Whiteboard" : "Show Whiteboard"}
-            >
-              <Pencil className="w-5 h-5 mr-2" />
-              {showWhiteboard ? "Hide Whiteboard" : "Show Whiteboard"}
-            </Button>
-          </div>
+        <div className="absolute bottom-6 left-6 z-[9999]">
+          <Button
+            onClick={() => setShowWhiteboard(!showWhiteboard)}
+            size="icon"
+            className={cn(
+              "h-14 w-14 rounded-full shadow-xl transition-all duration-200 backdrop-blur-sm",
+              showWhiteboard 
+                ? "bg-blue-600/95 hover:bg-blue-700 text-white border-2 border-blue-400" 
+                : "bg-gray-800/90 hover:bg-gray-700/90 text-white border-2 border-gray-600"
+            )}
+            title={showWhiteboard ? "Hide Whiteboard" : "Show Whiteboard"}
+          >
+            <Pencil className="w-6 h-6" />
+          </Button>
         </div>
       )}
       
