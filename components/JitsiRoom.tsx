@@ -452,6 +452,13 @@ export default function JitsiRoom({
         api.addEventListener("errorOccurred", (event: any) => {
           console.error("Jitsi error:", event);
           
+          // Ignore "conference.destroyed" - it's fired when teacher ends meeting normally
+          const errorName = event?.error?.name || "";
+          if (errorName === "conference.destroyed") {
+            console.log("Jitsi: Conference destroyed (normal meeting end), ignoring error");
+            return;
+          }
+          
           // Check if this is a critical error that needs user attention
           const errorMsg = event?.error?.message || "An error occurred in the meeting";
           
