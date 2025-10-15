@@ -40,10 +40,15 @@ function RoomContent() {
   }
 
   const handleLeave = () => {
-    console.log("Leaving room...");
+    console.log("Leaving room...", { isTutor, studentId });
     if (isTutor) {
-      router.push(`/${userName}`);
+      // Teacher goes to home page
+      router.push('/');
+    } else if (studentId) {
+      // Student goes back to their welcome page
+      router.push(`/student/${studentId}`);
     } else {
+      // Fallback to home
       router.push('/');
     }
   };
