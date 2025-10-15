@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
       autoStartRecording: false,
       allowStartStopRecording: true,
       muteOnStart: false,
-      guestPolicy: 'ASK_MODERATOR',
+      guestPolicy: 'ALWAYS_ACCEPT',
       meta: {
         tutorName: isTutor ? participantName : '',
         studentId: studentId || '',

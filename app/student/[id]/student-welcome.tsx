@@ -109,13 +109,13 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
         console.log("📄 Join request status:", data.status);
 
         if (data.status === "approved") {
-          console.log("✅ Join request approved! Redirecting to room...");
+          console.log("✅ Join request approved! Redirecting to BBB room...");
           
           // Simple room name: just the teacher's name
           const teacherKey = teacherName.toLowerCase();
           const roomName = teacherKey; // "roman" or "violet"
-          const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&isTutor=false`;
-          console.log("🚀 Joining room:", roomUrl);
+          const roomUrl = `/bbb-room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}`;
+          console.log("🚀 Joining BBB room:", roomUrl);
           router.push(roomUrl);
         } else if (data.status === "denied") {
           console.log("❌ Join request denied");
