@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, AlertCircle, Pencil } from "lucide-react";
 import AnnotationOverlay from "@/components/AnnotationOverlay";
+import MeetingFeedback from "@/components/MeetingFeedback";
 import { cn } from "@/lib/utils";
 
 interface JitsiRoomProps {
@@ -40,9 +41,24 @@ export default function JitsiRoom({
   const [error, setError] = useState<string | null>(null);
   const [showAnnotations, setShowAnnotations] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [meetingEnded, setMeetingEnded] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const router = useRouter();
 
-  // Handle redirects when meeting ends or errors occur
+  // Handle meeting end - show feedback for students, redirect teachers
+  const handleMeetingEnd = () => {
+    setMeetingEnded(true);
+    
+    if (isTutor) {
+      // Teachers redirect directly
+      handleRedirect();
+    } else {
+      // Students see feedback screen
+      setShowFeedback(true);
+    }
+  };
+
+  // Handle final redirect after feedback (or directly for teachers)
   const handleRedirect = () => {
     if (onLeave) {
       onLeave(); // Use parent's handler if provided
@@ -59,6 +75,18 @@ export default function JitsiRoom({
         router.push("/");
       }
     }
+  };
+
+  // Handle feedback submission
+  const handleFeedbackSubmit = async (rating: number, comment: string) => {
+    // TODO: Save feedback to database
+    console.log("Feedback submitted:", { rating, comment, studentId, meetingID });
+    
+    // Small delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Redirect after submission
+    handleRedirect();
   };
 
   useEffect(() => {
@@ -202,13 +230,13 @@ export default function JitsiRoom({
         // Sometimes prejoinPageEnabled: false doesn't work with External API
         api.on('readyToClose', () => {
           console.log("Jitsi: Ready to close - meeting ended");
-          handleRedirect();
+          handleMeetingEnd();
         });
 
         // Listen for when user clicks "Leave" button
         api.addListener('videoConferenceLeft', () => {
           console.log("Jitsi: User left the conference");
-          handleRedirect();
+          handleMeetingEnd();
         });
 
         // Listen for screen sharing events
@@ -263,18 +291,22 @@ export default function JitsiRoom({
           }
         }, 4000); // Wait 4 seconds before trying alternatives
 
-        // Error handling - redirect on critical errors
+        // Error handling - only show for actual errors (not normal meeting end)
         api.addEventListener("errorOccurred", (event: any) => {
           console.error("Jitsi error:", event);
+          
+          // Check if this is a critical error that needs user attention
           const errorMsg = event?.error?.message || "An error occurred in the meeting";
           
-          // Show error briefly then redirect
-          setError(`${errorMsg}. Redirecting...`);
-          
-          // Redirect after 3 seconds
-          setTimeout(() => {
-            handleRedirect();
-          }, 3000);
+          // Only show error if meeting hasn't ended normally
+          if (!meetingEnded) {
+            setError(`${errorMsg}. Redirecting...`);
+            
+            // Redirect after 3 seconds
+            setTimeout(() => {
+              handleRedirect();
+            }, 3000);
+          }
         });
       } catch (err: any) {
         console.error("Error initializing Jitsi:", err);
@@ -294,7 +326,18 @@ export default function JitsiRoom({
     };
   }, [meetingID, participantName, isTutor, studentId, router]); // Added router to deps
 
-  if (error) {
+  // Show feedback screen for students when meeting ends
+  if (showFeedback && !isTutor) {
+    return (
+      <MeetingFeedback
+        participantName={participantName}
+        onSubmit={handleFeedbackSubmit}
+      />
+    );
+  }
+
+  // Only show error screen for actual errors (not normal meeting end)
+  if (error && !meetingEnded) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-red-50 to-pink-100">
         <Card className="w-96">
