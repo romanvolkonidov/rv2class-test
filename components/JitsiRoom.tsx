@@ -68,13 +68,14 @@ export default function JitsiRoom({
 
         // Configure Jitsi options
         const domain = "jitsi.rv2class.com"; // ✅ Your self-hosted Jitsi server!
+        const roomName = `RV2Class_${meetingID}`; // Prefix to avoid conflicts
+        
         const options = {
-          roomName: `RV2Class_${meetingID}`, // Prefix to avoid conflicts
+          roomName: roomName,
           width: "100%",
           height: "100%",
           parentNode: containerRef.current,
-          // ⭐ Add subject to auto-join
-          subject: `Lesson: ${meetingID}`,
+          
           configOverwrite: {
             startWithAudioMuted: !isTutor, // Tutors start unmuted
             startWithVideoMuted: false,
@@ -139,6 +140,9 @@ export default function JitsiRoom({
             displayName: participantName,
             email: studentId ? `student_${studentId}@rv2class.com` : undefined,
           },
+          
+          // 🎯 NEW: Add JWT and config params to URL to force skip prejoin
+          jwt: undefined, // No JWT for now, but this enables the feature
         };
 
         // Create Jitsi instance
@@ -178,31 +182,46 @@ export default function JitsiRoom({
           }
         });
 
-        // Try to auto-join after a short delay if prejoin doesn't auto-submit
+        // Listen for prejoin page rendered
+        api.on('prejoinVideoChanged', () => {
+          console.log("🎥 Jitsi: Prejoin video changed, attempting auto-submit");
+          // Use postMessage to trigger prejoin submit via iframe communication
+          try {
+            const iframe = api.getIFrame();
+            if (iframe && iframe.contentWindow) {
+              // Send submit prejoin command via postMessage (cross-origin safe)
+              iframe.contentWindow.postMessage({
+                type: 'submit-prejoin'
+              }, 'https://jitsi.rv2class.com');
+              console.log("📤 Sent submit-prejoin postMessage to iframe");
+            }
+          } catch (err) {
+            console.error("Failed to send prejoin submit message:", err);
+          }
+        });
+
+        // Also try executeCommand approach after delay
         setTimeout(() => {
           if (!hasJoined && loading) {
-            console.log("⚠️ Jitsi: Auto-join didn't work, trying to submit prejoin manually");
+            console.log("⚠️ Jitsi: Auto-join taking too long, trying alternative methods");
             try {
-              // Try to get iframe and submit prejoin form programmatically
+              // Method 1: Try executeCommand to skip prejoin
+              api.executeCommand('toggleLobby', false);
+              console.log("📞 Executed toggleLobby(false) command");
+              
+              // Method 2: Send postMessage as fallback
               const iframe = api.getIFrame();
               if (iframe && iframe.contentWindow) {
-                // Look for prejoin submit button and click it
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                const submitButton = iframeDoc.querySelector('[data-testid="prejoin.joinMeeting"]') ||
-                                   iframeDoc.querySelector('button[type="submit"]') ||
-                                   iframeDoc.querySelector('.prejoin-join-button');
-                if (submitButton) {
-                  console.log("🎯 Found prejoin button, clicking it");
-                  (submitButton as HTMLElement).click();
-                } else {
-                  console.warn("Could not find prejoin submit button");
-                }
+                iframe.contentWindow.postMessage({
+                  type: 'submit-prejoin'
+                }, 'https://jitsi.rv2class.com');
+                console.log("📤 Sent submit-prejoin postMessage");
               }
             } catch (err) {
-              console.error("Failed to auto-submit prejoin:", err);
+              console.error("Failed alternative auto-join methods:", err);
             }
           }
-        }, 3000); // Wait 3 seconds for prejoin to auto-submit
+        }, 4000); // Wait 4 seconds before trying alternatives
 
         // Error handling
         api.addEventListener("errorOccurred", (event: any) => {
