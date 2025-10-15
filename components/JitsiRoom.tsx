@@ -154,33 +154,55 @@ export default function JitsiRoom({
           }
         }, 30000);
 
+        // Track if we've successfully joined
+        let hasJoined = false;
+        
         // Listen for successful conference join
-        api.addEventListener("videoConferenceJoined", () => {
+        api.addListener("videoConferenceJoined", () => {
           console.log("✅ Jitsi: Conference joined successfully");
+          hasJoined = true;
           clearTimeout(connectionTimeout);
           setLoading(false);
 
-          // If tutor, grant moderator rights
           if (isTutor) {
             console.log("Jitsi: Tutor joined as moderator");
           }
         });
 
-        // Handle user leaving
-        api.addEventListener("videoConferenceLeft", () => {
-          console.log("Jitsi: User left conference");
-          if (onLeave) {
-            onLeave();
-          }
-        });
-
-        // Handle ready state
-        api.addEventListener("readyToClose", () => {
+        // **CRITICAL**: Listen for when iframe loads and auto-submit prejoin
+        // Sometimes prejoinPageEnabled: false doesn't work with External API
+        api.on('readyToClose', () => {
           console.log("Jitsi: Ready to close");
           if (onLeave) {
             onLeave();
           }
         });
+
+        // Try to auto-join after a short delay if prejoin doesn't auto-submit
+        setTimeout(() => {
+          if (!hasJoined && loading) {
+            console.log("⚠️ Jitsi: Auto-join didn't work, trying to submit prejoin manually");
+            try {
+              // Try to get iframe and submit prejoin form programmatically
+              const iframe = api.getIFrame();
+              if (iframe && iframe.contentWindow) {
+                // Look for prejoin submit button and click it
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const submitButton = iframeDoc.querySelector('[data-testid="prejoin.joinMeeting"]') ||
+                                   iframeDoc.querySelector('button[type="submit"]') ||
+                                   iframeDoc.querySelector('.prejoin-join-button');
+                if (submitButton) {
+                  console.log("🎯 Found prejoin button, clicking it");
+                  (submitButton as HTMLElement).click();
+                } else {
+                  console.warn("Could not find prejoin submit button");
+                }
+              }
+            } catch (err) {
+              console.error("Failed to auto-submit prejoin:", err);
+            }
+          }
+        }, 3000); // Wait 3 seconds for prejoin to auto-submit
 
         // Error handling
         api.addEventListener("errorOccurred", (event: any) => {
