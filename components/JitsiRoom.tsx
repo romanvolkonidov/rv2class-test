@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, AlertCircle, Pencil, UserCheck, UserX, Bell } from "lucide-react";
 import MeetingFeedback from "@/components/MeetingFeedback";
 import TldrawWhiteboard from "@/components/TldrawWhiteboard";
+import JitsiAnnotationOverlay from "@/components/JitsiAnnotationOverlay";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
@@ -63,6 +64,9 @@ export default function JitsiRoom({
   const [meetingEnded, setMeetingEnded] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
+  const [showAnnotations, setShowAnnotations] = useState(false);
+  const [annotationsClosing, setAnnotationsClosing] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [knockingParticipants, setKnockingParticipants] = useState<KnockingParticipant[]>([]);
   const [admittedIds, setAdmittedIds] = useState<Set<string>>(new Set());
   const [firebaseJoinRequests, setFirebaseJoinRequests] = useState<FirebaseJoinRequest[]>([]);
@@ -524,6 +528,79 @@ export default function JitsiRoom({
     return () => unsubscribe();
   }, [isTutor, meetingID]);
 
+  // 🖥️ DETECT SCREEN SHARE STATUS
+  useEffect(() => {
+    if (!jitsiApiRef.current) return;
+
+    const checkScreenShare = () => {
+      try {
+        // Check if screen sharing is active
+        const screenSharingStatus = jitsiApiRef.current.isVideoMuted();
+        
+        // Alternative: Listen for screen share events
+        // Jitsi fires 'screenSharingStatusChanged' event
+      } catch (error) {
+        console.error('Error checking screen share status:', error);
+      }
+    };
+
+    // Listen for screen share events
+    const handleScreenShareToggled = (event: any) => {
+      console.log('📺 Screen share toggled:', event);
+      setIsScreenSharing(event.on);
+      
+      // If screen share stops, also hide annotations
+      if (!event.on && showAnnotations) {
+        setAnnotationsClosing(true);
+        setTimeout(() => {
+          setShowAnnotations(false);
+          setAnnotationsClosing(false);
+        }, 300);
+      }
+    };
+
+    jitsiApiRef.current.addListener('screenSharingStatusChanged', handleScreenShareToggled);
+
+    return () => {
+      if (jitsiApiRef.current) {
+        jitsiApiRef.current.removeListener('screenSharingStatusChanged', handleScreenShareToggled);
+      }
+    };
+  }, [showAnnotations]);
+
+  // 📝 LISTEN FOR ANNOTATION TOGGLE MESSAGES (Students only)
+  useEffect(() => {
+    if (!jitsiApiRef.current || isTutor) return;
+
+    const handleEndpointMessage = (participant: any, data: any) => {
+      try {
+        const message = JSON.parse(data);
+        if (message.type === 'toggleAnnotations') {
+          if (message.show) {
+            setShowAnnotations(true);
+            setAnnotationsClosing(false);
+          } else {
+            setAnnotationsClosing(true);
+            setTimeout(() => {
+              setShowAnnotations(false);
+              setAnnotationsClosing(false);
+            }, 300);
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing annotation message:', error);
+      }
+    };
+
+    jitsiApiRef.current.addListener('endpointTextMessageReceived', handleEndpointMessage);
+
+    return () => {
+      if (jitsiApiRef.current) {
+        jitsiApiRef.current.removeListener('endpointTextMessageReceived', handleEndpointMessage);
+      }
+    };
+  }, [isTutor]);
+
   // Helper to play notification sound
   const playNotificationSound = () => {
     try {
@@ -734,8 +811,8 @@ export default function JitsiRoom({
         </div>
       )}
       
-      {/* Whiteboard Toggle Button - Teachers Only, Round Icon in Bottom Left */}
-      {!loading && isTutor && (
+      {/* Whiteboard Toggle Button - Teachers Only, shown when NOT screen sharing */}
+      {!loading && isTutor && !isScreenSharing && (
         <div className="absolute bottom-6 left-6 z-[9999]">
           <Button
             onClick={() => setShowWhiteboard(!showWhiteboard)}
@@ -752,12 +829,82 @@ export default function JitsiRoom({
           </Button>
         </div>
       )}
+
+      {/* Annotation Toggle Button - Teachers Only, shown when screen sharing */}
+      {!loading && isTutor && isScreenSharing && (
+        <div className="absolute bottom-6 left-6 z-[9999]">
+          <Button
+            onClick={() => {
+              if (showAnnotations) {
+                setAnnotationsClosing(true);
+                setTimeout(() => {
+                  setShowAnnotations(false);
+                  setAnnotationsClosing(false);
+                }, 300);
+              } else {
+                setShowAnnotations(true);
+              }
+              
+              // Broadcast toggle to all participants
+              if (jitsiApiRef.current) {
+                try {
+                  jitsiApiRef.current.executeCommand('sendEndpointTextMessage', '', JSON.stringify({
+                    type: 'toggleAnnotations',
+                    show: !showAnnotations
+                  }));
+                } catch (error) {
+                  console.error('Error broadcasting annotation toggle:', error);
+                }
+              }
+            }}
+            size="icon"
+            className={cn(
+              "h-14 w-14 rounded-full shadow-xl transition-all duration-200 backdrop-blur-sm",
+              showAnnotations 
+                ? "bg-green-600/95 hover:bg-green-700 text-white border-2 border-green-400" 
+                : "bg-gray-800/90 hover:bg-gray-700/90 text-white border-2 border-gray-600"
+            )}
+            title={showAnnotations ? "Hide Annotations" : "Show Annotations"}
+          >
+            <Pencil className="w-6 h-6" />
+          </Button>
+        </div>
+      )}
       
       {/* tldraw Whiteboard */}
-      {showWhiteboard && (
+      {showWhiteboard && !isScreenSharing && (
         <TldrawWhiteboard
           roomId={`rv2class-${meetingID}`}
           onClose={() => setShowWhiteboard(false)}
+        />
+      )}
+
+      {/* Annotation Overlay - Only during screen share */}
+      {showAnnotations && isScreenSharing && (
+        <JitsiAnnotationOverlay
+          onClose={() => {
+            setAnnotationsClosing(true);
+            setTimeout(() => {
+              setShowAnnotations(false);
+              setAnnotationsClosing(false);
+            }, 300);
+            
+            // Broadcast close to students
+            if (jitsiApiRef.current) {
+              try {
+                jitsiApiRef.current.executeCommand('sendEndpointTextMessage', '', JSON.stringify({
+                  type: 'toggleAnnotations',
+                  show: false
+                }));
+              } catch (error) {
+                console.error('Error broadcasting annotation close:', error);
+              }
+            }
+          }}
+          viewOnly={false}
+          isClosing={annotationsClosing}
+          isTutor={isTutor}
+          jitsiApi={jitsiApiRef.current}
         />
       )}
       
