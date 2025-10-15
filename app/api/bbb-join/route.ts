@@ -77,13 +77,15 @@ export async function POST(req: NextRequest) {
 
     // Always call create - BBB handles idempotency
     // This will succeed if meeting doesn't exist or already running
-    const meetingName = `Урок: ${roomName}`;
+    // Capitalize first letter of room name for display
+    const teacherName = roomName.charAt(0).toUpperCase() + roomName.slice(1);
+    const meetingName = `Lesson with ${teacherName}`;
     const createResult = await createMeeting({
       meetingID: roomName,
       meetingName,
       attendeePW,
       moderatorPW,
-      welcome: `Добро пожаловать на урок!`,
+      welcome: `Welcome to the lesson!`,
       maxParticipants: 10,
       record: true,
       autoStartRecording: false,
