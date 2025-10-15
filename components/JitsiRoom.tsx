@@ -72,6 +72,12 @@ export default function JitsiRoom({
   const [firebaseJoinRequests, setFirebaseJoinRequests] = useState<FirebaseJoinRequest[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
+  
+  // Draggable button state
+  const [buttonPosition, setButtonPosition] = useState({ x: 24, y: window.innerHeight - 80 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const buttonRef = useRef<HTMLDivElement>(null);
 
   // Handle meeting end - show feedback for students, redirect teachers
   const handleMeetingEnd = async () => {
@@ -212,6 +218,98 @@ export default function JitsiRoom({
     handleRedirect();
   };
 
+  // Draggable button handlers
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!buttonRef.current) return;
+    
+    setIsDragging(true);
+    const rect = buttonRef.current.getBoundingClientRect();
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging) return;
+    
+    const newX = e.clientX - dragOffset.x;
+    const newY = e.clientY - dragOffset.y;
+    
+    // Keep button within viewport bounds
+    const maxX = window.innerWidth - 56; // 56px = button width
+    const maxY = window.innerHeight - 56; // 56px = button height
+    
+    setButtonPosition({
+      x: Math.max(0, Math.min(newX, maxX)),
+      y: Math.max(0, Math.min(newY, maxY)),
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!buttonRef.current) return;
+    
+    const touch = e.touches[0];
+    setIsDragging(true);
+    const rect = buttonRef.current.getBoundingClientRect();
+    setDragOffset({
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    });
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (!isDragging || e.touches.length === 0) return;
+    
+    const touch = e.touches[0];
+    const newX = touch.clientX - dragOffset.x;
+    const newY = touch.clientY - dragOffset.y;
+    
+    // Keep button within viewport bounds
+    const maxX = window.innerWidth - 56;
+    const maxY = window.innerHeight - 56;
+    
+    setButtonPosition({
+      x: Math.max(0, Math.min(newX, maxX)),
+      y: Math.max(0, Math.min(newY, maxY)),
+    });
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Add/remove drag event listeners
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove);
+      window.addEventListener('touchend', handleTouchEnd);
+      
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('touchmove', handleTouchMove);
+        window.removeEventListener('touchend', handleTouchEnd);
+      };
+    }
+  }, [isDragging, dragOffset]);
+
+  // Initialize button position on mount and window resize
+  useEffect(() => {
+    const updateButtonPosition = () => {
+      setButtonPosition({ x: 24, y: window.innerHeight - 80 });
+    };
+    
+    window.addEventListener('resize', updateButtonPosition);
+    return () => window.removeEventListener('resize', updateButtonPosition);
+  }, []);
+
   useEffect(() => {
     // Load Jitsi Meet External API script
     const loadJitsiScript = () => {
@@ -253,8 +351,8 @@ export default function JitsiRoom({
           parentNode: containerRef.current,
           
           configOverwrite: {
-            startWithAudioMuted: !isTutor, // Tutors start unmuted
-            startWithVideoMuted: false,
+            startWithAudioMuted: false, // Everyone starts with audio ON (unmuted)
+            startWithVideoMuted: false, // Everyone starts with video ON
             enableWelcomePage: false,
             prejoinPageEnabled: false, // CRITICAL: Disable prejoin page completely
             disableDeepLinking: true,
@@ -813,9 +911,24 @@ export default function JitsiRoom({
       
       {/* Whiteboard Toggle Button - Teachers Only, shown when NOT screen sharing */}
       {!loading && isTutor && !isScreenSharing && (
-        <div className="absolute bottom-6 left-6 z-[9999]">
+        <div 
+          ref={buttonRef}
+          className="absolute z-[9999] cursor-move"
+          style={{ 
+            left: `${buttonPosition.x}px`, 
+            top: `${buttonPosition.y}px`,
+            transition: isDragging ? 'none' : 'transform 0.2s',
+          }}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+        >
           <Button
-            onClick={() => setShowWhiteboard(!showWhiteboard)}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isDragging) {
+                setShowWhiteboard(!showWhiteboard);
+              }
+            }}
             size="icon"
             className={cn(
               "h-14 w-14 rounded-full shadow-xl transition-all duration-200 backdrop-blur-sm",
@@ -823,7 +936,7 @@ export default function JitsiRoom({
                 ? "bg-blue-600/95 hover:bg-blue-700 text-white border-2 border-blue-400" 
                 : "bg-gray-800/90 hover:bg-gray-700/90 text-white border-2 border-gray-600"
             )}
-            title={showWhiteboard ? "Hide Whiteboard" : "Show Whiteboard"}
+            title={showWhiteboard ? "Hide Whiteboard" : "Show Whiteboard (Drag to move)"}
           >
             <Pencil className="w-6 h-6" />
           </Button>
@@ -832,28 +945,41 @@ export default function JitsiRoom({
 
       {/* Annotation Toggle Button - Teachers Only, shown when screen sharing */}
       {!loading && isTutor && isScreenSharing && (
-        <div className="absolute bottom-6 left-6 z-[9999]">
+        <div 
+          ref={buttonRef}
+          className="absolute z-[9999] cursor-move"
+          style={{ 
+            left: `${buttonPosition.x}px`, 
+            top: `${buttonPosition.y}px`,
+            transition: isDragging ? 'none' : 'transform 0.2s',
+          }}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+        >
           <Button
-            onClick={() => {
-              if (showAnnotations) {
-                setAnnotationsClosing(true);
-                setTimeout(() => {
-                  setShowAnnotations(false);
-                  setAnnotationsClosing(false);
-                }, 300);
-              } else {
-                setShowAnnotations(true);
-              }
-              
-              // Broadcast toggle to all participants
-              if (jitsiApiRef.current) {
-                try {
-                  jitsiApiRef.current.executeCommand('sendEndpointTextMessage', '', JSON.stringify({
-                    type: 'toggleAnnotations',
-                    show: !showAnnotations
-                  }));
-                } catch (error) {
-                  console.error('Error broadcasting annotation toggle:', error);
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isDragging) {
+                if (showAnnotations) {
+                  setAnnotationsClosing(true);
+                  setTimeout(() => {
+                    setShowAnnotations(false);
+                    setAnnotationsClosing(false);
+                  }, 300);
+                } else {
+                  setShowAnnotations(true);
+                }
+                
+                // Broadcast toggle to all participants
+                if (jitsiApiRef.current) {
+                  try {
+                    jitsiApiRef.current.executeCommand('sendEndpointTextMessage', '', JSON.stringify({
+                      type: 'toggleAnnotations',
+                      show: !showAnnotations
+                    }));
+                  } catch (error) {
+                    console.error('Error broadcasting annotation toggle:', error);
+                  }
                 }
               }
             }}
@@ -864,7 +990,7 @@ export default function JitsiRoom({
                 ? "bg-green-600/95 hover:bg-green-700 text-white border-2 border-green-400" 
                 : "bg-gray-800/90 hover:bg-gray-700/90 text-white border-2 border-gray-600"
             )}
-            title={showAnnotations ? "Hide Annotations" : "Show Annotations"}
+            title={showAnnotations ? "Hide Annotations" : "Show Annotations (Drag to move)"}
           >
             <Pencil className="w-6 h-6" />
           </Button>
