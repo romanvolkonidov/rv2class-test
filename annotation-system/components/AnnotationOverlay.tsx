@@ -3,8 +3,13 @@
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, ChevronUp, Type, MousePointer2, Edit, GripVertical, Move } from "lucide-react";
-import { useRoomContext, useDataChannel } from "@livekit/components-react";
+// LiveKit removed - using BBB/Jitsi instead
+// import { useRoomContext, useDataChannel } from "@livekit/components-react";
 import { cn } from "@/lib/utils";
+
+// Placeholder hooks for LiveKit functionality (not used with BBB/Jitsi)
+const useRoomContext = () => null;
+const useDataChannel = (callback: any) => {};
 
 type AnnotationTool = "pointer" | "pencil" | "eraser" | "rectangle" | "circle" | "text";
 
