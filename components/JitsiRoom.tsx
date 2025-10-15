@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, AlertCircle, Pencil, UserCheck, UserX, Bell } from "lucide-react";
 import MeetingFeedback from "@/components/MeetingFeedback";
-import TldrawWhiteboard from "@/components/TldrawWhiteboard";
+import ExcalidrawWhiteboard from "@/components/ExcalidrawWhiteboard";
 import JitsiAnnotationOverlay from "@/components/JitsiAnnotationOverlay";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/firebase";
@@ -871,11 +871,12 @@ export default function JitsiRoom({
         </div>
       )}
       
-      {/* tldraw Whiteboard */}
+      {/* Excalidraw Whiteboard */}
       {showWhiteboard && !isScreenSharing && (
-        <TldrawWhiteboard
+        <ExcalidrawWhiteboard
           roomId={`rv2class-${meetingID}`}
           onClose={() => setShowWhiteboard(false)}
+          jitsiApi={jitsiApiRef.current}
         />
       )}
 
