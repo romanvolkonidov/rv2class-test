@@ -102,10 +102,10 @@ export default function MeetingFeedback({
           {/* Optional Comment */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 block">
-              Поделитесь своими мыслями (необязательно)
+              Как прошёл урок?
             </label>
             <Textarea
-              placeholder="Что вы узнали сегодня? Есть предложения?"
+              placeholder="Есть предложения? Как ты можешь использовать то, что узнал?"
               value={comment}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setComment(e.target.value)}
               className="min-h-[100px] resize-none"
