@@ -39,6 +39,7 @@ export default function JitsiRoom({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAnnotations, setShowAnnotations] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const router = useRouter();
 
   // Handle redirects when meeting ends or errors occur
@@ -210,6 +211,17 @@ export default function JitsiRoom({
           handleRedirect();
         });
 
+        // Listen for screen sharing events
+        api.addListener('screenSharingStatusChanged', (event: any) => {
+          console.log("📺 Jitsi: Screen sharing status changed:", event);
+          setIsScreenSharing(event.on);
+          
+          // Auto-hide annotations when screen share stops
+          if (!event.on && showAnnotations) {
+            setShowAnnotations(false);
+          }
+        });
+
         // Listen for prejoin page rendered
         api.on('prejoinVideoChanged', () => {
           console.log("🎥 Jitsi: Prejoin video changed, attempting auto-submit");
@@ -317,22 +329,20 @@ export default function JitsiRoom({
         </div>
       )}
       
-      {/* Annotation Toggle Button */}
-      {!loading && (
-        <div className="absolute top-4 right-4 z-50">
+      {/* Annotation Toggle Button - Only visible during screen share */}
+      {!loading && isScreenSharing && (
+        <div className="absolute bottom-6 left-6 z-50">
           <Button
             onClick={() => setShowAnnotations(!showAnnotations)}
-            variant={showAnnotations ? "default" : "secondary"}
-            size="lg"
+            size="icon"
             className={cn(
-              "shadow-lg transition-all duration-300",
+              "h-14 w-14 rounded-full shadow-2xl transition-all duration-300 border-2",
               showAnnotations 
-                ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                : "bg-white hover:bg-gray-100 text-gray-800"
+                ? "bg-blue-600 hover:bg-blue-700 border-blue-400 text-white scale-110" 
+                : "bg-black hover:bg-gray-800 border-gray-700 text-white"
             )}
           >
-            <Pencil className="w-5 h-5 mr-2" />
-            {showAnnotations ? "Hide Annotations" : "Show Annotations"}
+            <Pencil className="w-6 h-6" />
           </Button>
         </div>
       )}
