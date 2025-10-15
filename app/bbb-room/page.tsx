@@ -35,9 +35,14 @@ function BBBRoomContent() {
   const handleLeave = () => {
     // Navigate back to appropriate page
     if (isTutor) {
-      router.push(`/${userName}`); // Tutor home page
+      // Tutor goes back to their home page (e.g., /roman or /violet)
+      router.push(`/${roomName}`);
+    } else if (studentId) {
+      // Student goes back to their welcome page
+      router.push(`/student/${studentId}`);
     } else {
-      router.push('/'); // Student landing page
+      // Fallback to home
+      router.push('/');
     }
   };
 

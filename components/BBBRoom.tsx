@@ -64,6 +64,29 @@ export default function BBBRoom({
     fetchJoinUrl();
   }, [meetingID, participantName, isTutor, studentId]);
 
+  // Listen for BBB window close/leave events
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // BBB sends messages when user leaves
+      if (event.data && typeof event.data === 'object') {
+        if (event.data.response === 'loggedOut' || 
+            event.data.response === 'endMeeting' ||
+            event.data === 'userLeftMeeting') {
+          console.log('BBB: User left meeting');
+          if (onLeave) {
+            onLeave();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [onLeave]);
+
   // Handle iframe load
   const handleIframeLoad = () => {
     console.log('BBB iframe loaded successfully');

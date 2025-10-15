@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
       autoStartRecording: false,
       allowStartStopRecording: true,
       muteOnStart: false,
-      guestPolicy: 'ALWAYS_ACCEPT',
+      guestPolicy: 'ASK_MODERATOR', // Students wait in BBB's waiting room until you approve
       meta: {
         tutorName: isTutor ? participantName : '',
         studentId: studentId || '',
