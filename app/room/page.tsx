@@ -14,12 +14,16 @@ function RoomContent() {
   const userName = searchParams?.get("name") || "";
   const isTutor = searchParams?.get("isTutor") === "true" || searchParams?.get("tutor") === "true";
   const studentId = searchParams?.get("studentId") || searchParams?.get("sessionCode") || undefined;
+  const subject = searchParams?.get("subject") || "English"; // Default to English
+  const teacherName = searchParams?.get("teacherName") || (isTutor ? userName : "Teacher"); // Use teacher's name for title
 
   console.log("Room Page - Jitsi Integration", { 
     roomName, 
     userName, 
     isTutor, 
-    studentId 
+    studentId,
+    subject,
+    teacherName
   });
 
   if (!roomName || !userName) {
@@ -60,6 +64,8 @@ function RoomContent() {
       participantName={userName}
       isTutor={isTutor}
       studentId={studentId}
+      subject={subject}
+      teacherName={teacherName}
       onLeave={handleLeave}
     />
   );

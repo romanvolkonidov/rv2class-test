@@ -81,7 +81,7 @@ export default function JoinTutorRoom({
                   return;
                 }
                 
-                const joinUrl = `/room?room=${encodeURIComponent(targetRoomName)}&name=${encodeURIComponent(studentName.trim())}&isTutor=false&sessionCode=${targetSessionCode}`;
+                const joinUrl = `/room?room=${encodeURIComponent(targetRoomName)}&name=${encodeURIComponent(studentName.trim())}&isTutor=false&sessionCode=${targetSessionCode}&subject=English&teacherName=${encodeURIComponent(name)}`;
                 console.log(`🚀 Navigating student to room:`, joinUrl);
                 
                 router.push(joinUrl);

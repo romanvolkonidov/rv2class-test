@@ -20,6 +20,8 @@ interface JitsiRoomProps {
   participantName: string;
   isTutor: boolean;
   studentId?: string;
+  subject?: string; // e.g., "English"
+  teacherName?: string; // e.g., "Roman" or "Violeta"
   onLeave?: () => void;
 }
 
@@ -39,6 +41,8 @@ export default function JitsiRoom({
   participantName,
   isTutor,
   studentId,
+  subject = "English", // Default to English
+  teacherName, // Teacher's name for title
   onLeave,
 }: JitsiRoomProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -199,11 +203,20 @@ export default function JitsiRoom({
             disableDeepLinking: true,
             defaultLanguage: "en",
             enableClosePage: false,
+            // Set meeting title: "English with Roman" or "English with Violeta"
+            subject: `${subject} with ${isTutor ? participantName : (teacherName || 'Teacher')}`,
             
             // 🔒 ROBUST WAITING ROOM CONFIGURATION
             enableLobbyChat: false, // Don't let students chat in lobby
             autoKnockLobby: true, // Automatically knock when entering lobby
             lobbyEnabled: true, // ALWAYS enable lobby for the room
+            hideLobbyButton: isTutor ? false : true, // Students can't manually toggle lobby
+            
+            // Prevent students from becoming moderators
+            ...(!isTutor && {
+              disableModeratorIndicator: true,
+              // Force students to always need approval
+            }),
             
             // Let Jitsi use server's default config for connection settings
             // Only override STUN servers for better connectivity
@@ -317,6 +330,38 @@ export default function JitsiRoom({
                 console.log("getLobbyParticipants not available:", err);
               }
             }, 1000); // Wait 1 second for lobby to be fully initialized
+          } else {
+            // STUDENT JOINED - Check if teacher is present
+            console.log("🎓 Student joined conference");
+            
+            // Check if there are any moderators/teachers in the room
+            setTimeout(() => {
+              try {
+                const participants = api.getParticipantsInfo();
+                const hasModerator = participants.some((p: any) => p.role === 'moderator');
+                
+                console.log("👥 Participants in room:", participants.length, "Moderator present:", hasModerator);
+                
+                if (!hasModerator && participants.length === 1) {
+                  // Student is alone - they joined before teacher
+                  console.log("⚠️ Student joined empty room - showing waiting message");
+                  setError("Teacher hasn't started the lesson yet. Please wait...");
+                  setLoading(true); // Show loading state
+                  
+                  // Leave and wait for teacher to start
+                  setTimeout(() => {
+                    api.executeCommand('hangup');
+                    if (onLeave) {
+                      onLeave();
+                    } else {
+                      router.push(`/student/${studentId}`);
+                    }
+                  }, 3000);
+                }
+              } catch (err) {
+                console.error("Failed to check for moderator:", err);
+              }
+            }, 1000);
           }
         });
 

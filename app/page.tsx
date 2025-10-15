@@ -41,7 +41,7 @@ export default function Home() {
       });
       
       // Join the room (always Jitsi)
-      router.push(`/room?room=${room}&name=${teacher}&isTutor=true`);
+      router.push(`/room?room=${room}&name=${teacher}&isTutor=true&subject=English`);
     } catch (error) {
       console.error("Error starting lesson:", error);
       alert("Failed to start lesson. Please try again.");
@@ -56,7 +56,7 @@ export default function Home() {
 
   const rejoinRoom = (roomName: string, teacher: string) => {
     const teacherName = teacher.charAt(0).toUpperCase() + teacher.slice(1); // "roman" -> "Roman"
-    router.push(`/room?room=${roomName}&name=${teacherName}&isTutor=true`);
+    router.push(`/room?room=${roomName}&name=${teacherName}&isTutor=true&subject=English`);
   };
 
   return (

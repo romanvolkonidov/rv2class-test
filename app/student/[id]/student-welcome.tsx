@@ -116,7 +116,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
           const roomName = teacherKey; // "roman" or "violet"
           
           // Always use Jitsi
-          const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&isTutor=false`;
+          const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&isTutor=false&subject=English&teacherName=${encodeURIComponent(teacherName)}`;
           console.log("🚀 Joining Jitsi room:", roomUrl);
           router.push(roomUrl);
         } else if (data.status === "denied") {
@@ -381,7 +381,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     console.log(`🚀 Joining ${teacherName}'s room: ${roomName}`);
     
     // Always use Jitsi
-    const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&isTutor=false`;
+    const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&isTutor=false&subject=English&teacherName=${encodeURIComponent(teacherName)}`;
     console.log("🚀 Redirecting to Jitsi room:", roomUrl);
     router.push(roomUrl);
   };
