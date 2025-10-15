@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Video, Users, BookOpen, Calendar, Play, User, X, LogIn, MessageSquare } from "lucide-react";
-import { db } from "@/lib/firebase";
+import { db, countUnseenHomework } from "@/lib/firebase";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import FeedbackList from "@/components/FeedbackList";
 
@@ -20,6 +20,7 @@ export default function Home() {
   const [showTeacherSelect, setShowTeacherSelect] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<"Roman" | "Violet" | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [unseenHomeworkCount, setUnseenHomeworkCount] = useState<number>(0);
 
   const handleTeacherSelect = async (teacher: "Roman" | "Violet") => {
     setSelectedTeacher(teacher);
@@ -54,6 +55,15 @@ export default function Home() {
     setShowTeacherSelect(false);
     setSelectedTeacher(null);
   };
+
+  // Load unseen homework count
+  useEffect(() => {
+    const loadUnseenCount = async () => {
+      const count = await countUnseenHomework();
+      setUnseenHomeworkCount(count);
+    };
+    loadUnseenCount();
+  }, []);
 
   const rejoinRoom = (roomName: string, teacher: string) => {
     const teacherName = teacher.charAt(0).toUpperCase() + teacher.slice(1); // "roman" -> "Roman"
@@ -150,7 +160,7 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/homework")}>
+          <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 hover:shadow-lg transition-shadow cursor-pointer relative" onClick={() => router.push("/teacher/homeworks")}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <BookOpen className="h-6 w-6 text-green-600" />
@@ -159,9 +169,14 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Create and review homework assignments
+                Review completed homework submissions
               </p>
             </CardContent>
+            {unseenHomeworkCount > 0 && (
+              <div className="absolute top-3 right-3 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold shadow-lg">
+                {unseenHomeworkCount}
+              </div>
+            )}
           </Card>
 
           <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/schedule")}>

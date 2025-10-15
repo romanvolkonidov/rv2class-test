@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { UserCircle, Video, BookOpen, GraduationCap, Sparkles, Mic, MicOff, VideoOff, CheckCircle, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import WaitingRoom, { WaitingRoomHandle } from "@/components/WaitingRoom";
-import { db } from "@/lib/firebase";
+import { db, countUncompletedHomework } from "@/lib/firebase";
 import { doc, onSnapshot, getDoc, deleteDoc } from "firebase/firestore";
 
 interface StudentData {
@@ -31,6 +31,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   const [hasShownWelcomePopup, setHasShownWelcomePopup] = useState(false);
   const [isWaitingForTeacher, setIsWaitingForTeacher] = useState(false);
   const [joinRequestId, setJoinRequestId] = useState<string | null>(null);
+  const [uncompletedCount, setUncompletedCount] = useState<number>(0);
 
   const teacherName = student.teacher || "Roman";
   const teacherPath = `/${teacherName.toLowerCase()}`;
@@ -78,6 +79,15 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   useEffect(() => {
     checkPermissions();
   }, []);
+
+  // Load uncompleted homework count
+  useEffect(() => {
+    const loadUncompletedCount = async () => {
+      const count = await countUncompletedHomework(student.id);
+      setUncompletedCount(count);
+    };
+    loadUncompletedCount();
+  }, [student.id]);
 
   // Cleanup streams on unmount
   useEffect(() => {
@@ -520,13 +530,18 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
                 <div className="pt-2">
                   <Button
                     size="sm"
-                    className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl font-semibold touch-manipulation active:scale-95 select-none h-12 px-4 border-0"
+                    className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl font-semibold touch-manipulation active:scale-95 select-none h-12 px-4 border-0 relative"
                     onClick={handleHomeworks}
                   >
                     <div className="flex items-center gap-2 justify-center">
                       <BookOpen className="h-5 w-5" />
                       <span className="text-base">Домашние задания</span>
                     </div>
+                    {uncompletedCount > 0 && (
+                      <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold shadow-lg">
+                        {uncompletedCount}
+                      </div>
+                    )}
                   </Button>
                 </div>
               </div>

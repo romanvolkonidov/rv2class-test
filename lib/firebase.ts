@@ -90,6 +90,7 @@ export interface HomeworkReport {
   submittedAnswers?: any;
   correctAnswers?: number;
   totalQuestions?: number;
+  seenByTeacher?: boolean;
 }
 
 // Question interface
@@ -304,12 +305,19 @@ export const submitHomeworkAnswers = async (
         if (typeof question.correctAnswer === 'number' && question.options) {
           // Compare with the option at that index
           const correctOption = question.options[question.correctAnswer];
-          isCorrect = correctOption === answer.answer;
+          // Case-insensitive comparison with trimming
+          const userAnswerNorm = String(answer.answer).trim().toLowerCase();
+          const correctOptionNorm = String(correctOption).trim().toLowerCase();
+          isCorrect = correctOptionNorm === userAnswerNorm;
           console.log(`  Comparing index ${question.correctAnswer} (option: "${correctOption}") with user answer`);
+          console.log(`  Normalized: "${correctOptionNorm}" === "${userAnswerNorm}"`);
         } else {
-          // Direct string comparison (with type coercion for safety)
-          isCorrect = String(question.correctAnswer) === String(answer.answer);
+          // Direct string comparison with normalization
+          const userAnswerNorm = String(answer.answer).trim().toLowerCase();
+          const correctAnswerNorm = String(question.correctAnswer).trim().toLowerCase();
+          isCorrect = correctAnswerNorm === userAnswerNorm;
           console.log(`  Direct string comparison`);
+          console.log(`  Normalized: "${correctAnswerNorm}" === "${userAnswerNorm}"`);
         }
         
         console.log(`  Match: ${isCorrect}`);
@@ -326,6 +334,13 @@ export const submitHomeworkAnswers = async (
     console.log(`\n=== FINAL SCORE: ${correctCount}/${totalCount} (${Math.round((correctCount / totalCount) * 100)}%) ===\n`);
     
     const score = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+    
+    // CRITICAL DEBUG: Log the exact values being saved
+    console.log('📊 About to save these values:');
+    console.log(`   correctAnswers: ${correctCount} (type: ${typeof correctCount})`);
+    console.log(`   totalQuestions: ${totalCount} (type: ${typeof totalCount})`);
+    console.log(`   score: ${score} (type: ${typeof score})`);
+    console.log(`   answers array length: ${answers.length}`);
     
     // Update assignment status
     const assignmentRef = doc(db, "telegramAssignments", assignmentId);
@@ -666,6 +681,92 @@ export const fetchAllStudentRatings = async (tutorKey?: string): Promise<any[]> 
   } catch (error) {
     console.error('❌ Error fetching all student ratings:', error);
     throw error;
+  }
+};
+
+// Count uncompleted homework for a student
+export const countUncompletedHomework = async (studentId: string): Promise<number> => {
+  try {
+    const assignments = await fetchStudentHomework(studentId);
+    const reports = await fetchHomeworkReports(studentId);
+    
+    // Get completed homework IDs
+    const completedIds = new Set(reports.map(r => r.homeworkId));
+    
+    // Count assignments that don't have a report
+    const uncompletedCount = assignments.filter(a => !completedIds.has(a.id)).length;
+    
+    return uncompletedCount;
+  } catch (error) {
+    console.error("Error counting uncompleted homework:", error);
+    return 0;
+  }
+};
+
+// Count unseen homework reports (not yet viewed by teacher)
+export const countUnseenHomework = async (): Promise<number> => {
+  try {
+    const reportsRef = collection(db, "telegramHomeworkReports");
+    const querySnapshot = await getDocs(reportsRef);
+    
+    // Count reports that don't have seenByTeacher or it's false
+    const unseenCount = querySnapshot.docs.filter(doc => {
+      const data = doc.data();
+      return !data.seenByTeacher;
+    }).length;
+    
+    return unseenCount;
+  } catch (error) {
+    console.error("Error counting unseen homework:", error);
+    return 0;
+  }
+};
+
+// Fetch all completed homework reports with student information
+export const fetchAllCompletedHomework = async (): Promise<Array<HomeworkReport & { studentName?: string }>> => {
+  try {
+    const reportsRef = collection(db, "telegramHomeworkReports");
+    const querySnapshot = await getDocs(reportsRef);
+    
+    // Get all students to map IDs to names
+    const students = await fetchStudents();
+    const studentMap = new Map(students.map(s => [s.id, s.name]));
+    
+    // Map reports with student names
+    const reports = querySnapshot.docs.map(doc => {
+      const data = serializeTimestamp(doc.data());
+      return {
+        id: doc.id,
+        ...data,
+        studentName: studentMap.get(data.studentId) || "Unknown Student"
+      };
+    }) as Array<HomeworkReport & { studentName?: string }>;
+    
+    // Sort by completedAt, latest first
+    reports.sort((a, b) => {
+      const aTime = a.completedAt?.seconds || 0;
+      const bTime = b.completedAt?.seconds || 0;
+      return bTime - aTime;
+    });
+    
+    return reports;
+  } catch (error) {
+    console.error("Error fetching all completed homework:", error);
+    return [];
+  }
+};
+
+// Mark homework report as seen by teacher
+export const markHomeworkAsSeen = async (reportId: string): Promise<boolean> => {
+  try {
+    const reportRef = doc(db, "telegramHomeworkReports", reportId);
+    await updateDoc(reportRef, {
+      seenByTeacher: true
+    });
+    return true;
+  } catch (error) {
+    console.error("Error marking homework as seen:", error);
+    return false;
   }
 };
 

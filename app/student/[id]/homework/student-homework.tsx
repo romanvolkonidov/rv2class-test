@@ -387,8 +387,14 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                           <div className="mt-2 flex items-center gap-1 justify-end">
                             <Trophy className="h-4 w-4 text-yellow-600" />
                             <span className="text-lg font-bold text-yellow-600">
-                              {report.correctAnswers}/{report.totalQuestions}
+                              {report.correctAnswers ?? 0}/{report.totalQuestions ?? 0}
                             </span>
+                          </div>
+                        )}
+                        {/* Debug info - remove after testing */}
+                        {report && (
+                          <div className="mt-1 text-xs text-gray-500 text-right">
+                            Score: {report.score}% | CA: {report.correctAnswers} | TQ: {report.totalQuestions}
                           </div>
                         )}
                       </div>
