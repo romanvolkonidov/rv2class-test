@@ -698,13 +698,15 @@ export default function JitsiRoom({
     };
   }, [showAnnotations, isScreenSharing]);
 
-  // 📝 LISTEN FOR ANNOTATION TOGGLE MESSAGES (Students only)
+  // 📝 LISTEN FOR ANNOTATION & WHITEBOARD TOGGLE MESSAGES (Students only)
   useEffect(() => {
     if (!jitsiApiRef.current || isTutor) return;
 
     const handleEndpointMessage = (participant: any, data: any) => {
       try {
         const message = JSON.parse(data);
+        
+        // Handle annotation toggle
         if (message.type === 'toggleAnnotations') {
           if (message.show) {
             setShowAnnotations(true);
@@ -717,8 +719,14 @@ export default function JitsiRoom({
             }, 300);
           }
         }
+        
+        // Handle whiteboard toggle
+        if (message.type === 'toggleWhiteboard') {
+          console.log('📋 Received whiteboard toggle from teacher:', message.show);
+          setShowWhiteboard(message.show);
+        }
       } catch (error) {
-        console.error('Error parsing annotation message:', error);
+        console.error('Error parsing message:', error);
       }
     };
 
@@ -958,7 +966,21 @@ export default function JitsiRoom({
             onClick={(e) => {
               e.stopPropagation();
               if (!isDragging) {
-                setShowWhiteboard(!showWhiteboard);
+                const newState = !showWhiteboard;
+                setShowWhiteboard(newState);
+                
+                // Broadcast toggle to all participants
+                if (jitsiApiRef.current) {
+                  try {
+                    jitsiApiRef.current.executeCommand('sendEndpointTextMessage', '', JSON.stringify({
+                      type: 'toggleWhiteboard',
+                      show: newState
+                    }));
+                    console.log('📋 Broadcasting whiteboard toggle:', newState);
+                  } catch (error) {
+                    console.error('Error broadcasting whiteboard toggle:', error);
+                  }
+                }
               }
             }}
             size="icon"
@@ -1040,7 +1062,22 @@ export default function JitsiRoom({
       {showWhiteboard && !isScreenSharing && (
         <ExcalidrawWhiteboard
           roomId={`rv2class-${meetingID}`}
-          onClose={() => setShowWhiteboard(false)}
+          onClose={() => {
+            setShowWhiteboard(false);
+            
+            // Broadcast close to all participants (if teacher)
+            if (isTutor && jitsiApiRef.current) {
+              try {
+                jitsiApiRef.current.executeCommand('sendEndpointTextMessage', '', JSON.stringify({
+                  type: 'toggleWhiteboard',
+                  show: false
+                }));
+                console.log('📋 Broadcasting whiteboard close');
+              } catch (error) {
+                console.error('Error broadcasting whiteboard close:', error);
+              }
+            }
+          }}
           jitsiApi={jitsiApiRef.current}
         />
       )}
