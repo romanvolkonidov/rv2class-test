@@ -3,11 +3,11 @@
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Pencil, Eraser, Square, Circle, Undo, Redo, Trash2, X, ChevronDown, ChevronUp, Type, MousePointer2, Edit, GripVertical, Move } from "lucide-react";
-// LiveKit removed - using BBB/Jitsi instead
+// LiveKit removed - using Jitsi instead
 // import { useRoomContext, useDataChannel } from "@livekit/components-react";
 import { cn } from "@/lib/utils";
 
-// Placeholder hooks for LiveKit functionality (not used with BBB/Jitsi)
+// Placeholder hooks for LiveKit functionality (not used with Jitsi)
 // Returns a mock room object to prevent null errors
 const useRoomContext = () => ({
   localParticipant: {

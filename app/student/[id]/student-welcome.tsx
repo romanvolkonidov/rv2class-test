@@ -115,24 +115,10 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
           const teacherKey = teacherName.toLowerCase();
           const roomName = teacherKey; // "roman" or "violet"
           
-          // Check which platform the teacher is using
-          try {
-            const roomDoc = await getDoc(doc(db, 'activeRooms', roomName));
-            const platform = roomDoc.exists() ? roomDoc.data().platform || 'bbb' : 'bbb';
-            
-            console.log(`📡 Teacher is using platform: ${platform}`);
-            
-            // Use unified /room route which handles both platforms
-            const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&isTutor=false&platform=${platform}`;
-            console.log("🚀 Joining room:", roomUrl);
-            router.push(roomUrl);
-          } catch (error) {
-            console.error("Error checking room platform:", error);
-            // Fallback to BBB with old route
-            const roomUrl = `/bbb-room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}`;
-            console.log("🚀 Joining BBB room (fallback):", roomUrl);
-            router.push(roomUrl);
-          }
+          // Always use Jitsi
+          const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&isTutor=false`;
+          console.log("🚀 Joining Jitsi room:", roomUrl);
+          router.push(roomUrl);
         } else if (data.status === "denied") {
           console.log("❌ Join request denied");
           alert("😔 Учитель отклонил ваш запрос на подключение.\n\nПожалуйста, свяжитесь с учителем или попробуйте позже.");
@@ -394,24 +380,10 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     
     console.log(`🚀 Joining ${teacherName}'s room: ${roomName}`);
     
-    // Check which platform the teacher is using
-    try {
-      const roomDoc = await getDoc(doc(db, 'activeRooms', roomName));
-      const platform = roomDoc.exists() ? roomDoc.data().platform || 'bbb' : 'bbb';
-      
-      console.log(`📡 Teacher is using platform: ${platform}`);
-      
-      // Join the appropriate room - use /room route which handles both platforms
-      const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&isTutor=false&platform=${platform}`;
-      console.log("🚀 Redirecting to room:", roomUrl);
-      router.push(roomUrl);
-    } catch (error) {
-      console.error("Error checking room platform:", error);
-      // Fallback to BBB
-      const roomUrl = `/bbb-room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&tutor=false`;
-      console.log("🚀 Redirecting to BBB (fallback):", roomUrl);
-      router.push(roomUrl);
-    }
+    // Always use Jitsi
+    const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&isTutor=false`;
+    console.log("🚀 Redirecting to Jitsi room:", roomUrl);
+    router.push(roomUrl);
   };
 
   const handleCancelRequest = async () => {

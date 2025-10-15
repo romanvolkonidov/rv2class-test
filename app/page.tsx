@@ -18,43 +18,30 @@ export default function Home() {
   const router = useRouter();
   const [showTeacherSelect, setShowTeacherSelect] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<"Roman" | "Violet" | null>(null);
-  const [showPlatformSelect, setShowPlatformSelect] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
-  // No need to fetch active rooms anymore - BBB manages this
-  useEffect(() => {
-    // Nothing to do on mount for BBB
-  }, []);
-
-  const handleTeacherSelect = (teacher: "Roman" | "Violet") => {
+  const handleTeacherSelect = async (teacher: "Roman" | "Violet") => {
     setSelectedTeacher(teacher);
-    setShowPlatformSelect(true);
-  };
-
-  const startLessonWithPlatform = async (platform: "bbb" | "jitsi") => {
-    if (!selectedTeacher) return;
-    
     setIsStarting(true);
+    
     try {
-      const teacherKey = selectedTeacher.toLowerCase(); // "roman" or "violet"
+      const teacherKey = teacher.toLowerCase(); // "roman" or "violet"
       const room = teacherKey; // Simple room name: just "roman" or "violet"
       
-      console.log(`🚀 Starting lesson for ${selectedTeacher} on ${platform}:`, {
+      console.log(`🚀 Starting lesson for ${teacher} on jitsi:`, {
         roomName: room,
-        teacherKey,
-        platform
+        teacherKey
       });
       
-      // Store the active platform in Firebase for student joining
+      // Store the active room in Firebase (no platform needed - always Jitsi)
       await setDoc(doc(db, 'activeRooms', room), {
-        teacher: selectedTeacher,
-        platform: platform,
+        teacher: teacher,
         startedAt: serverTimestamp(),
         roomName: room,
       });
       
-      // Join the room with platform parameter
-      router.push(`/room?room=${room}&name=${selectedTeacher}&isTutor=true&platform=${platform}`);
+      // Join the room (always Jitsi)
+      router.push(`/room?room=${room}&name=${teacher}&isTutor=true`);
     } catch (error) {
       console.error("Error starting lesson:", error);
       alert("Failed to start lesson. Please try again.");
@@ -63,12 +50,8 @@ export default function Home() {
   };
 
   const handleBack = () => {
-    if (showPlatformSelect) {
-      setShowPlatformSelect(false);
-      setSelectedTeacher(null);
-    } else if (showTeacherSelect) {
-      setShowTeacherSelect(false);
-    }
+    setShowTeacherSelect(false);
+    setSelectedTeacher(null);
   };
 
   const rejoinRoom = (roomName: string, teacher: string) => {
@@ -106,7 +89,7 @@ export default function Home() {
                     </span>
                   </div>
                 </Button>
-              ) : !showPlatformSelect ? (
+              ) : (
                 <div className="space-y-4">
                   <h3 className="text-white text-xl font-semibold text-center mb-4">
                     Select Teacher
@@ -143,50 +126,7 @@ export default function Home() {
                     className="w-full text-white hover:text-white hover:bg-white/10"
                     disabled={isStarting}
                   >
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <h3 className="text-white text-xl font-semibold text-center mb-2">
-                    Choose Platform
-                  </h3>
-                  <p className="text-white/80 text-sm text-center mb-4">
-                    Starting as {selectedTeacher}
-                  </p>
-                  <div className="grid grid-cols-1 gap-4">
-                    <Button
-                      size="lg"
-                      onClick={() => startLessonWithPlatform("bbb")}
-                      className="h-auto py-6 bg-white hover:bg-gray-50 text-blue-600 font-bold shadow-lg hover:scale-105 transition-all duration-300 group"
-                      disabled={isStarting}
-                    >
-                      <Video className="h-8 w-8 mr-3 group-hover:scale-110 transition-transform" />
-                      <div className="flex flex-col items-start">
-                        <span className="text-lg">BigBlueButton</span>
-                        <span className="text-xs font-normal text-gray-500">Full-featured education platform</span>
-                      </div>
-                    </Button>
-                    <Button
-                      size="lg"
-                      onClick={() => startLessonWithPlatform("jitsi")}
-                      className="h-auto py-6 bg-white hover:bg-gray-50 text-green-600 font-bold shadow-lg hover:scale-105 transition-all duration-300 group"
-                      disabled={isStarting}
-                    >
-                      <Video className="h-8 w-8 mr-3 group-hover:scale-110 transition-transform" />
-                      <div className="flex flex-col items-start">
-                        <span className="text-lg">Jitsi Meet</span>
-                        <span className="text-xs font-normal text-gray-500">Fast, simple video conferencing</span>
-                      </div>
-                    </Button>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    onClick={handleBack}
-                    className="w-full text-white hover:text-white hover:bg-white/10"
-                    disabled={isStarting}
-                  >
-                    {isStarting ? "Starting..." : "Back"}
+                    {isStarting ? "Starting..." : "Cancel"}
                   </Button>
                 </div>
               )}

@@ -1,0 +1,658 @@
+Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    NextJS 7
+4bd1b696-c023c6e3521b1417.js:1:35061
+The resource at “https://online.rv2class.com/_next/static/media/e4af272ccee01ff0-s.p.woff2” preloaded with link preload was not used within a few seconds. Make sure all attributes of the preload tag are set correctly. 4nC6wdZjpp3RKuOplx7y
+🚀 Joining Roman's room: roman page-aebb4fbc53188ab0.js:1:16152
+📡 Teacher is using platform: jitsi page-aebb4fbc53188ab0.js:1:16317
+🚀 Redirecting to room: /room?room=roman&name=Adelina&studentId=4nC6wdZjpp3RKuOplx7y&isTutor=false&platform=jitsi page-aebb4fbc53188ab0.js:1:16561
+Room Page - Platform Integration 
+Object { roomName: "roman", userName: "Adelina", isTutor: false, studentId: "4nC6wdZjpp3RKuOplx7y", platform: "jitsi" }
+page-a7f1f2d120204c3a.js:1:7857
+Feature Policy: Skipping unsupported feature name “autoplay”. external_api.js:1:22332
+Feature Policy: Skipping unsupported feature name “clipboard-write”. external_api.js:1:22332
+Feature Policy: Skipping unsupported feature name “compute-pressure”. external_api.js:1:22332
+Feature Policy: Skipping unsupported feature name “hid”. external_api.js:1:22332
+Feature Policy: Skipping unsupported feature name “autoplay”. external_api.js:1:22503
+Feature Policy: Skipping unsupported feature name “clipboard-write”. external_api.js:1:22503
+Feature Policy: Skipping unsupported feature name “compute-pressure”. external_api.js:1:22503
+Feature Policy: Skipping unsupported feature name “hid”. external_api.js:1:22503
+Feature Policy: Skipping unsupported feature name “autoplay”. external_api.js:1:22558
+Feature Policy: Skipping unsupported feature name “clipboard-write”. external_api.js:1:22558
+Feature Policy: Skipping unsupported feature name “compute-pressure”. external_api.js:1:22558
+Feature Policy: Skipping unsupported feature name “hid”. external_api.js:1:22558
+This page is in Quirks Mode. Page layout may be impacted. For Standards Mode use “<!DOCTYPE html>”. RV2Class_roman
+Layout was forced before the page was fully loaded. If stylesheets are not yet loaded this may cause a flash of unstyled content. stylesheets-manager.js:664:11
+(TIME) index.html loaded:	 1134 RV2Class_roman:72:17
+Source map error: Error: JSON.parse: unexpected character at line 1 column 1 of the JSON data
+Stack in the worker:parseSourceMapInput@resource://devtools/client/shared/vendor/source-map/lib/util.js:163:15
+_factory@resource://devtools/client/shared/vendor/source-map/lib/source-map-consumer.js:1069:22
+SourceMapConsumer@resource://devtools/client/shared/vendor/source-map/lib/source-map-consumer.js:26:12
+_fetch@resource://devtools/client/shared/source-map-loader/utils/fetchSourceMap.js:83:19
+
+Resource URL: https://jitsi.rv2class.com/external_api.js
+Source Map URL: external_api.min.js.map
+⚠️ Jitsi: Auto-join taking too long, trying alternative methods page-a7f1f2d120204c3a.js:1:5588
+📞 Executed toggleLobby(false) command page-a7f1f2d120204c3a.js:1:5706
+📤 Sent submit-prejoin postMessage page-a7f1f2d120204c3a.js:1:5893
+2025-10-15T12:08:37.452Z [INFO] [api:core] <F3/<>:  API command received: toggle-lobby app.bundle.min.js:2:949407
+2025-10-15T12:08:37.478Z [INFO] [app:redux] <persistState>:  redux state persisted. 99914b932bd37a50b983c5e7c90ae93b -> ac7bd4cfb6c8491801d83411fac5dba1 app.bundle.min.js:2:949407
+2025-10-15T12:08:37.481Z [WARN] [app:sounds] PLAY_SOUND: no sound found for id: RECORDING_OFF_SOUND app.bundle.min.js:2:949407
+2025-10-15T12:08:37.667Z [DEBUG] [ui:VideoLayout] <updateLargeVideo>:  Ignoring large video update with user id local: large video not initialized yet! app.bundle.min.js:2:949407
+2025-10-15T12:08:37.699Z [INFO] [app:config] <uD/</<>:  Extending config with: {"disableDeepLinking":true,"disableModeratorIndicator":false,"enableEmailInStats":false,"p2p":{"enabled":true},"startScreenSharing":false,"startWithAudioMuted":true,"startWithVideoMuted":false} app.bundle.min.js:2:949407
+2025-10-15T12:08:37.699Z [INFO] [app:config] <uD/</<>:  Extending interfaceConfig with: {"DISABLE_JOIN_LEAVE_NOTIFICATIONS":false,"DEFAULT_REMOTE_DISPLAY_NAME":"Student","SETTINGS_SECTIONS":["devices","language","moderator","profile"],"TOOLBAR_BUTTONS":["microphone","camera","closedcaptions","desktop","fullscreen","fodeviceselection","hangup","chat","recording","livestreaming","etherpad","sharedvideo","settings","raisehand","videoquality","filmstrip","feedback","stats","shortcuts","tileview","videobackgroundblur","download","help","mute-everyone","security"]} app.bundle.min.js:2:949407
+2025-10-15T12:08:37.707Z [INFO] [core:JitsiMeetJS] <init>:  This appears to be firefox, ver: 144.0 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:37.715Z [INFO] [stats:LocalStatsCollector] <connectAudioContext>:  Connecting audio context lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:37.873Z [DEBUG] [connectivity:NetworkInfo] <updateNetworkInfo>:  updateNetworkInfo 
+Object { isOnline: true }
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:37.875Z [INFO] [app:lib-jitsi-meet] lib-jitsi-meet version: 518cec5f app.bundle.min.js:2:949407
+2025-10-15T12:08:37.876Z [INFO] [app:lib-jitsi-meet] User Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0 app.bundle.min.js:2:949407
+2025-10-15T12:08:37.891Z [LOG] [app:media] Start muted: audio, app.bundle.min.js:2:949407
+2025-10-15T12:08:37.896Z [LOG] [app:media] Start audio only set to false app.bundle.min.js:2:949407
+2025-10-15T12:08:37.897Z [DEBUG] [stats:AnalyticsAdapter] <dispose>:  Disposing of analytics adapter. lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:37.897Z [INFO] [app:analytics] <r<>:  Initialized 0 analytics handlers app.bundle.min.js:2:949407
+2025-10-15T12:08:38.130Z [DEBUG] [app:conference] <_start/<>:  (TIME) init action dispatched: 4720 app.bundle.min.js:2:949407
+2025-10-15T12:08:38.159Z [LOG] [app:index.web] (TIME) document ready:	 4749 app.bundle.min.js:2:949407
+2025-10-15T12:08:39.485Z [INFO] [app:redux] <persistState>:  redux state persisted. ac7bd4cfb6c8491801d83411fac5dba1 -> 9f4ff251339d2bb3912e58218dc734b6 app.bundle.min.js:2:949407
+(TIME) window loaded event:	 7475 RV2Class_roman:75:21
+2025-10-15T12:08:41.055Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.058Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.060Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.068Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.070Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.072Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.080Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.082Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.084Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.085Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.086Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.094Z [INFO] [rtc:RTCUtils] <_onMediaDevicesListChanged>:  list of media devices has changed: 
+Array [ MediaDeviceInfo, MediaDeviceInfo ]
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:41.107Z [DEBUG] [rtc:RTCUtils] <276/init/<>:  Available devices:  
+Array [ MediaDeviceInfo, MediaDeviceInfo ]
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:41.109Z [DEBUG] [app:devices] <YY>:  Ignored devices on device list changed::
+audioInput:
+
+audioOutput:
+
+videoInput:
+app.bundle.min.js:2:949407
+2025-10-15T12:08:41.110Z [DEBUG] [app:devices] <YY>:  Device list updated:
+audioInput:
+		[]
+audioOutput:
+
+videoInput:
+		[] app.bundle.min.js:2:949407
+2025-10-15T12:08:41.134Z [DEBUG] [app:devices] <a9/</<>:  (TIME) configureInitialDevices: deviceLabels=false, performance.now=7723 app.bundle.min.js:2:949407
+2025-10-15T12:08:41.135Z [DEBUG] [app:devices] <a9/</</<>:  (TIME) configureInitialDevices -> setAudioOutputDeviceId: performance.now=7725 app.bundle.min.js:2:949407
+2025-10-15T12:08:41.136Z [DEBUG] [app:devices] <GY>:  setAudioOutputDevice: undefined[default] app.bundle.min.js:2:949407
+2025-10-15T12:08:41.139Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.147Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.150Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.151Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.152Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.160Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.162Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.163Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.164Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.166Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.174Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.174Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.175Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.176Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.177Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.178Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.180Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.186Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.187Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.189Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.190Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.190Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.191Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.191Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.192Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.192Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.193Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.204Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.205Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.268Z [WARN] [app:devices] <a9/</</</<>:  Failed to set audio output device.
+                        Default audio output device will be used instead NotFoundError: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.269Z [DEBUG] [app:conference] <a9/<>:  (TIME) setupInitialDevices finished: 7858 app.bundle.min.js:2:949407
+2025-10-15T12:08:41.269Z [DEBUG] [app:conference-web] <init>:  Executed conference.init with roomName: rv2class_roman (performance.now=7859) app.bundle.min.js:2:949407
+2025-10-15T12:08:41.339Z [DEBUG] [app:conference-web] <init>:  (TIME) createInitialLocalTracks: 7929 app.bundle.min.js:2:949407
+2025-10-15T12:08:41.364Z [INFO] [app:conference-web] <init>:  Dispatching connect from init since prejoin is not visible. app.bundle.min.js:2:949407
+2025-10-15T12:08:41.364Z [LOG] [app:connection] <MO/</i<>:  Using service URL wss://jitsi.rv2class.com/xmpp-websocket app.bundle.min.js:2:949407
+2025-10-15T12:08:41.373Z [INFO] [xmpp:Moderator] <Zd>:  Using xmpp for conference requests. lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:41.374Z [INFO] [xmpp:Xmpp] <_initStrophePlugins>:  P2P STUN servers:  
+Array [ {…} ]
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:41.377Z [DEBUG] [xmpp:Xmpp] <initFeaturesList>:  Source-name signaling is enabled lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:41.378Z [DEBUG] [xmpp:Xmpp] <initFeaturesList>:  Receiving multiple video streams is enabled lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:41.403Z [INFO] [xmpp:Xmpp] <connectionHandler>:  (TIME) Strophe connecting:	 7993 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:41.418Z [DEBUG] [app:tracks] <Ud/<>:  (TIME) loadEffects() start=7953, end=8008, time=55 app.bundle.min.js:2:949407
+2025-10-15T12:08:41.419Z [INFO] [rtc:RTCUtils] <276/obtainAudioAndVideoPermissions/o<>:  Got media constraints:  {"video":{"frameRate":{"max":30,"min":15}},"audio":{"autoGainControl":true,"echoCancellation":true,"noiseSuppression":true}} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:43.601Z [INFO] [xmpp:XmppConnection] <_maybeEnableStreamResume>:  Enabling XEP-0198 stream management lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:43.606Z [INFO] [xmpp:XmppConnection] <_maybeStartWSKeepAlive>:  WebSocket keep alive interval: 60000ms lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:43.606Z [DEBUG] [xmpp:XmppConnection] <_maybeStartWSKeepAlive>:  Scheduling next WebSocket keep-alive in 116893.82831947386ms lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:43.614Z [INFO] [xmpp:strophe.ping] <startInterval>:  XMPP pings will be sent every 10000 ms lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:43.615Z [INFO] [xmpp:Xmpp] <connectionHandler>:  (TIME) Strophe connected:	 10204 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:43.616Z [INFO] [xmpp:Xmpp] <connectionHandler>:  My Jabber ID: 83664148-1e47-432d-b587-d318a0f92143@jitsi.rv2class.com/4hdPC3f7R_O- lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:43.619Z [INFO] [app:dialog] <qw>:  Hide dialog: s5 app.bundle.min.js:2:949407
+2025-10-15T12:08:43.663Z [DEBUG] [app:base-conference] On connection established: prejoinVisible: false, initialGUMPromiseExists=true, promiseExists=true app.bundle.min.js:2:949407
+2025-10-15T12:08:45.879Z [WARN] [rtc:RTCUtils] <276/_getUserMedia/</<>:  Failed to get access to local media. AbortError: Starting videoinput failed {"video":{"frameRate":{"max":30,"min":15}},"audio":{"autoGainControl":true,"echoCancellation":true,"noiseSuppression":true}} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:45.880Z [ERROR] [app:tracks] <Ud/</<>:  Failed to create local tracks 
+Array [ "audio", "video" ]
+ gum.general: Starting videoinput failed app.bundle.min.js:2:949407
+2025-10-15T12:08:45.881Z [DEBUG] [app:tracks] <Ud/<>:  (TIME) loadEffects() start=12470, end=12471, time=1 app.bundle.min.js:2:949407
+2025-10-15T12:08:45.882Z [DEBUG] [app:tracks] <Ud/<>:  (TIME) loadEffects() start=12471, end=12472, time=1 app.bundle.min.js:2:949407
+2025-10-15T12:08:45.882Z [INFO] [rtc:RTCUtils] <276/obtainAudioAndVideoPermissions/o<>:  Got media constraints:  {"video":false,"audio":{"autoGainControl":true,"echoCancellation":true,"noiseSuppression":true}} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:45.883Z [INFO] [rtc:RTCUtils] <276/obtainAudioAndVideoPermissions/o<>:  Got media constraints:  {"video":{"frameRate":{"max":30,"min":15}},"audio":false} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:45.963Z [INFO] [rtc:RTCUtils] <276/_getUserMedia/</<>:  onUserMediaSuccess lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.185Z [WARN] [rtc:RTCUtils] <276/_getUserMedia/</<>:  Failed to get access to local media. AbortError: Starting videoinput failed {"video":{"frameRate":{"max":30,"min":15}},"audio":false} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.186Z [ERROR] [app:tracks] <Ud/</<>:  Failed to create local tracks 
+Array [ "video" ]
+ gum.general: Starting videoinput failed app.bundle.min.js:2:949407
+2025-10-15T12:08:46.187Z [ERROR] [app:tracks] <e4/</</<>:  Video track creation failed with error gum.general: Starting videoinput failed app.bundle.min.js:2:949407
+2025-10-15T12:08:46.188Z [DEBUG] [app:conference-web] <init/<>:  (TIME) createInitialLocalTracks finished: 12777 app.bundle.min.js:2:949407
+2025-10-15T12:08:46.266Z [DEBUG] [app:conference-web] <init/<>:  Resolving the initialGUM promise! app.bundle.min.js:2:949407
+2025-10-15T12:08:46.277Z [INFO] [settings:Settings] <276/get callStatsUserName/mn<>:  generated stats id Kendall-oQq lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.278Z [INFO] [xmpp:Xmpp] <createRoom>:  JID 83664148-1e47-432d-b587-d318a0f92143@jitsi.rv2class.com/4hdPC3f7R_O- using MUC nickname 83664148 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.278Z [INFO] [xmpp:ChatRoom] <Cc>:  Joining MUC as rv2class_roman@conference.jitsi.rv2class.com/83664148 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.283Z [INFO] [qc:CodecSelection] <nu>:  Codec preference order for jvb connection is vp8,h264,av1,vp9 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.284Z [INFO] [qc:CodecSelection] <nu>:  Codec preference order for p2p connection is av1,vp8,h264,vp9 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.285Z [INFO] [stats:AvgRTPStatsReporter] <Du>:  Avg RTP stats will be calculated every 15 samples lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.286Z [INFO] [core:JitsiConference] <Zu>:  backToP2PDelay: 5 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.287Z [DEBUG] [videosipgw:VideoSIPGW] <qu>:  creating VideoSIPGW lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.327Z [INFO] [app:jwt] JWT avatarURL temporarily not loaded till jwt is verified on connect app.bundle.min.js:2:949407
+2025-10-15T12:08:46.355Z [INFO] [app:dialog] <qw>:  Hide dialog: app.bundle.min.js:2:949407
+2025-10-15T12:08:46.382Z [INFO] [xmpp:Moderator] <276/sendConferenceRequest/<>:  Sending conference request over XMPP to focus.jitsi.rv2class.com lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.383Z [INFO] [settings:Settings] <276/get machineId/gn<>:  generated id f484654190f34238bf7466d1fcb84a44 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.383Z [LOG] [app:conference-web] <_setLocalAudioVideoStreams/<>:  Initialized with 0 local tracks app.bundle.min.js:2:949407
+2025-10-15T12:08:46.437Z [INFO] [rtc:RTCUtils] <_onMediaDevicesListChanged>:  list of media devices has changed: 
+Array(4) [ MediaDeviceInfo, MediaDeviceInfo, MediaDeviceInfo, MediaDeviceInfo ]
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.439Z [DEBUG] [app:devices] <YY>:  Ignored devices on device list changed::
+audioInput:
+
+audioOutput:
+
+videoInput:
+app.bundle.min.js:2:949407
+2025-10-15T12:08:46.440Z [DEBUG] [app:devices] <YY>:  Device list updated:
+audioInput:
+		Built-in Audio Analog Stereo[sFchY3MrQLt9mTwiDLDch4C8MgCTFBglCV/VYcmxd0w=]
+		Monitor of Built-in Audio Analog Stereo[QW5GqS/cE3SXKQmbIfYkqpynE04qh6TvEax6/39Cqbg=]
+audioOutput:
+		Built-in Audio Analog Stereo[wtDaTHSfo+gvgKhkJOFHqLbfBKbiQm/7bD4cJ5nPG5A=]
+videoInput:
+		[] app.bundle.min.js:2:949407
+2025-10-15T12:08:46.600Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  Scheduled large video update for 83664148 app.bundle.min.js:2:949407
+2025-10-15T12:08:46.601Z [DEBUG] [ui:VideoContainer] <setStream>:  SetStream on the large video is called without a stream argument! app.bundle.min.js:2:949407
+2025-10-15T12:08:46.620Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  scheduleLargeVideoUpdate: Remote track undefined, isVideoMuted=true, streamingStatusActive=false, isVideoRenderable=false, showAvatar=true app.bundle.min.js:2:949407
+2025-10-15T12:08:46.684Z [INFO] [xmpp:Moderator] <_handleSuccess>:  Adding focus JID: focus@auth.jitsi.rv2class.com lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.685Z [INFO] [xmpp:Moderator] <_handleSuccess>:  Authentication enabled: false lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.685Z [INFO] [xmpp:Moderator] <_handleSuccess>:  Sip gateway enabled: undefined lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.685Z [INFO] [xmpp:Moderator] <_handleSuccess>:  Conference-request successful, ready to join the MUC. lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:46.956Z [INFO] [xmpp:ChatRoom] <onPresence>:  (TIME) MUC join started:	 13546 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:47.011Z [INFO] [xmpp:ChatRoom] <onPresence>:  entered rv2class_roman@conference.jitsi.rv2class.com/focus 
+Object { isReplaceParticipant: 0, affiliation: "owner", role: "moderator", jid: "focus@auth.jitsi.rv2class.com/focus", isFocus: true, isHiddenDomain: false }
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:47.032Z [INFO] [misc:ComponentsVersions] <276/_processVersions/<>:  Got focus version: 1.0.1161 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:47.053Z [INFO] [core:JitsiConference] <_updateProperties>:  Audio unmute permissions set by Jicofo to false lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:47.066Z [INFO] [core:JitsiConference] <_updateProperties>:  Video unmute permissions set by Jicofo to false lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:47.068Z [DEBUG] [core:JitsiConference] <_shouldBeInP2PMode>:  P2P? peerCount: 0, hasBotPeer: false => false lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:47.081Z [INFO] [xmpp:ChatRoom] <onPresence>:  entered rv2class_roman@conference.jitsi.rv2class.com/32989edd 
+Object { isReplaceParticipant: 0, affiliation: "owner", role: "moderator", jid: "32989edd-71e7-4a1e-8d75-df386897852d@jitsi.rv2class.com/ITfhubtEam3k", isFocus: false, isHiddenDomain: false, statsID: "Alfredo-2mV", features: Set(1), nick: "Roman" }
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:47.221Z [LOG] [app:conference-web] <_setupListeners/<>:  USER 32989edd connected: 
+Object { _jid: "rv2class_roman@conference.jitsi.rv2class.com/32989edd", _id: "32989edd", _conference: {…}, _displayName: "Roman", _supportsDTMF: false, _tracks: [], _role: "moderator", _status: undefined, _hidden: false, _statsID: "Alfredo-2mV", … }
+app.bundle.min.js:2:949407
+2025-10-15T12:08:47.406Z [INFO] [xmpp:ChatRoom] <onPresence>:  (TIME) MUC joined:	 13995 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:47.529Z [INFO] [app:dialog] <qw>:  Hide dialog: s5 app.bundle.min.js:2:949407
+2025-10-15T12:08:47.542Z [INFO] [app:dialog] <qw>:  Hide dialog: xoe app.bundle.min.js:2:949407
+2025-10-15T12:08:47.668Z [DEBUG] [core:JitsiConference] <_shouldBeInP2PMode>:  P2P? peerCount: 1, hasBotPeer: false => true lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:47.668Z [DEBUG] [core:JitsiConference] <_maybeStartOrStopP2P>:  I'm the bigger peersId - the other peer should start P2P 83664148 32989edd lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:47.681Z [INFO] [app:conference-web] <_setupListeners/<>:  My role changed, new role: participant app.bundle.min.js:2:949407
+GET
+https://www.gravatar.com/avatar/87c6d82dba9e7c51364597e9a30ceabc?d=404&size=200
+NS_BINDING_ABORTED
+
+2025-10-15T12:08:47.851Z [INFO] [xmpp:ChatRoom] <onMessage>:  Subject is changed to lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:47.858Z [DEBUG] [app:base-conference] <nre/<>:  Wake lock created. app.bundle.min.js:2:949407
+✅ Jitsi: Conference joined successfully page-a7f1f2d120204c3a.js:1:4975
+2025-10-15T12:08:47.873Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  Scheduled large video update for 32989edd app.bundle.min.js:2:949407
+2025-10-15T12:08:47.873Z [DEBUG] [ui:VideoContainer] <setStream>:  SetStream on the large video is called without a stream argument! app.bundle.min.js:2:949407
+2025-10-15T12:08:47.875Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  scheduleLargeVideoUpdate: Remote track undefined, isVideoMuted=true, streamingStatusActive=false, isVideoRenderable=false, showAvatar=true app.bundle.min.js:2:949407
+2025-10-15T12:08:48.315Z [INFO] [app:dialog] <qw>:  Hide dialog: c5 app.bundle.min.js:2:949407
+2025-10-15T12:08:48.317Z [DEBUG] [app:base-conference] <tre>:  Releasing wake lock. app.bundle.min.js:2:949407
+2025-10-15T12:08:48.319Z [DEBUG] [app:base-conference] <are>:  Wake lock released app.bundle.min.js:2:949407
+2025-10-15T12:08:48.320Z [INFO] [app:dialog] <qw>:  Hide dialog: xoe app.bundle.min.js:2:949407
+2025-10-15T12:08:48.349Z [INFO] [app:dialog] <qw>:  Hide dialog: app.bundle.min.js:2:949407
+2025-10-15T12:08:48.417Z [INFO] [app:overlay] <componentDidMount>:  The conference will be reloaded after 23 seconds. app.bundle.min.js:2:949407
+2025-10-15T12:08:48.486Z [INFO] [xmpp:ChatRoom] <doLeave>:  do leave rv2class_roman@conference.jitsi.rv2class.com/83664148 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:48.490Z [ERROR] [app:conference-web] <_onConferenceFailed>:  CONFERENCE FAILED: conference.videobridgeNotAvailable app.bundle.min.js:2:949407
+2025-10-15T12:08:48.527Z [INFO] [xmpp:Xmpp] <disconnect>:  XMPP disconnect triggered by the event=undefined lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:48.536Z [INFO] [xmpp:Xmpp] <connectionHandler>:  (TIME) Strophe disconnecting:	 15118 lib-jitsi-meet.min.js:2:1125357
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. 87c6d82dba9e7c51364597e9a30ceabc
+Jitsi error: 
+Object { error: {…} }
+page-a7f1f2d120204c3a.js:1:6067
+2025-10-15T12:08:48.640Z [INFO] [xmpp:strophe.ping] <stopInterval>:  Ping interval cleared lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:48.641Z [INFO] [xmpp:Xmpp] <connectionHandler>:  (TIME) Strophe disconnected:	 15231 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:08:48.898Z [INFO] [xmpp:Xmpp] <disconnect>:  XMPP disconnect triggered by the event=unload lib-jitsi-meet.min.js:2:1125357
+🚀 Joining Roman's room: roman page-aebb4fbc53188ab0.js:1:16152
+📡 Teacher is using platform: jitsi page-aebb4fbc53188ab0.js:1:16317
+🚀 Redirecting to room: /room?room=roman&name=Adelina&studentId=4nC6wdZjpp3RKuOplx7y&isTutor=false&platform=jitsi page-aebb4fbc53188ab0.js:1:16561
+Room Page - Platform Integration 
+Object { roomName: "roman", userName: "Adelina", isTutor: false, studentId: "4nC6wdZjpp3RKuOplx7y", platform: "jitsi" }
+page-a7f1f2d120204c3a.js:1:7857
+Feature Policy: Skipping unsupported feature name “autoplay”. external_api.js:1:22332
+Feature Policy: Skipping unsupported feature name “clipboard-write”. external_api.js:1:22332
+Feature Policy: Skipping unsupported feature name “compute-pressure”. external_api.js:1:22332
+Feature Policy: Skipping unsupported feature name “hid”. external_api.js:1:22332
+Feature Policy: Skipping unsupported feature name “autoplay”. external_api.js:1:22503
+Feature Policy: Skipping unsupported feature name “clipboard-write”. external_api.js:1:22503
+Feature Policy: Skipping unsupported feature name “compute-pressure”. external_api.js:1:22503
+Feature Policy: Skipping unsupported feature name “hid”. external_api.js:1:22503
+Feature Policy: Skipping unsupported feature name “autoplay”. external_api.js:1:22558
+Feature Policy: Skipping unsupported feature name “clipboard-write”. external_api.js:1:22558
+Feature Policy: Skipping unsupported feature name “compute-pressure”. external_api.js:1:22558
+Feature Policy: Skipping unsupported feature name “hid”. external_api.js:1:22558
+This page is in Quirks Mode. Page layout may be impacted. For Standards Mode use “<!DOCTYPE html>”. RV2Class_roman
+(TIME) index.html loaded:	 1242 RV2Class_roman:72:17
+Layout was forced before the page was fully loaded. If stylesheets are not yet loaded this may cause a flash of unstyled content. stylesheets-manager.js:664:11
+2025-10-15T12:14:24.594Z [INFO] [app:redux] <persistState>:  redux state persisted. cfd77f0d5302d58b82c0a99162c3f0df -> d12bab12c86cdedb59d0039ab3e675be app.bundle.min.js:2:949407
+2025-10-15T12:14:24.596Z [WARN] [app:sounds] PLAY_SOUND: no sound found for id: RECORDING_OFF_SOUND app.bundle.min.js:2:949407
+2025-10-15T12:14:24.691Z [DEBUG] [ui:VideoLayout] <updateLargeVideo>:  Ignoring large video update with user id local: large video not initialized yet! app.bundle.min.js:2:949407
+2025-10-15T12:14:24.711Z [INFO] [app:config] <uD/</<>:  Extending config with: {"disableDeepLinking":true,"disableModeratorIndicator":false,"enableEmailInStats":false,"p2p":{"enabled":true},"startScreenSharing":false,"startWithAudioMuted":true,"startWithVideoMuted":false} app.bundle.min.js:2:949407
+2025-10-15T12:14:24.711Z [INFO] [app:config] <uD/</<>:  Extending interfaceConfig with: {"DISABLE_JOIN_LEAVE_NOTIFICATIONS":false,"DEFAULT_REMOTE_DISPLAY_NAME":"Student","SETTINGS_SECTIONS":["devices","language","moderator","profile"],"TOOLBAR_BUTTONS":["microphone","camera","closedcaptions","desktop","fullscreen","fodeviceselection","hangup","chat","recording","livestreaming","etherpad","sharedvideo","settings","raisehand","videoquality","filmstrip","feedback","stats","shortcuts","tileview","videobackgroundblur","download","help","mute-everyone","security"]} app.bundle.min.js:2:949407
+2025-10-15T12:14:24.714Z [INFO] [core:JitsiMeetJS] <init>:  This appears to be firefox, ver: 144.0 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:24.716Z [INFO] [stats:LocalStatsCollector] <connectAudioContext>:  Connecting audio context lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:24.717Z [DEBUG] [connectivity:NetworkInfo] <updateNetworkInfo>:  updateNetworkInfo 
+Object { isOnline: true }
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:24.718Z [INFO] [app:lib-jitsi-meet] lib-jitsi-meet version: 518cec5f app.bundle.min.js:2:949407
+2025-10-15T12:14:24.719Z [INFO] [app:lib-jitsi-meet] User Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0 app.bundle.min.js:2:949407
+2025-10-15T12:14:24.725Z [LOG] [app:media] Start muted: audio, app.bundle.min.js:2:949407
+2025-10-15T12:14:24.728Z [LOG] [app:media] Start audio only set to false app.bundle.min.js:2:949407
+2025-10-15T12:14:24.729Z [DEBUG] [stats:AnalyticsAdapter] <dispose>:  Disposing of analytics adapter. lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:24.729Z [INFO] [app:analytics] <r<>:  Initialized 0 analytics handlers app.bundle.min.js:2:949407
+2025-10-15T12:14:24.856Z [DEBUG] [app:conference] <_start/<>:  (TIME) init action dispatched: 2345 app.bundle.min.js:2:949407
+2025-10-15T12:14:24.890Z [LOG] [app:index.web] (TIME) document ready:	 2380 app.bundle.min.js:2:949407
+2025-10-15T12:14:25.463Z [INFO] [rtc:RTCUtils] <_onMediaDevicesListChanged>:  list of media devices has changed: 
+Array [ MediaDeviceInfo, MediaDeviceInfo ]
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:25.464Z [DEBUG] [rtc:RTCUtils] <276/init/<>:  Available devices:  
+Array [ MediaDeviceInfo, MediaDeviceInfo ]
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:25.466Z [DEBUG] [app:devices] <YY>:  Ignored devices on device list changed::
+audioInput:
+
+audioOutput:
+
+videoInput:
+app.bundle.min.js:2:949407
+2025-10-15T12:14:25.466Z [DEBUG] [app:devices] <YY>:  Device list updated:
+audioInput:
+		[]
+audioOutput:
+
+videoInput:
+		[] app.bundle.min.js:2:949407
+2025-10-15T12:14:25.478Z [DEBUG] [app:devices] <a9/</<>:  (TIME) configureInitialDevices: deviceLabels=false, performance.now=2968 app.bundle.min.js:2:949407
+2025-10-15T12:14:25.479Z [DEBUG] [app:devices] <a9/</</<>:  (TIME) configureInitialDevices -> setAudioOutputDeviceId: performance.now=2969 app.bundle.min.js:2:949407
+2025-10-15T12:14:25.479Z [DEBUG] [app:devices] <GY>:  setAudioOutputDevice: undefined[default] app.bundle.min.js:2:949407
+2025-10-15T12:14:25.482Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.483Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.484Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.485Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.486Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.487Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.488Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.488Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.489Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.489Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.490Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.490Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.491Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.491Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.491Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.492Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.493Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.494Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.495Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.495Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.496Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.496Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.496Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.497Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.498Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.498Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.499Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.500Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.501Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.501Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.502Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.502Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.503Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.503Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.504Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.504Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.504Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.505Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.505Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.505Z [ERROR] [app:media] <setSinkId/<>:  Error setting sink DOMException: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.506Z [WARN] [app:devices] <a9/</</</<>:  Failed to set audio output device.
+                        Default audio output device will be used instead NotFoundError: The object can not be found here. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.506Z [DEBUG] [app:conference] <a9/<>:  (TIME) setupInitialDevices finished: 2996 app.bundle.min.js:2:949407
+2025-10-15T12:14:25.507Z [DEBUG] [app:conference-web] <init>:  Executed conference.init with roomName: rv2class_roman (performance.now=2996) app.bundle.min.js:2:949407
+(TIME) window loaded event:	 3084 RV2Class_roman:75:21
+2025-10-15T12:14:25.605Z [DEBUG] [app:conference-web] <init>:  (TIME) createInitialLocalTracks: 3095 app.bundle.min.js:2:949407
+2025-10-15T12:14:25.615Z [INFO] [app:conference-web] <init>:  Dispatching connect from init since prejoin is not visible. app.bundle.min.js:2:949407
+2025-10-15T12:14:25.618Z [LOG] [app:connection] <MO/</i<>:  Using service URL wss://jitsi.rv2class.com/xmpp-websocket app.bundle.min.js:2:949407
+2025-10-15T12:14:25.620Z [INFO] [xmpp:Moderator] <Zd>:  Using xmpp for conference requests. lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:25.621Z [INFO] [xmpp:Xmpp] <_initStrophePlugins>:  P2P STUN servers:  
+Array [ {…} ]
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:25.625Z [DEBUG] [xmpp:Xmpp] <initFeaturesList>:  Source-name signaling is enabled lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:25.626Z [DEBUG] [xmpp:Xmpp] <initFeaturesList>:  Receiving multiple video streams is enabled lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:25.634Z [INFO] [xmpp:Xmpp] <connectionHandler>:  (TIME) Strophe connecting:	 3124 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:25.642Z [DEBUG] [app:tracks] <Ud/<>:  (TIME) loadEffects() start=3105, end=3132, time=27 app.bundle.min.js:2:949407
+2025-10-15T12:14:25.643Z [INFO] [rtc:RTCUtils] <276/obtainAudioAndVideoPermissions/o<>:  Got media constraints:  {"video":{"frameRate":{"max":30,"min":15}},"audio":{"autoGainControl":true,"echoCancellation":true,"noiseSuppression":true}} lib-jitsi-meet.min.js:2:1125357
+⚠️ Jitsi: Auto-join taking too long, trying alternative methods page-a7f1f2d120204c3a.js:1:5588
+📞 Executed toggleLobby(false) command page-a7f1f2d120204c3a.js:1:5706
+📤 Sent submit-prejoin postMessage page-a7f1f2d120204c3a.js:1:5893
+2025-10-15T12:14:26.519Z [INFO] [api:core] <F3/<>:  API command received: toggle-lobby app.bundle.min.js:2:949407
+2025-10-15T12:14:26.595Z [INFO] [app:redux] <persistState>:  redux state persisted. d12bab12c86cdedb59d0039ab3e675be -> 9f4ff251339d2bb3912e58218dc734b6 app.bundle.min.js:2:949407
+2025-10-15T12:14:28.027Z [INFO] [xmpp:XmppConnection] <_maybeEnableStreamResume>:  Enabling XEP-0198 stream management lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.028Z [INFO] [xmpp:XmppConnection] <_maybeStartWSKeepAlive>:  WebSocket keep alive interval: 60000ms lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.029Z [DEBUG] [xmpp:XmppConnection] <_maybeStartWSKeepAlive>:  Scheduling next WebSocket keep-alive in 115107.43602090514ms lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.029Z [INFO] [xmpp:strophe.ping] <startInterval>:  XMPP pings will be sent every 10000 ms lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.029Z [INFO] [xmpp:Xmpp] <connectionHandler>:  (TIME) Strophe connected:	 5518 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.030Z [INFO] [xmpp:Xmpp] <connectionHandler>:  My Jabber ID: 692254f9-97bd-4ed4-bfe7-e779710e977d@jitsi.rv2class.com/IttfTKzZ_38k lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.030Z [INFO] [app:dialog] <qw>:  Hide dialog: s5 app.bundle.min.js:2:949407
+2025-10-15T12:14:28.031Z [DEBUG] [app:base-conference] On connection established: prejoinVisible: false, initialGUMPromiseExists=true, promiseExists=true app.bundle.min.js:2:949407
+2025-10-15T12:14:28.538Z [WARN] [rtc:RTCUtils] <276/_getUserMedia/</<>:  Failed to get access to local media. AbortError: Starting videoinput failed {"video":{"frameRate":{"max":30,"min":15}},"audio":{"autoGainControl":true,"echoCancellation":true,"noiseSuppression":true}} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.539Z [ERROR] [app:tracks] <Ud/</<>:  Failed to create local tracks 
+Array [ "audio", "video" ]
+ gum.general: Starting videoinput failed app.bundle.min.js:2:949407
+2025-10-15T12:14:28.540Z [DEBUG] [app:tracks] <Ud/<>:  (TIME) loadEffects() start=6030, end=6030, time=0 2 app.bundle.min.js:2:949407
+2025-10-15T12:14:28.540Z [INFO] [rtc:RTCUtils] <276/obtainAudioAndVideoPermissions/o<>:  Got media constraints:  {"video":false,"audio":{"autoGainControl":true,"echoCancellation":true,"noiseSuppression":true}} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.541Z [INFO] [rtc:RTCUtils] <276/obtainAudioAndVideoPermissions/o<>:  Got media constraints:  {"video":{"frameRate":{"max":30,"min":15}},"audio":false} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.596Z [INFO] [rtc:RTCUtils] <276/_getUserMedia/</<>:  onUserMediaSuccess lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.814Z [WARN] [rtc:RTCUtils] <276/_getUserMedia/</<>:  Failed to get access to local media. AbortError: Starting videoinput failed {"video":{"frameRate":{"max":30,"min":15}},"audio":false} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.815Z [ERROR] [app:tracks] <Ud/</<>:  Failed to create local tracks 
+Array [ "video" ]
+ gum.general: Starting videoinput failed app.bundle.min.js:2:949407
+2025-10-15T12:14:28.816Z [ERROR] [app:tracks] <e4/</</<>:  Video track creation failed with error gum.general: Starting videoinput failed app.bundle.min.js:2:949407
+2025-10-15T12:14:28.817Z [DEBUG] [app:conference-web] <init/<>:  (TIME) createInitialLocalTracks finished: 6306 app.bundle.min.js:2:949407
+2025-10-15T12:14:28.841Z [DEBUG] [app:conference-web] <init/<>:  Resolving the initialGUM promise! app.bundle.min.js:2:949407
+2025-10-15T12:14:28.847Z [INFO] [xmpp:Xmpp] <createRoom>:  JID 692254f9-97bd-4ed4-bfe7-e779710e977d@jitsi.rv2class.com/IttfTKzZ_38k using MUC nickname 692254f9 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.847Z [INFO] [xmpp:ChatRoom] <Cc>:  Joining MUC as rv2class_roman@conference.jitsi.rv2class.com/692254f9 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.849Z [INFO] [qc:CodecSelection] <nu>:  Codec preference order for jvb connection is vp8,h264,av1,vp9 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.849Z [INFO] [qc:CodecSelection] <nu>:  Codec preference order for p2p connection is av1,vp8,h264,vp9 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.850Z [INFO] [stats:AvgRTPStatsReporter] <Du>:  Avg RTP stats will be calculated every 15 samples lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.850Z [INFO] [core:JitsiConference] <Zu>:  backToP2PDelay: 5 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.850Z [DEBUG] [videosipgw:VideoSIPGW] <qu>:  creating VideoSIPGW lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.866Z [INFO] [app:jwt] JWT avatarURL temporarily not loaded till jwt is verified on connect app.bundle.min.js:2:949407
+2025-10-15T12:14:28.886Z [INFO] [app:dialog] <qw>:  Hide dialog: app.bundle.min.js:2:949407
+2025-10-15T12:14:28.912Z [INFO] [xmpp:Moderator] <276/sendConferenceRequest/<>:  Sending conference request over XMPP to focus.jitsi.rv2class.com lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.913Z [LOG] [app:conference-web] <_setLocalAudioVideoStreams/<>:  Initialized with 0 local tracks app.bundle.min.js:2:949407
+2025-10-15T12:14:28.931Z [INFO] [rtc:RTCUtils] <_onMediaDevicesListChanged>:  list of media devices has changed: 
+Array(4) [ MediaDeviceInfo, MediaDeviceInfo, MediaDeviceInfo, MediaDeviceInfo ]
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:28.933Z [DEBUG] [app:devices] <YY>:  Ignored devices on device list changed::
+audioInput:
+
+audioOutput:
+
+videoInput:
+app.bundle.min.js:2:949407
+2025-10-15T12:14:28.933Z [DEBUG] [app:devices] <YY>:  Device list updated:
+audioInput:
+		Built-in Audio Analog Stereo[sFchY3MrQLt9mTwiDLDch4C8MgCTFBglCV/VYcmxd0w=]
+		Monitor of Built-in Audio Analog Stereo[QW5GqS/cE3SXKQmbIfYkqpynE04qh6TvEax6/39Cqbg=]
+audioOutput:
+		Built-in Audio Analog Stereo[wtDaTHSfo+gvgKhkJOFHqLbfBKbiQm/7bD4cJ5nPG5A=]
+videoInput:
+		[] app.bundle.min.js:2:949407
+2025-10-15T12:14:29.154Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  Scheduled large video update for 692254f9 app.bundle.min.js:2:949407
+2025-10-15T12:14:29.155Z [DEBUG] [ui:VideoContainer] <setStream>:  SetStream on the large video is called without a stream argument! app.bundle.min.js:2:949407
+2025-10-15T12:14:29.160Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  scheduleLargeVideoUpdate: Remote track undefined, isVideoMuted=true, streamingStatusActive=false, isVideoRenderable=false, showAvatar=true app.bundle.min.js:2:949407
+2025-10-15T12:14:29.187Z [INFO] [xmpp:Moderator] <_handleSuccess>:  Adding focus JID: focus@auth.jitsi.rv2class.com lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.187Z [INFO] [xmpp:Moderator] <_handleSuccess>:  Authentication enabled: false lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.188Z [INFO] [xmpp:Moderator] <_handleSuccess>:  Sip gateway enabled: undefined lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.188Z [INFO] [xmpp:Moderator] <_handleSuccess>:  Conference-request successful, ready to join the MUC. lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.534Z [INFO] [xmpp:ChatRoom] <onPresence>:  (TIME) MUC join started:	 7021 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.630Z [INFO] [xmpp:ChatRoom] <onPresence>:  entered rv2class_roman@conference.jitsi.rv2class.com/4ce7abff 
+Object { isReplaceParticipant: 0, affiliation: "owner", role: "moderator", jid: "4ce7abff-cfc4-461b-8569-646c982584a3@jitsi.rv2class.com/oNjAhx9649GS", isFocus: false, isHiddenDomain: false, statsID: "Alfredo-2mV", features: Set(1), nick: "Roman" }
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.731Z [LOG] [app:conference-web] <_setupListeners/<>:  USER 4ce7abff connected: 
+Object { _jid: "rv2class_roman@conference.jitsi.rv2class.com/4ce7abff", _id: "4ce7abff", _conference: {…}, _displayName: "Roman", _supportsDTMF: false, _tracks: [], _role: "moderator", _status: undefined, _hidden: false, _statsID: "Alfredo-2mV", … }
+app.bundle.min.js:2:949407
+2025-10-15T12:14:29.814Z [INFO] [xmpp:ChatRoom] <onPresence>:  entered rv2class_roman@conference.jitsi.rv2class.com/focus 
+Object { isReplaceParticipant: 0, affiliation: "owner", role: "moderator", jid: "focus@auth.jitsi.rv2class.com/focus", isFocus: true, isHiddenDomain: false }
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.822Z [INFO] [misc:ComponentsVersions] <276/_processVersions/<>:  Got focus version: 1.0.1161 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.835Z [INFO] [core:JitsiConference] <_updateProperties>:  Audio unmute permissions set by Jicofo to false lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.841Z [INFO] [core:JitsiConference] <_updateProperties>:  Video unmute permissions set by Jicofo to false lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.842Z [DEBUG] [core:JitsiConference] <_shouldBeInP2PMode>:  P2P? peerCount: 1, hasBotPeer: false => true lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.842Z [DEBUG] [core:JitsiConference] <_maybeStartOrStopP2P>:  I'm the bigger peersId - the other peer should start P2P 692254f9 4ce7abff lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.851Z [INFO] [xmpp:ChatRoom] <onPresence>:  (TIME) MUC joined:	 7340 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:29.923Z [INFO] [app:dialog] <qw>:  Hide dialog: s5 app.bundle.min.js:2:949407
+2025-10-15T12:14:29.930Z [INFO] [app:dialog] <qw>:  Hide dialog: xoe app.bundle.min.js:2:949407
+2025-10-15T12:14:30.034Z [DEBUG] [core:JitsiConference] <_shouldBeInP2PMode>:  P2P? peerCount: 1, hasBotPeer: false => true lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:30.035Z [DEBUG] [core:JitsiConference] <_maybeStartOrStopP2P>:  I'm the bigger peersId - the other peer should start P2P 692254f9 4ce7abff lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:30.038Z [INFO] [app:conference-web] <_setupListeners/<>:  My role changed, new role: participant app.bundle.min.js:2:949407
+2025-10-15T12:14:30.120Z [INFO] [xmpp:ChatRoom] <onMessage>:  Subject is changed to lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:30.125Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  Scheduled large video update for 4ce7abff app.bundle.min.js:2:949407
+2025-10-15T12:14:30.125Z [DEBUG] [ui:VideoContainer] <setStream>:  SetStream on the large video is called without a stream argument! app.bundle.min.js:2:949407
+2025-10-15T12:14:30.128Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  scheduleLargeVideoUpdate: Remote track undefined, isVideoMuted=true, streamingStatusActive=false, isVideoRenderable=false, showAvatar=true app.bundle.min.js:2:949407
+2025-10-15T12:14:30.155Z [DEBUG] [app:base-conference] <nre/<>:  Wake lock created. app.bundle.min.js:2:949407
+✅ Jitsi: Conference joined successfully page-a7f1f2d120204c3a.js:1:4975
+GET
+https://www.gravatar.com/avatar/87c6d82dba9e7c51364597e9a30ceabc?d=404&size=200
+NS_BINDING_ABORTED
+
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. 87c6d82dba9e7c51364597e9a30ceabc
+GET
+https://www.gravatar.com/avatar/87c6d82dba9e7c51364597e9a30ceabc?d=404&size=200
+[HTTP/3 404  281ms]
+
+2025-10-15T12:14:30.977Z [INFO] [xmpp:strophe.jingle] <onJingle>:  (TIME) received session-initiate:	 8467 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:30.978Z [DEBUG] [xmpp:strophe.jingle] <onJingle>:  Received session-initiate from rv2class_roman@conference.jitsi.rv2class.com/4ce7abff lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:30.979Z [DEBUG] [core:JitsiConference] <_shouldBeInP2PMode>:  P2P? peerCount: 1, hasBotPeer: false => true lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:30.986Z [INFO] [rtc:TraceablePeerConnection] <Sa>:  Create new TPC[id=1,type=P2P] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:30.986Z [DEBUG] [xmpp:JingleSessionPC] <setOfferAnswerCycle>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Executing setOfferAnswerCycle task lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:30.993Z [DEBUG] [xmpp:JingleSessionPC] <_renegotiate>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Renegotiate: setting remote description lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.004Z [DEBUG] [xmpp:strophe.jingle] <onJingle>:  Received transport-info from rv2class_roman@conference.jitsi.rv2class.com/4ce7abff for candidates=id: es206lsnj3 port: 55300 generation: 0 priority: 2122260223 ip: 192.168.0.103 protocol: udp type: host foundation: 2501109513 network: 1 component: 1, id: 54z9dqupph ip: 192.168.0.103 port: 9 generation: 0 priority: 1518280447 network: 1 tcptype: active protocol: tcp type: host foundation: 3957065105 component: 1 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.004Z [INFO] [core:JitsiConference] <onTransportInfo>:  P2P addIceCandidates lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.005Z [DEBUG] [xmpp:JingleSessionPC] <addIceCandidates>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Queued add (2) ICE candidates task lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.006Z [DEBUG] [xmpp:strophe.jingle] <onJingle>:  Received transport-info from rv2class_roman@conference.jitsi.rv2class.com/4ce7abff for candidates=id: k8k6w3x8k1 ip: 129.222.187.218 rel-port: 55300 port: 7416 generation: 0 priority: 1686052607 network: 1 protocol: udp foundation: 978912823 type: srflx rel-addr: 192.168.0.103 component: 1 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.006Z [INFO] [core:JitsiConference] <onTransportInfo>:  P2P addIceCandidates lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.006Z [DEBUG] [xmpp:JingleSessionPC] <addIceCandidates>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Queued add (1) ICE candidates task lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.008Z [DEBUG] [xmpp:strophe.jingle] <onJingle>:  Received transport-info from rv2class_roman@conference.jitsi.rv2class.com/4ce7abff for candidates=id: 3ixrt3y2eu ip: 207.246.95.30 rel-port: 7416 port: 63792 generation: 0 priority: 41885695 network: 1 protocol: udp foundation: 2705319585 type: relay rel-addr: 129.222.187.218 component: 1 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.008Z [INFO] [core:JitsiConference] <onTransportInfo>:  P2P addIceCandidates lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.008Z [DEBUG] [xmpp:JingleSessionPC] <addIceCandidates>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Queued add (1) ICE candidates task lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.013Z [INFO] [rtc:TraceablePeerConnection] <_remoteTrackAdded>:  TPC[id=1,type=P2P] Received track event for remote stream[id=4ce7abff-audio-0-1,type=audio] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.019Z [INFO] [rtc:TraceablePeerConnection] <_createRemoteTrack>:  TPC[id=1,type=P2P] creating remote track[endpoint=4ce7abff,ssrc=846763533,type=audio,sourceName=4ce7abff-a0] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.019Z [DEBUG] [rtc:JitsiRemoteTrack] <pa>:  New remote track created: RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: true, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.019Z [INFO] [core:JitsiConference] <onRemoteTrackAdded>:  Trying to add remote P2P track, when not in P2P - IGNORED lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.020Z [INFO] [rtc:TraceablePeerConnection] <_remoteTrackAdded>:  TPC[id=1,type=P2P] Received track event for remote stream[id=4ce7abff-video-0-1,type=video] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.021Z [INFO] [rtc:TraceablePeerConnection] <_createRemoteTrack>:  TPC[id=1,type=P2P] creating remote track[endpoint=4ce7abff,ssrc=3796238172,type=video,sourceName=4ce7abff-v0] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.021Z [DEBUG] [rtc:JitsiRemoteTrack] <pa>:  New remote track created: RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: true, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.021Z [INFO] [core:JitsiConference] <onRemoteTrackAdded>:  Trying to add remote P2P track, when not in P2P - IGNORED lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.022Z [DEBUG] [xmpp:JingleSessionPC] <_renegotiate>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Renegotiate: creating answer lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.024Z [DEBUG] [xmpp:JingleSessionPC] <_renegotiate>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Renegotiate: setting local description lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.030Z [DEBUG] [xmpp:JingleSessionPC] <276/setOfferAnswerCycle/<>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] setOfferAnswerCycle task done lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.036Z [INFO] [xmpp:JingleSessionPC] <_sendSessionAccept>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Sending session-accept lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.036Z [DEBUG] [xmpp:JingleSessionPC] <_sendSessionAccept>:  
+<iq to="rv2class_roman@conferenc…i.rv2class.com/4ce7abff" type="set" xmlns="jabber:client">
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.192Z [DEBUG] [xmpp:JingleSessionPC] <_sendIceCandidates>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] _sendIceCandidates count: 2 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.455Z [DEBUG] [xmpp:JingleSessionPC] <_sendIceCandidates>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] _sendIceCandidates count: 1 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.552Z [DEBUG] [xmpp:JingleSessionPC] <_sendIceCandidate>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] _sendIceCandidate: last candidate lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.553Z [DEBUG] [xmpp:JingleSessionPC] <_sendIceCandidate>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] _sendIceCandidate: last candidate lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:31.699Z [DEBUG] [xmpp:JingleSessionPC] <_sendIceCandidates>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] _sendIceCandidates count: 1 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.028Z [INFO] [xmpp:JingleSessionPC] <276/doInitialize/this.peerconnection.oniceconnectionstatechange>:  (TIME) ICE checking P2P:	 9518 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.029Z [INFO] [xmpp:JingleSessionPC] <276/doInitialize/this.peerconnection.onconnectionstatechange>:  (TIME) P2P PC state is now connecting (ICE state checking):	 9518 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.035Z [INFO] [xmpp:JingleSessionPC] <276/doInitialize/this.peerconnection.oniceconnectionstatechange>:  (TIME) ICE connected P2P:	 9524 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.035Z [INFO] [core:JitsiConference] <_setP2PStatus>:  Peer to peer connection established! lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.037Z [DEBUG] [stats:AvgRTPStatsReporter] <276/Du/this._onP2PStatusChanged>:  Resetting average stats calculation lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.046Z [INFO] [core:JitsiConference] <_onIceConnectionEstablished>:  Not removing remote JVB tracks - no session yet lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.046Z [INFO] [core:JitsiConference] <_addRemoteTracks>:  Adding remote P2P track: RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: true, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.059Z [DEBUG] [app:tracks] <Eu>:  Track state for participant 4ce7abff changed(reason: Track added):
+{type: audio, videoType: undefined, muted: true, isReceivingData: true, jitsiTrack: RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: true, enabled: true}]} app.bundle.min.js:2:949407
+2025-10-15T12:14:32.066Z [INFO] [core:JitsiConference] <_addRemoteTracks>:  Adding remote P2P track: RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: true, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.076Z [INFO] [connectivity:TrackStreamingStatus] <aa>:  RtcMuteTimeout set to: 10000 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.077Z [DEBUG] [rtc:JitsiRemoteTrack] <_addEventListener>:  Initializing track streaming status: 4ce7abff-v0 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.093Z [DEBUG] [app:tracks] <Eu>:  Track state for participant 4ce7abff changed(reason: Track added):
+{type: audio, videoType: undefined, muted: true, isReceivingData: true, jitsiTrack: RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: true, enabled: true}]}
+{type: video, videoType: camera, muted: true, isReceivingData: true, jitsiTrack: RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: true, enabled: true}]} app.bundle.min.js:2:949407
+2025-10-15T12:14:32.105Z [INFO] [core:JitsiConference] <_onIceConnectionEstablished>:  Starting remote stats with p2p connection lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.106Z [DEBUG] [modules/statistics/statistics] <sendAnalyticsAndLog>:  {"action":"established","attributes":{"initiator":false},"source":"p2p","type":"operational"} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.123Z [DEBUG] [rtc:JitsiRemoteTrack] <_onTrackUnmute>:  "onunmute" event(1760530472123): RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.123Z [DEBUG] [rtc:JitsiRemoteTrack] <_onTrackUnmute>:  "onunmute" event(1760530472123): RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: false, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.123Z [DEBUG] [rtc:JitsiRemoteTrack] <_containerEventHandler>:  waiting handler was called for a container with attached RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: false, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.124Z [DEBUG] [rtc:JitsiRemoteTrack] <_containerEventHandler>:  waiting handler was called for a container with attached RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.125Z [DEBUG] [rtc:JitsiRemoteTrack] <_containerEventHandler>:  suspend handler was called for a container with attached RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: false, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.126Z [DEBUG] [rtc:JitsiRemoteTrack] <_containerEventHandler>:  suspend handler was called for a container with attached RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.127Z [INFO] [rtc:JitsiRemoteTrack] <_playCallback>:  (TIME) Render audio:	 9617 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.128Z [INFO] [rtc:JitsiRemoteTrack] <_playCallback>:  (TIME) TTFM audio:	 NaN lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.129Z [DEBUG] [rtc:JitsiRemoteTrack] <_containerEventHandler>:  canplaythrough handler was called for a container with attached RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: false, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.130Z [INFO] [xmpp:JingleSessionPC] <276/doInitialize/this.peerconnection.onconnectionstatechange>:  (TIME) P2P PC state is now connected (ICE state connected):	 9620 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.327Z [DEBUG] [xmpp:JingleSessionPC] <276/acceptOffer/</<>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Resuming the modification queue after session is established! lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.328Z [DEBUG] [core:JitsiConference] <276/_acceptP2PIncomingCall/<>:  Got RESULT for P2P "session-accept" lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.331Z [INFO] [xmpp:JingleSessionPC] <setVideoCodecs>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] setVideoCodecs: codecList=vp8,h264,av1,vp9, screenshareCodec=undefined lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.331Z [DEBUG] [xmpp:JingleSessionPC] <setVideoCodecs>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Queued setVideoCodecs task lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.332Z [INFO] [xmpp:JingleSessionPC] <setReceiverVideoConstraint>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] setReceiverVideoConstraint - constraints: {} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.333Z [INFO] [xmpp:JingleSessionPC] <276/_sendContentModify/<>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] sending content-modify for source-name: 4ce7abff-v0, maxHeight: 2160 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.333Z [DEBUG] [xmpp:JingleSessionPC] <_sendContentModify>:  
+<iq to="rv2class_roman@conferenc…i.rv2class.com/4ce7abff" type="set" xmlns="jabber:client">
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.336Z [DEBUG] [xmpp:JingleSessionPC] <276/addIceCandidates/<>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] ICE candidates task finished 2 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.337Z [DEBUG] [xmpp:JingleSessionPC] <276/addIceCandidates/<>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] ICE candidates task finished lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.339Z [DEBUG] [xmpp:JingleSessionPC] <_renegotiate>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Renegotiate: setting remote description lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.343Z [DEBUG] [xmpp:strophe.jingle] <onJingle>:  Received content-modify from rv2class_roman@conference.jitsi.rv2class.com/4ce7abff lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.346Z [DEBUG] [xmpp:JingleSessionPC] <276/addIceCandidates/</<>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] addIceCandidate ok! lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.348Z [DEBUG] [xmpp:JingleSessionPC] <276/addIceCandidates/</<>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] addIceCandidate ok! 2 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.351Z [DEBUG] [xmpp:JingleSessionPC] <276/addIceCandidates/</<>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] addIceCandidate ok! lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.352Z [DEBUG] [xmpp:JingleSessionPC] <_renegotiate>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Renegotiate: creating answer lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.355Z [DEBUG] [xmpp:JingleSessionPC] <_renegotiate>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] Renegotiate: setting local description lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.362Z [DEBUG] [xmpp:JingleSessionPC] JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] setVideoCodecs task is done lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.366Z [DEBUG] [xmpp:strophe.jingle] <onJingle>:  Received content-modify from rv2class_roman@conference.jitsi.rv2class.com/4ce7abff lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.380Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  Scheduled large video update for 4ce7abff app.bundle.min.js:2:949407
+2025-10-15T12:14:32.380Z [DEBUG] [ui:VideoContainer] <setStream>:  Attaching a remote track to the large video for user 4ce7abff app.bundle.min.js:2:949407
+2025-10-15T12:14:32.395Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  scheduleLargeVideoUpdate: Remote track RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}], isVideoMuted=true, streamingStatusActive=true, isVideoRenderable=false, showAvatar=true app.bundle.min.js:2:949407
+2025-10-15T12:14:32.401Z [DEBUG] [ui:VideoContainer] <GH/</<>:  waiting handler was called for the large video. app.bundle.min.js:2:949407
+2025-10-15T12:14:32.401Z [DEBUG] [rtc:JitsiRemoteTrack] <_containerEventHandler>:  waiting handler was called for a container with attached RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.401Z [DEBUG] [ui:VideoContainer] <GH/</<>:  suspend handler was called for the large video. app.bundle.min.js:2:949407
+2025-10-15T12:14:32.402Z [DEBUG] [rtc:JitsiRemoteTrack] <_containerEventHandler>:  suspend handler was called for a container with attached RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:32.696Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  Scheduled large video update for 4ce7abff app.bundle.min.js:2:949407
+2025-10-15T12:14:32.696Z [DEBUG] [ui:VideoContainer] <setStream>:  SetStream on the large video for user 4ce7abff ignored: the stream is not changed! app.bundle.min.js:2:949407
+2025-10-15T12:14:32.697Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  scheduleLargeVideoUpdate: Remote track RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}], isVideoMuted=true, streamingStatusActive=true, isVideoRenderable=false, showAvatar=true app.bundle.min.js:2:949407
+2025-10-15T12:14:33.612Z [INFO] [xmpp:strophe.jingle] <onJingle>:  Found a JSON-encoded element in session-initiate, translating to standard Jingle. lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.613Z [DEBUG] [xmpp:strophe.jingle] <onJingle>:  Received session-initiate from rv2class_roman@conference.jitsi.rv2class.com/focus with sources=jvb:[2865174247,93227858] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.613Z [INFO] [xmpp:strophe.jingle] <onJingle>:  (TIME) received session-initiate:	 11102 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.616Z [INFO] [rtc:TraceablePeerConnection] <Sa>:  Create new TPC[id=2,type=JVB] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.616Z [INFO] [core:JitsiConference] <_setBridgeChannel>:  SCTP: offered=true, prefered=true lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.617Z [DEBUG] [rtc:BridgeChannel] <is>:  constructor() with peerconnection lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.620Z [DEBUG] [xmpp:JingleSessionPC] <setOfferAnswerCycle>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] Executing setOfferAnswerCycle task lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.633Z [DEBUG] [xmpp:JingleSessionPC] <_renegotiate>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] Renegotiate: setting remote description lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.647Z [DEBUG] [xmpp:JingleSessionPC] <_renegotiate>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] Renegotiate: creating answer lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.649Z [DEBUG] [xmpp:JingleSessionPC] <_renegotiate>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] Renegotiate: setting local description lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.664Z [DEBUG] [xmpp:JingleSessionPC] <276/setOfferAnswerCycle/<>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] setOfferAnswerCycle task done lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.674Z [INFO] [xmpp:JingleSessionPC] <_sendSessionAccept>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] Sending session-accept lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.675Z [DEBUG] [xmpp:JingleSessionPC] <_sendSessionAccept>:  
+<iq to="rv2class_roman@conference.jitsi.rv2class.com/focus" type="set" xmlns="jabber:client">
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.678Z [INFO] [xmpp:JingleSessionPC] <276/doInitialize/this.peerconnection.oniceconnectionstatechange>:  (TIME) ICE checking JVB:	 11168 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:33.679Z [INFO] [xmpp:JingleSessionPC] <276/doInitialize/this.peerconnection.onconnectionstatechange>:  (TIME) JVB PC state is now connecting (ICE state checking):	 11169 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:34.465Z [DEBUG] [xmpp:JingleSessionPC] <276/acceptOffer/</<>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] Resuming the modification queue after session is established! lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:34.470Z [INFO] [core:JitsiConference] <_suspendMediaTransferForJvbConnection>:  Suspending media transfer over the JVB connection... lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:34.471Z [INFO] [rtc:TraceablePeerConnection] <setMediaTransferActive>:  TPC[id=2,type=JVB] Suspending media transfer. lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:34.480Z [INFO] [core:JitsiConference] <276/_suspendMediaTransferForJvbConnection/<>:  Suspended media transfer over the JVB connection ! lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:34.742Z [INFO] [rtc:JitsiRemoteTrack] <setMute>:  Mute RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: false, enabled: true}]: false lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:34.748Z [DEBUG] [app:tracks] <Eu>:  Track state for participant 4ce7abff changed(reason: Track updated):
+{type: audio, videoType: undefined, muted: false, isReceivingData: true, jitsiTrack: RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: false, enabled: true}]}
+{type: video, videoType: camera, muted: true, isReceivingData: true, jitsiTrack: RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}]} app.bundle.min.js:2:949407
+2025-10-15T12:14:34.759Z [INFO] [rtc:JitsiRemoteTrack] <setMute>:  Mute RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}]: false lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:34.765Z [DEBUG] [app:tracks] <Eu>:  Track state for participant 4ce7abff changed(reason: Track updated):
+{type: audio, videoType: undefined, muted: false, isReceivingData: true, jitsiTrack: RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: false, enabled: true}]}
+{type: video, videoType: camera, muted: false, isReceivingData: true, jitsiTrack: RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}]} app.bundle.min.js:2:949407
+2025-10-15T12:14:34.770Z [INFO] [xmpp:JingleSessionPC] <setReceiverVideoConstraint>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] setReceiverVideoConstraint - constraints: {} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:34.770Z [INFO] [xmpp:JingleSessionPC] <276/_sendContentModify/<>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] sending content-modify for source-name: 4ce7abff-v0, maxHeight: 180 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:34.771Z [DEBUG] [xmpp:JingleSessionPC] <_sendContentModify>:  
+<iq to="rv2class_roman@conferenc…i.rv2class.com/4ce7abff" type="set" xmlns="jabber:client">
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:34.781Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  Scheduled large video update for 4ce7abff app.bundle.min.js:2:949407
+2025-10-15T12:14:34.781Z [DEBUG] [ui:VideoContainer] <setStream>:  SetStream on the large video for user 4ce7abff ignored: the stream is not changed! app.bundle.min.js:2:949407
+2025-10-15T12:14:34.781Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  scheduleLargeVideoUpdate: Remote track RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}], isVideoMuted=false, streamingStatusActive=true, isVideoRenderable=true, showAvatar=false app.bundle.min.js:2:949407
+2025-10-15T12:14:34.884Z [INFO] [xmpp:JingleSessionPC] <276/doInitialize/this.peerconnection.oniceconnectionstatechange>:  (TIME) ICE connected JVB:	 12373 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:35.472Z [INFO] [xmpp:JingleSessionPC] <276/doInitialize/this.peerconnection.onconnectionstatechange>:  (TIME) JVB PC state is now connected (ICE state connected):	 12962 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:35.972Z [INFO] [rtc:BridgeChannel] <276/_handleChannel/e.onopen>:  datachannel channel opened lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:35.972Z [INFO] [core:JitsiConferenceEventManager] <276/setupRTCListeners/<>:  (TIME) data.channel.opened:	 13462 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:36.006Z [INFO] [rtc:BridgeChannel] <sendReceiverVideoConstraintsMessage>:  Sending ReceiverVideoConstraints with {"constraints":{"4ce7abff-v0":{"maxHeight":180}},"defaultConstraints":{"maxHeight":0},"lastN":-1,"onStageSources":["4ce7abff-v0"],"selectedSources":[]} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.290Z [INFO] [rtc:BridgeChannel] <276/_handleChannel/e.onmessage>:  New forwarded sources: lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.290Z [DEBUG] [rtc:RTC] <_onForwardedSourcesChanged>:  Fowarded sources changed leaving=, entering= at 1760530477290 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.291Z [DEBUG] [connectivity:TrackStreamingStatus] <figureOutStreamingStatus>:  Figure out conn status for 4ce7abff-v0, is video muted: false video track frozen: false p2p mode: true is in forwarded sources: false currentStatus => newStatus: active => active lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.420Z [INFO] [rtc:BridgeChannel] <276/_handleChannel/e.onmessage>:  Received VideoSourcesMap: [{"source":"4ce7abff-v0","owner":"4ce7abff","ssrc":3455178316,"rtx":3361827085,"videoType":"CAMERA"}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.420Z [DEBUG] [xmpp:JingleSessionPC] <processSourceMap>:  New SSRC signaled 3455178316: owner=4ce7abff, source-name=4ce7abff-v0 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.421Z [DEBUG] [xmpp:JingleSessionPC] <_addOrRemoveRemoteStream>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] Queued addRemoteStream task lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.422Z [DEBUG] [xmpp:JingleSessionPC] <276/_addOrRemoveRemoteStream/<>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] Processing addRemoteStream lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.425Z [DEBUG] [xmpp:JingleSessionPC] <276/_addOrRemoveRemoteStream/<>:  adding sources=4ce7abff-v0 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.432Z [DEBUG] [xmpp:JingleSessionPC] <_renegotiate>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] Renegotiate: setting remote description lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.441Z [INFO] [rtc:TraceablePeerConnection] <_remoteTrackAdded>:  TPC[id=2,type=JVB] Received track event for remote stream[id=remote-video-1,type=video] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.442Z [INFO] [rtc:TraceablePeerConnection] <_createRemoteTrack>:  TPC[id=2,type=JVB] creating remote track[endpoint=4ce7abff,ssrc=3455178316,type=video,sourceName=4ce7abff-v0] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.442Z [DEBUG] [rtc:JitsiRemoteTrack] <pa>:  New remote track created: RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3455178316, p2p: false, sourceName: 4ce7abff-v0, status: {readyState: live, muted: true, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.442Z [INFO] [core:JitsiConference] <onRemoteTrackAdded>:  Trying to add remote JVB track, when in P2P - IGNORED lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.442Z [DEBUG] [xmpp:JingleSessionPC] <_renegotiate>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] Renegotiate: creating answer lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.444Z [DEBUG] [xmpp:JingleSessionPC] <_renegotiate>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] Renegotiate: setting local description lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.455Z [DEBUG] [xmpp:JingleSessionPC] <276/_addOrRemoveRemoteStream/</<>:  JingleSessionPC[session=JVB,initiator=false,sid=7ji7u5nolol2o] addRemoteStream - OK lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.587Z [INFO] [rtc:BridgeChannel] <276/_handleChannel/e.onmessage>:  New forwarded sources: 4ce7abff-v0 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.588Z [DEBUG] [rtc:RTC] <_onForwardedSourcesChanged>:  Fowarded sources changed leaving=, entering=4ce7abff-v0 at 1760530477588 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:14:37.588Z [DEBUG] [connectivity:TrackStreamingStatus] <figureOutStreamingStatus>:  Figure out conn status for 4ce7abff-v0, is video muted: false video track frozen: false p2p mode: true is in forwarded sources: true currentStatus => newStatus: active => active lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:24.636Z [DEBUG] [app:base-conference] <are>:  Wake lock released app.bundle.min.js:2:949407
+2025-10-15T12:15:26.321Z [DEBUG] [app:base-conference] <nre/<>:  Wake lock created. app.bundle.min.js:2:949407
+2025-10-15T12:15:30.311Z [DEBUG] [app:base-conference] <are>:  Wake lock released app.bundle.min.js:2:949407
+2025-10-15T12:15:33.925Z [INFO] [rtc:JitsiRemoteTrack] <setMute>:  Mute RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}]: true lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:33.937Z [DEBUG] [app:tracks] <Eu>:  Track state for participant 4ce7abff changed(reason: Track updated):
+{type: audio, videoType: undefined, muted: false, isReceivingData: true, jitsiTrack: RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: false, enabled: true}]}
+{type: video, videoType: camera, muted: true, isReceivingData: true, jitsiTrack: RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}]} app.bundle.min.js:2:949407
+2025-10-15T12:15:33.941Z [INFO] [rtc:JitsiRemoteTrack] <setMute>:  Mute RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3455178316, p2p: false, sourceName: 4ce7abff-v0, status: {readyState: live, muted: true, enabled: true}]: true lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:33.948Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  Scheduled large video update for 4ce7abff app.bundle.min.js:2:949407
+2025-10-15T12:15:33.948Z [DEBUG] [ui:VideoContainer] <setStream>:  SetStream on the large video for user 4ce7abff ignored: the stream is not changed! app.bundle.min.js:2:949407
+2025-10-15T12:15:33.948Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  scheduleLargeVideoUpdate: Remote track RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}], isVideoMuted=true, streamingStatusActive=true, isVideoRenderable=false, showAvatar=true app.bundle.min.js:2:949407
+2025-10-15T12:15:35.800Z [INFO] [rtc:JitsiRemoteTrack] <_playCallback>:  (TIME) Render video:	 73289 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:35.803Z [INFO] [rtc:JitsiRemoteTrack] <_playCallback>:  (TIME) TTFM video:	 69252 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:35.847Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  Scheduled large video update for 4ce7abff app.bundle.min.js:2:949407
+2025-10-15T12:15:35.847Z [DEBUG] [ui:VideoContainer] <setStream>:  SetStream on the large video for user 4ce7abff ignored: the stream is not changed! app.bundle.min.js:2:949407
+2025-10-15T12:15:35.848Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  scheduleLargeVideoUpdate: Remote track RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}], isVideoMuted=true, streamingStatusActive=true, isVideoRenderable=false, showAvatar=true app.bundle.min.js:2:949407
+2025-10-15T12:15:35.860Z [DEBUG] [rtc:JitsiRemoteTrack] <_containerEventHandler>:  canplaythrough handler was called for a container with attached RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:35.873Z [INFO] [rtc:BridgeChannel] <sendReceiverVideoConstraintsMessage>:  Sending ReceiverVideoConstraints with {"constraints":{"4ce7abff-v0":{"maxHeight":720}},"defaultConstraints":{"maxHeight":0},"lastN":-1,"onStageSources":["4ce7abff-v0"],"selectedSources":[]} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:35.875Z [INFO] [xmpp:JingleSessionPC] <setReceiverVideoConstraint>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] setReceiverVideoConstraint - constraints: {} lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:35.876Z [INFO] [xmpp:JingleSessionPC] <276/_sendContentModify/<>:  JingleSessionPC[session=P2P,initiator=false,sid=ef9f09cfd7a4] sending content-modify for source-name: 4ce7abff-v0, maxHeight: 720 lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:35.876Z [DEBUG] [xmpp:JingleSessionPC] <_sendContentModify>:  
+<iq to="rv2class_roman@conferenc…i.rv2class.com/4ce7abff" type="set" xmlns="jabber:client">
+lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:35.946Z [DEBUG] [ui:VideoContainer] <GH/this.video.onplaying>:  Large video is playing! app.bundle.min.js:2:949407
+2025-10-15T12:15:35.953Z [DEBUG] [ui:VideoContainer] <_play/<>:  Successfully played large video after 1 retries! app.bundle.min.js:2:949407
+2025-10-15T12:15:35.954Z [DEBUG] [ui:VideoContainer] <GH/</<>:  canplaythrough handler was called for the large video. app.bundle.min.js:2:949407
+2025-10-15T12:15:35.954Z [DEBUG] [rtc:JitsiRemoteTrack] <_containerEventHandler>:  canplaythrough handler was called for a container with attached RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}] lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:35.998Z [INFO] [rtc:JitsiRemoteTrack] <setMute>:  Mute RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}]: false lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:36.006Z [DEBUG] [app:tracks] <Eu>:  Track state for participant 4ce7abff changed(reason: Track updated):
+{type: audio, videoType: undefined, muted: false, isReceivingData: true, jitsiTrack: RemoteTrack[userID: 4ce7abff, type: audio, ssrc: 846763533, p2p: true, sourceName: 4ce7abff-a0, status: {readyState: live, muted: false, enabled: true}]}
+{type: video, videoType: camera, muted: false, isReceivingData: true, jitsiTrack: RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}]} app.bundle.min.js:2:949407
+2025-10-15T12:15:36.011Z [INFO] [rtc:JitsiRemoteTrack] <setMute>:  Mute RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3455178316, p2p: false, sourceName: 4ce7abff-v0, status: {readyState: live, muted: true, enabled: true}]: false lib-jitsi-meet.min.js:2:1125357
+2025-10-15T12:15:36.149Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  Scheduled large video update for 4ce7abff app.bundle.min.js:2:949407
+2025-10-15T12:15:36.149Z [DEBUG] [ui:VideoContainer] <setStream>:  SetStream on the large video for user 4ce7abff ignored: the stream is not changed! app.bundle.min.js:2:949407
+2025-10-15T12:15:36.149Z [DEBUG] [ui:videolayout] <scheduleLargeVideoUpdate/<>:  scheduleLargeVideoUpdate: Remote track RemoteTrack[userID: 4ce7abff, type: video, ssrc: 3796238172, p2p: true, sourceName: 4ce7abff-v0, status: {readyState: live, muted: false, enabled: true}], isVideoMuted=false, streamingStatusActive=true, isVideoRenderable=true, showAvatar=false app.bundle.min.js:2:949407
+2025-10-15T12:15:36.474Z [DEBUG] [app:base-conference] <nre/<>:  Wake lock created. app.bundle.min.js:2:949407
+2025-10-15T12:15:44.453Z [DEBUG] [app:base-conference] <are>:  Wake lock released app.bundle.min.js:2:949407
+2025-10-15T12:15:52.999Z [DEBUG] [app:base-conference] <nre/<>:  Wake lock created. app.bundle.min.js:2:949407
+2025-10-15T12:16:00.728Z [DEBUG] [app:base-conference] <are>:  Wake lock released app.bundle.min.js:2:949407
+2025-10-15T12:16:02.894Z [DEBUG] [app:base-conference] <nre/<>:  Wake lock created. app.bundle.min.js:2:949407
+2025-10-15T12:16:24.500Z [DEBUG] [xmpp:XmppConnection] <_maybeStartWSKeepAlive>:  Scheduling next WebSocket keep-alive in 112726.13029267082ms lib-jitsi-meet.min.js:2:1125357

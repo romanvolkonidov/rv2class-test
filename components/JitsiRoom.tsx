@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, AlertCircle } from "lucide-react";
@@ -35,6 +36,26 @@ export default function JitsiRoom({
   const jitsiApiRef = useRef<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Handle redirects when meeting ends or errors occur
+  const handleRedirect = () => {
+    if (onLeave) {
+      onLeave(); // Use parent's handler if provided
+    } else {
+      // Default redirect behavior
+      if (isTutor) {
+        // Teacher goes to home page
+        router.push("/");
+      } else if (studentId) {
+        // Student goes back to their welcome page
+        router.push(`/student/${studentId}`);
+      } else {
+        // Fallback to home
+        router.push("/");
+      }
+    }
+  };
 
   useEffect(() => {
     // Load Jitsi Meet External API script
@@ -176,10 +197,14 @@ export default function JitsiRoom({
         // **CRITICAL**: Listen for when iframe loads and auto-submit prejoin
         // Sometimes prejoinPageEnabled: false doesn't work with External API
         api.on('readyToClose', () => {
-          console.log("Jitsi: Ready to close");
-          if (onLeave) {
-            onLeave();
-          }
+          console.log("Jitsi: Ready to close - meeting ended");
+          handleRedirect();
+        });
+
+        // Listen for when user clicks "Leave" button
+        api.addListener('videoConferenceLeft', () => {
+          console.log("Jitsi: User left the conference");
+          handleRedirect();
         });
 
         // Listen for prejoin page rendered
@@ -223,10 +248,18 @@ export default function JitsiRoom({
           }
         }, 4000); // Wait 4 seconds before trying alternatives
 
-        // Error handling
+        // Error handling - redirect on critical errors
         api.addEventListener("errorOccurred", (event: any) => {
           console.error("Jitsi error:", event);
-          setError("An error occurred in the meeting. Please refresh and try again.");
+          const errorMsg = event?.error?.message || "An error occurred in the meeting";
+          
+          // Show error briefly then redirect
+          setError(`${errorMsg}. Redirecting...`);
+          
+          // Redirect after 3 seconds
+          setTimeout(() => {
+            handleRedirect();
+          }, 3000);
         });
       } catch (err: any) {
         console.error("Error initializing Jitsi:", err);
@@ -244,7 +277,7 @@ export default function JitsiRoom({
         jitsiApiRef.current = null;
       }
     };
-  }, [meetingID, participantName, isTutor, studentId, onLeave]);
+  }, [meetingID, participantName, isTutor, studentId, router]); // Added router to deps
 
   if (error) {
     return (
@@ -256,11 +289,9 @@ export default function JitsiRoom({
               Connection Error
             </h2>
             <p className="text-gray-600 text-center mb-4">{error}</p>
-            {onLeave && (
-              <Button onClick={onLeave} className="w-full">
-                Return Home
-              </Button>
-            )}
+            <Button onClick={handleRedirect} className="w-full">
+              {isTutor ? "Return to Home" : "Back to Welcome Page"}
+            </Button>
           </CardContent>
         </Card>
       </div>
