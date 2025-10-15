@@ -211,18 +211,19 @@ export default function JitsiRoom({
             startWithAudioMuted: !isTutor, // Tutors start unmuted
             startWithVideoMuted: false,
             enableWelcomePage: false,
-            prejoinPageEnabled: false, // Disable prejoin page
+            prejoinPageEnabled: false, // CRITICAL: Disable prejoin page completely
             disableDeepLinking: true,
             defaultLanguage: "en",
             enableClosePage: false,
             // Set meeting title: "English with Roman" or "English with Violeta"
             subject: `${subject} with ${isTutor ? participantName : (teacherName || 'Teacher')}`,
             
-            // 🔒 ROBUST WAITING ROOM CONFIGURATION
-            enableLobbyChat: false, // Don't let students chat in lobby
-            autoKnockLobby: true, // Automatically knock when entering lobby
-            lobbyEnabled: true, // ALWAYS enable lobby for the room
-            hideLobbyButton: isTutor ? false : true, // Students can't manually toggle lobby
+            // 🔒 CRITICAL FIX: Disable lobby entirely - we handle waiting room via Firebase
+            // The lobby causes "membersOnly" errors for approved students
+            enableLobbyChat: false,
+            autoKnockLobby: false, // Don't auto-knock
+            lobbyEnabled: false, // DISABLE lobby - we use Firebase waiting room instead
+            hideLobbyButton: true, // Hide lobby button for everyone
             
             // Prevent students from becoming moderators
             ...(!isTutor && {
@@ -319,128 +320,27 @@ export default function JitsiRoom({
 
           if (isTutor) {
             console.log("Jitsi: Tutor joined as moderator");
-            
-            // 🔒 ENABLE LOBBY IMMEDIATELY AFTER TEACHER JOINS
-            api.executeCommand('toggleLobby', true);
-            console.log("🔒 Lobby enabled - students will need approval");
-            
-            // 🔍 CHECK IF STUDENTS ARE ALREADY WAITING (joined before teacher)
-            setTimeout(() => {
-              try {
-                api.getLobbyParticipants().then((waitingParticipants: any[]) => {
-                  if (waitingParticipants && waitingParticipants.length > 0) {
-                    console.log(`🔔 Found ${waitingParticipants.length} students already waiting!`);
-                    waitingParticipants.forEach((p: any) => {
-                      handleNewKnocker(p);
-                    });
-                  }
-                }).catch((err: any) => {
-                  console.log("Could not check for waiting participants:", err);
-                });
-              } catch (err) {
-                console.log("getLobbyParticipants not available:", err);
-              }
-            }, 1000); // Wait 1 second for lobby to be fully initialized
+            console.log("� Using Firebase waiting room - lobby disabled in Jitsi");
           } else {
             // Student joined
-            console.log("🎓 Student joined conference and will be in lobby");
+            console.log("🎓 Student joined conference directly (no lobby)");
           }
         });
 
-        // 🔔 ROBUST WAITING ROOM EVENT LISTENERS (MULTIPLE REDUNDANCY)
+        // 🔔 WAITING ROOM: We use Firebase instead of Jitsi lobby
+        // No lobby event listeners needed - students join directly after Firebase approval
         if (isTutor) {
-          // Event 1: knockingParticipant - Primary event
-          api.addEventListener('knockingParticipant', (participant: any) => {
-            console.log("🚪 knockingParticipant event:", participant);
-            handleNewKnocker(participant);
-          });
-
-          // Event 2: participantKickedOut - Backup detection
-          api.addEventListener('participantKickedOut', (participant: any) => {
-            console.log("👋 participantKickedOut event:", participant);
-            // Remove from knockers if they were rejected
-            if (participant && participant.id) {
-              removeKnocker(participant.id);
-            }
-          });
-
-          // Event 3: participantJoined - Detect if someone was admitted
-          api.addEventListener('participantJoined', (participant: any) => {
-            console.log("✅ participantJoined event:", participant);
-            // Remove from knockers list when they join
-            if (participant && participant.id) {
-              removeKnocker(participant.id);
-            }
-          });
-
-          // Event 4: lobbyMessageReceived - Additional lobby messages
-          api.addEventListener('lobbyMessageReceived', (data: any) => {
-            console.log("📨 lobbyMessageReceived:", data);
-          });
-
-          // Event 5: Poll for waiting participants every 2 seconds (ULTIMATE BACKUP)
-          const pollInterval = setInterval(() => {
-            try {
-              // Check if there are pending lobby participants
-              api.getLobbyParticipants().then((participants: any[]) => {
-                if (participants && participants.length > 0) {
-                  console.log("🔍 Poll detected waiting participants:", participants);
-                  participants.forEach((p: any) => handleNewKnocker(p));
-                }
-              }).catch((err: any) => {
-                // Silently handle errors to avoid spam
-                console.debug("Lobby poll error:", err);
-              });
-            } catch (err) {
-              console.debug("Lobby poll exception:", err);
-            }
-          }, 2000); // Poll every 2 seconds
-
-          // Cleanup poll on unmount
-          return () => {
-            clearInterval(pollInterval);
-          };
+          console.log("👨‍🏫 Teacher: Using Firebase waiting room system");
         }
 
-        // Helper function to handle new knocker
+        // Helper function to handle new knocker (not used with Firebase, but kept for compatibility)
         const handleNewKnocker = (participant: any) => {
-          if (!participant || !participant.id) {
-            console.warn("Invalid participant data:", participant);
-            return;
-          }
-
-          const knocker: KnockingParticipant = {
-            id: participant.id,
-            name: participant.name || participant.displayName || "Unknown Student",
-            timestamp: Date.now()
-          };
-
-          setKnockingParticipants(prev => {
-            // Prevent duplicates
-            if (prev.some(p => p.id === knocker.id)) {
-              console.log("Knocker already in list:", knocker.name);
-              return prev;
-            }
-            
-            console.log("🔔 NEW KNOCKER ADDED:", knocker.name);
-            
-            // Play notification sound
-            playNotificationSound();
-            
-            // Add to list
-            return [...prev, knocker];
-          });
+          console.log("Note: handleNewKnocker called but lobby is disabled, using Firebase instead");
         };
 
-        // Helper function to remove knocker
+        // Helper function to remove knocker (not used with Firebase, but kept for compatibility)
         const removeKnocker = (participantId: string) => {
-          setKnockingParticipants(prev => {
-            const filtered = prev.filter(p => p.id !== participantId);
-            if (filtered.length !== prev.length) {
-              console.log("🗑️ Removed knocker:", participantId);
-            }
-            return filtered;
-          });
+          console.log("Note: removeKnocker called but lobby is disabled, using Firebase instead");
         };
 
         // Helper function to play notification sound
@@ -493,11 +393,7 @@ export default function JitsiRoom({
           if (!hasJoined && loading) {
             console.log("⚠️ Jitsi: Auto-join taking too long, trying alternative methods");
             try {
-              // Method 1: Try executeCommand to skip prejoin
-              api.executeCommand('toggleLobby', false);
-              console.log("📞 Executed toggleLobby(false) command");
-              
-              // Method 2: Send postMessage as fallback
+              // Send postMessage to trigger join
               const iframe = api.getIFrame();
               if (iframe && iframe.contentWindow) {
                 iframe.contentWindow.postMessage({
@@ -722,8 +618,9 @@ export default function JitsiRoom({
             </Card>
           ))}
           
-          {/* Jitsi Lobby Knockers (Already in Jitsi lobby) */}
-          {knockingParticipants.map((participant) => (
+          {/* Jitsi Lobby Knockers (LEGACY - Not used with Firebase waiting room) */}
+          {/* With lobbyEnabled: false, this section will never be populated */}
+          {knockingParticipants.length > 0 && knockingParticipants.map((participant) => (
             <Card 
               key={participant.id}
               className="w-80 shadow-2xl border-2 border-yellow-400 bg-gradient-to-br from-yellow-50 to-orange-50"
