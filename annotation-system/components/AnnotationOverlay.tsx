@@ -109,7 +109,22 @@ export default function AnnotationOverlay({
   const [expandedControlId, setExpandedControlId] = useState<string | null>(null); // ID of expanded control menu
   const [draggingTextId, setDraggingTextId] = useState<string | null>(null); // ID of text being dragged
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
-  const room = useRoomContext();
+  // Get the LiveKit room context if available. Provide a safe fallback
+  // so annotation code doesn't throw when LiveKit was removed or isn't initialized.
+  const _roomContext = useRoomContext();
+  const room = _roomContext ?? {
+    localParticipant: {
+      identity: 'local',
+      // publishData signature: (data: Uint8Array, options?: { reliable?: boolean })
+      publishData: (_data: Uint8Array | string, _opts?: any) => {
+        // No-op fallback: log for debugging but don't throw
+        if (typeof window !== 'undefined' && (window as any).console) {
+          console.debug('[AnnotationOverlay] publishData noop (room missing)');
+        }
+        return Promise.resolve();
+      },
+    },
+  } as any;
   
   // Toolbar dragging state
   const [toolbarPosition, setToolbarPosition] = useState({ x: 0, y: 0 });

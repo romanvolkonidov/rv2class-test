@@ -82,15 +82,8 @@ export default function JitsiRoom({
             defaultLanguage: "en",
             enableClosePage: false,
             
-            // ⭐ Fix broken URLs from server config
-            hosts: {
-              domain: 'jitsi.rv2class.com',
-              muc: 'conference.jitsi.rv2class.com',
-            },
-            bosh: 'https://jitsi.rv2class.com/http-bind', // Fixed BOSH URL
-            websocket: 'wss://jitsi.rv2class.com/xmpp-websocket', // Fixed WebSocket URL
-            
-            // ⭐ STUN/TURN Configuration - uses YOUR Coturn server!
+            // Let Jitsi use server's default config for connection settings
+            // Only override STUN servers for better connectivity
             p2p: {
               enabled: true,
               stunServers: [
@@ -98,7 +91,6 @@ export default function JitsiRoom({
                 { urls: 'stun:stun.l.google.com:19302' }, // Google backup
                 { urls: 'stun:stun1.l.google.com:19302' }
               ],
-              iceTransportPolicy: 'all' // Use both STUN and host candidates
             },
             
             // Moderator controls
