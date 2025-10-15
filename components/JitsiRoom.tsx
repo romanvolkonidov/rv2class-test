@@ -73,11 +73,13 @@ export default function JitsiRoom({
           width: "100%",
           height: "100%",
           parentNode: containerRef.current,
+          // ⭐ Add subject to auto-join
+          subject: `Lesson: ${meetingID}`,
           configOverwrite: {
             startWithAudioMuted: !isTutor, // Tutors start unmuted
             startWithVideoMuted: false,
             enableWelcomePage: false,
-            prejoinPageEnabled: false, // Skip prejoin for smoother experience
+            prejoinPageEnabled: false, // Disable prejoin page
             disableDeepLinking: true,
             defaultLanguage: "en",
             enableClosePage: false,
@@ -152,15 +154,14 @@ export default function JitsiRoom({
           }
         }, 30000);
 
-        // Wait for the conference to be joined
+        // Listen for successful conference join
         api.addEventListener("videoConferenceJoined", () => {
-          console.log("Jitsi: User joined conference");
+          console.log("✅ Jitsi: Conference joined successfully");
           clearTimeout(connectionTimeout);
           setLoading(false);
 
           // If tutor, grant moderator rights
           if (isTutor) {
-            // The first participant is automatically a moderator in Jitsi
             console.log("Jitsi: Tutor joined as moderator");
           }
         });
