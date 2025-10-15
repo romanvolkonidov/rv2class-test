@@ -4,10 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, AlertCircle, Pencil } from "lucide-react";
+import { Loader2, AlertCircle, Pencil, UserCheck, UserX, Bell } from "lucide-react";
 import MeetingFeedback from "@/components/MeetingFeedback";
 import TldrawWhiteboard from "@/components/TldrawWhiteboard";
 import { cn } from "@/lib/utils";
+
+interface KnockingParticipant {
+  id: string;
+  name: string;
+  timestamp: number;
+}
 
 interface JitsiRoomProps {
   meetingID: string;
@@ -42,19 +48,76 @@ export default function JitsiRoom({
   const [meetingEnded, setMeetingEnded] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
+  const [knockingParticipants, setKnockingParticipants] = useState<KnockingParticipant[]>([]);
+  const [admittedIds, setAdmittedIds] = useState<Set<string>>(new Set());
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
 
   // Handle meeting end - show feedback for students, redirect teachers
-  const handleMeetingEnd = () => {
+    const handleMeetingEnd = async () => {
+    console.log("Meeting ended");
     setMeetingEnded(true);
-    
-    if (isTutor) {
-      // Teachers redirect directly
-      handleRedirect();
-    } else {
-      // Students see feedback screen
-      setShowFeedback(true);
+  };
+
+  // 🚪 ADMIT STUDENT TO MEETING
+  const handleAdmitStudent = (participantId: string, name: string) => {
+    if (!jitsiApiRef.current) {
+      console.error("Cannot admit: Jitsi API not ready");
+      return;
     }
+
+    // Prevent duplicate admissions
+    if (admittedIds.has(participantId)) {
+      console.log("Student already admitted:", name);
+      removeKnockerFromList(participantId);
+      return;
+    }
+
+    try {
+      console.log("🎟️ ADMITTING STUDENT:", name, participantId);
+      
+      // Execute admit command
+      jitsiApiRef.current.executeCommand('answerKnockingParticipant', participantId, true);
+      
+      // Track that we admitted them
+      setAdmittedIds(prev => new Set([...prev, participantId]));
+      
+      // Remove from knockers list
+      removeKnockerFromList(participantId);
+      
+      console.log("✅ Admission command sent for:", name);
+    } catch (err) {
+      console.error("Failed to admit student:", err);
+      alert(`Failed to admit ${name}. Please try again.`);
+    }
+  };
+
+  // ❌ REJECT STUDENT FROM MEETING
+  const handleRejectStudent = (participantId: string, name: string) => {
+    if (!jitsiApiRef.current) {
+      console.error("Cannot reject: Jitsi API not ready");
+      return;
+    }
+
+    try {
+      console.log("❌ REJECTING STUDENT:", name, participantId);
+      
+      // Execute reject command
+      jitsiApiRef.current.executeCommand('answerKnockingParticipant', participantId, false);
+      
+      // Remove from knockers list
+      removeKnockerFromList(participantId);
+      
+      console.log("✅ Rejection command sent for:", name);
+    } catch (err) {
+      console.error("Failed to reject student:", err);
+      alert(`Failed to reject ${name}. Please try again.`);
+    }
+  };
+
+  // Helper to remove knocker from state
+  const removeKnockerFromList = (participantId: string) => {
+    setKnockingParticipants(prev => prev.filter(p => p.id !== participantId));
   };
 
   // Handle final redirect after feedback (or directly for teachers)
@@ -136,6 +199,11 @@ export default function JitsiRoom({
             disableDeepLinking: true,
             defaultLanguage: "en",
             enableClosePage: false,
+            
+            // 🔒 ROBUST WAITING ROOM CONFIGURATION
+            enableLobbyChat: false, // Don't let students chat in lobby
+            autoKnockLobby: true, // Automatically knock when entering lobby
+            lobbyEnabled: !isTutor, // Enable lobby for non-moderators only
             
             // Let Jitsi use server's default config for connection settings
             // Only override STUN servers for better connectivity
@@ -222,8 +290,122 @@ export default function JitsiRoom({
 
           if (isTutor) {
             console.log("Jitsi: Tutor joined as moderator");
+            
+            // 🔒 ENABLE LOBBY IMMEDIATELY AFTER TEACHER JOINS
+            api.executeCommand('toggleLobby', true);
+            console.log("🔒 Lobby enabled - students will need approval");
           }
         });
+
+        // 🔔 ROBUST WAITING ROOM EVENT LISTENERS (MULTIPLE REDUNDANCY)
+        if (isTutor) {
+          // Event 1: knockingParticipant - Primary event
+          api.addEventListener('knockingParticipant', (participant: any) => {
+            console.log("🚪 knockingParticipant event:", participant);
+            handleNewKnocker(participant);
+          });
+
+          // Event 2: participantKickedOut - Backup detection
+          api.addEventListener('participantKickedOut', (participant: any) => {
+            console.log("👋 participantKickedOut event:", participant);
+            // Remove from knockers if they were rejected
+            if (participant && participant.id) {
+              removeKnocker(participant.id);
+            }
+          });
+
+          // Event 3: participantJoined - Detect if someone was admitted
+          api.addEventListener('participantJoined', (participant: any) => {
+            console.log("✅ participantJoined event:", participant);
+            // Remove from knockers list when they join
+            if (participant && participant.id) {
+              removeKnocker(participant.id);
+            }
+          });
+
+          // Event 4: lobbyMessageReceived - Additional lobby messages
+          api.addEventListener('lobbyMessageReceived', (data: any) => {
+            console.log("📨 lobbyMessageReceived:", data);
+          });
+
+          // Event 5: Poll for waiting participants every 2 seconds (ULTIMATE BACKUP)
+          const pollInterval = setInterval(() => {
+            try {
+              // Check if there are pending lobby participants
+              api.getLobbyParticipants().then((participants: any[]) => {
+                if (participants && participants.length > 0) {
+                  console.log("🔍 Poll detected waiting participants:", participants);
+                  participants.forEach((p: any) => handleNewKnocker(p));
+                }
+              }).catch((err: any) => {
+                // Silently handle errors to avoid spam
+                console.debug("Lobby poll error:", err);
+              });
+            } catch (err) {
+              console.debug("Lobby poll exception:", err);
+            }
+          }, 2000); // Poll every 2 seconds
+
+          // Cleanup poll on unmount
+          return () => {
+            clearInterval(pollInterval);
+          };
+        }
+
+        // Helper function to handle new knocker
+        const handleNewKnocker = (participant: any) => {
+          if (!participant || !participant.id) {
+            console.warn("Invalid participant data:", participant);
+            return;
+          }
+
+          const knocker: KnockingParticipant = {
+            id: participant.id,
+            name: participant.name || participant.displayName || "Unknown Student",
+            timestamp: Date.now()
+          };
+
+          setKnockingParticipants(prev => {
+            // Prevent duplicates
+            if (prev.some(p => p.id === knocker.id)) {
+              console.log("Knocker already in list:", knocker.name);
+              return prev;
+            }
+            
+            console.log("🔔 NEW KNOCKER ADDED:", knocker.name);
+            
+            // Play notification sound
+            playNotificationSound();
+            
+            // Add to list
+            return [...prev, knocker];
+          });
+        };
+
+        // Helper function to remove knocker
+        const removeKnocker = (participantId: string) => {
+          setKnockingParticipants(prev => {
+            const filtered = prev.filter(p => p.id !== participantId);
+            if (filtered.length !== prev.length) {
+              console.log("🗑️ Removed knocker:", participantId);
+            }
+            return filtered;
+          });
+        };
+
+        // Helper function to play notification sound
+        const playNotificationSound = () => {
+          try {
+            if (audioRef.current) {
+              audioRef.current.currentTime = 0;
+              audioRef.current.play().catch(err => {
+                console.log("Audio play prevented:", err);
+              });
+            }
+          } catch (err) {
+            console.log("Audio error:", err);
+          }
+        };
 
         // **CRITICAL**: Listen for when iframe loads and auto-submit prejoin
         // Sometimes prejoinPageEnabled: false doesn't work with External API
@@ -346,6 +528,65 @@ export default function JitsiRoom({
 
   return (
     <div className="relative w-full h-screen bg-gray-900">
+      {/* Hidden audio for notifications */}
+      <audio
+        ref={(el) => { audioRef.current = el; }}
+        src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjKJ0fPTgTIIHGi999+UPA0PVqzn77FfGgY7kdb0zH4sBS18yu/glUALE1mz6OyrWBIJRKHh8bdjHAU3jdHz2IU2Bxpru/je"
+        preload="auto"
+      />
+      
+      {/* 🔔 WAITING ROOM NOTIFICATIONS (Teachers Only) */}
+      {isTutor && knockingParticipants.length > 0 && (
+        <div className="fixed top-4 right-4 z-[100] space-y-2 animate-slideIn">
+          {knockingParticipants.map((participant) => (
+            <Card 
+              key={participant.id}
+              className="w-80 shadow-2xl border-2 border-yellow-400 bg-gradient-to-br from-yellow-50 to-orange-50"
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  {/* Notification Icon */}
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center animate-bounce">
+                    <Bell className="w-5 h-5 text-white" />
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 mb-1">
+                      Student waiting to join
+                    </p>
+                    <p className="text-lg font-bold text-gray-800 truncate mb-3">
+                      {participant.name}
+                    </p>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleAdmitStudent(participant.id, participant.name)}
+                        size="sm"
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
+                      >
+                        <UserCheck className="w-4 h-4 mr-1" />
+                        Admit
+                      </Button>
+                      <Button
+                        onClick={() => handleRejectStudent(participant.id, participant.name)}
+                        size="sm"
+                        variant="destructive"
+                        className="flex-1"
+                      >
+                        <UserX className="w-4 h-4 mr-1" />
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 z-10">
           <div className="text-center">
