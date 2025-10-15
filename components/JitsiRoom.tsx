@@ -8,6 +8,17 @@ import { Loader2, AlertCircle, Pencil, UserCheck, UserX, Bell } from "lucide-rea
 import MeetingFeedback from "@/components/MeetingFeedback";
 import TldrawWhiteboard from "@/components/TldrawWhiteboard";
 import { cn } from "@/lib/utils";
+import { db } from "@/lib/firebase";
+import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
+
+interface FirebaseJoinRequest {
+  id: string;
+  studentName: string;
+  studentId?: string;
+  roomName: string;
+  status: string;
+  createdAt: any;
+}
 
 interface KnockingParticipant {
   id: string;
@@ -54,6 +65,7 @@ export default function JitsiRoom({
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [knockingParticipants, setKnockingParticipants] = useState<KnockingParticipant[]>([]);
   const [admittedIds, setAdmittedIds] = useState<Set<string>>(new Set());
+  const [firebaseJoinRequests, setFirebaseJoinRequests] = useState<FirebaseJoinRequest[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
 
@@ -215,7 +227,6 @@ export default function JitsiRoom({
             // Prevent students from becoming moderators
             ...(!isTutor && {
               disableModeratorIndicator: true,
-              // Force students to always need approval
             }),
             
             // Let Jitsi use server's default config for connection settings
@@ -331,37 +342,8 @@ export default function JitsiRoom({
               }
             }, 1000); // Wait 1 second for lobby to be fully initialized
           } else {
-            // STUDENT JOINED - Check if teacher is present
-            console.log("🎓 Student joined conference");
-            
-            // Check if there are any moderators/teachers in the room
-            setTimeout(() => {
-              try {
-                const participants = api.getParticipantsInfo();
-                const hasModerator = participants.some((p: any) => p.role === 'moderator');
-                
-                console.log("👥 Participants in room:", participants.length, "Moderator present:", hasModerator);
-                
-                if (!hasModerator && participants.length === 1) {
-                  // Student is alone - they joined before teacher
-                  console.log("⚠️ Student joined empty room - showing waiting message");
-                  setError("Teacher hasn't started the lesson yet. Please wait...");
-                  setLoading(true); // Show loading state
-                  
-                  // Leave and wait for teacher to start
-                  setTimeout(() => {
-                    api.executeCommand('hangup');
-                    if (onLeave) {
-                      onLeave();
-                    } else {
-                      router.push(`/student/${studentId}`);
-                    }
-                  }, 3000);
-                }
-              } catch (err) {
-                console.error("Failed to check for moderator:", err);
-              }
-            }, 1000);
+            // Student joined
+            console.log("🎓 Student joined conference and will be in lobby");
           }
         });
 
@@ -564,6 +546,92 @@ export default function JitsiRoom({
     };
   }, [meetingID, participantName, isTutor, studentId, router]); // Added router to deps
 
+  // 🔥 LISTEN FOR FIREBASE JOIN REQUESTS (Teachers only, during lesson)
+  useEffect(() => {
+    if (!isTutor || !meetingID) return;
+
+    console.log("👂 Teacher: Listening for Firebase join requests for room:", meetingID);
+
+    const joinRequestsRef = collection(db, "joinRequests");
+    const q = query(
+      joinRequestsRef,
+      where("roomName", "==", meetingID),
+      where("status", "==", "pending")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const requests: FirebaseJoinRequest[] = [];
+      snapshot.forEach((doc) => {
+        requests.push({
+          id: doc.id,
+          ...doc.data()
+        } as FirebaseJoinRequest);
+      });
+
+      console.log(`📋 Found ${requests.length} pending join requests from Firebase`);
+      setFirebaseJoinRequests(requests);
+
+      // Play notification sound if new requests arrived
+      if (requests.length > firebaseJoinRequests.length) {
+        playNotificationSound();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [isTutor, meetingID]);
+
+  // Helper to play notification sound
+  const playNotificationSound = () => {
+    try {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(err => {
+          console.log("Audio play prevented:", err);
+        });
+      }
+    } catch (err) {
+      console.log("Audio error:", err);
+    }
+  };
+
+  // Handle approving Firebase join request
+  const handleApproveFirebaseRequest = async (requestId: string, studentName: string) => {
+    try {
+      console.log("✅ Approving Firebase join request:", requestId, studentName);
+      
+      await updateDoc(doc(db, "joinRequests", requestId), {
+        status: "approved"
+      });
+
+      // Remove from local state
+      setFirebaseJoinRequests(prev => prev.filter(r => r.id !== requestId));
+
+      console.log("✅ Join request approved, student will join automatically");
+    } catch (error) {
+      console.error("Failed to approve request:", error);
+      alert(`Failed to approve ${studentName}. Please try again.`);
+    }
+  };
+
+  // Handle denying Firebase join request
+  const handleDenyFirebaseRequest = async (requestId: string, studentName: string) => {
+    try {
+      console.log("❌ Denying Firebase join request:", requestId, studentName);
+      
+      await updateDoc(doc(db, "joinRequests", requestId), {
+        status: "denied"
+      });
+
+      // Remove from local state
+      setFirebaseJoinRequests(prev => prev.filter(r => r.id !== requestId));
+
+      console.log("❌ Join request denied");
+    } catch (error) {
+      console.error("Failed to deny request:", error);
+      alert(`Failed to deny ${studentName}. Please try again.`);
+    }
+  };
+
   // Show feedback screen for students when meeting ends
   if (showFeedback && !isTutor) {
     return (
@@ -604,8 +672,57 @@ export default function JitsiRoom({
       />
       
       {/* 🔔 WAITING ROOM NOTIFICATIONS (Teachers Only) */}
-      {isTutor && knockingParticipants.length > 0 && (
-        <div className="fixed top-4 right-4 z-[100] space-y-2 animate-slideIn">
+      {isTutor && (knockingParticipants.length > 0 || firebaseJoinRequests.length > 0) && (
+        <div className="fixed top-4 right-4 z-[100] space-y-2 animate-slideIn max-h-[80vh] overflow-y-auto">
+          {/* Firebase Join Requests (Pre-Jitsi waiting room) */}
+          {firebaseJoinRequests.map((request) => (
+            <Card 
+              key={`firebase-${request.id}`}
+              className="w-80 shadow-2xl border-2 border-blue-400 bg-gradient-to-br from-blue-50 to-cyan-50"
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  {/* Notification Icon */}
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center animate-pulse">
+                    <Bell className="w-5 h-5 text-white" />
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 mb-1">
+                      Join request (not in Jitsi yet)
+                    </p>
+                    <p className="text-lg font-bold text-gray-800 truncate mb-3">
+                      {request.studentName}
+                    </p>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleApproveFirebaseRequest(request.id, request.studentName)}
+                        size="sm"
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
+                      >
+                        <UserCheck className="w-4 h-4 mr-1" />
+                        Approve
+                      </Button>
+                      <Button
+                        onClick={() => handleDenyFirebaseRequest(request.id, request.studentName)}
+                        size="sm"
+                        variant="destructive"
+                        className="flex-1"
+                      >
+                        <UserX className="w-4 h-4 mr-1" />
+                        Deny
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          
+          {/* Jitsi Lobby Knockers (Already in Jitsi lobby) */}
           {knockingParticipants.map((participant) => (
             <Card 
               key={participant.id}

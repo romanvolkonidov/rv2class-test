@@ -378,12 +378,37 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     const teacherKey = teacherName.toLowerCase();
     const roomName = teacherKey; // Simple: "roman" or "violet"
     
-    console.log(`🚀 Joining ${teacherName}'s room: ${roomName}`);
+    console.log(`Creating join request for ${teacherName}'s lesson...`);
     
-    // Always use Jitsi
-    const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&isTutor=false&subject=English&teacherName=${encodeURIComponent(teacherName)}`;
-    console.log("🚀 Redirecting to Jitsi room:", roomUrl);
-    router.push(roomUrl);
+    try {
+      // CREATE JOIN REQUEST in Firebase (teacher will approve from their dashboard)
+      const response = await fetch("/api/join-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomName: roomName,
+          studentName: student.name,
+          studentId: student.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Join request created:", data.requestId);
+        setJoinRequestId(data.requestId);
+        setIsWaitingForTeacher(true);
+        setIsJoining(false);
+      } else {
+        console.error("Failed to create join request:", data.error);
+        alert(data.error || "Failed to send join request. Please try again.");
+        setIsJoining(false);
+      }
+    } catch (error) {
+      console.error("Failed to create join request:", error);
+      alert("Failed to send join request. Please try again.");
+      setIsJoining(false);
+    }
   };
 
   const handleCancelRequest = async () => {
