@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, AlertCircle, Pencil } from "lucide-react";
-import AnnotationOverlay from "@/components/AnnotationOverlay";
 import MeetingFeedback from "@/components/MeetingFeedback";
+import TldrawWhiteboard from "@/components/TldrawWhiteboard";
 import { cn } from "@/lib/utils";
 
 interface JitsiRoomProps {
@@ -39,10 +39,9 @@ export default function JitsiRoom({
   const jitsiApiRef = useRef<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showAnnotations, setShowAnnotations] = useState(false);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [meetingEnded, setMeetingEnded] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showWhiteboard, setShowWhiteboard] = useState(false);
   const router = useRouter();
 
   // Handle meeting end - show feedback for students, redirect teachers
@@ -239,17 +238,6 @@ export default function JitsiRoom({
           handleMeetingEnd();
         });
 
-        // Listen for screen sharing events
-        api.addListener('screenSharingStatusChanged', (event: any) => {
-          console.log("📺 Jitsi: Screen sharing status changed:", event);
-          setIsScreenSharing(event.on);
-          
-          // Auto-hide annotations when screen share stops
-          if (!event.on && showAnnotations) {
-            setShowAnnotations(false);
-          }
-        });
-
         // Listen for prejoin page rendered
         api.on('prejoinVideoChanged', () => {
           console.log("🎥 Jitsi: Prejoin video changed, attempting auto-submit");
@@ -372,31 +360,30 @@ export default function JitsiRoom({
         </div>
       )}
       
-      {/* Annotation Toggle Button - Only visible during screen share */}
-      {!loading && isScreenSharing && (
+      {/* Whiteboard Toggle Button */}
+      {!loading && (
         <div className="absolute bottom-6 left-6 z-50">
           <Button
-            onClick={() => setShowAnnotations(!showAnnotations)}
+            onClick={() => setShowWhiteboard(!showWhiteboard)}
             size="icon"
             className={cn(
               "h-14 w-14 rounded-full shadow-2xl transition-all duration-300 border-2",
-              showAnnotations 
+              showWhiteboard 
                 ? "bg-blue-600 hover:bg-blue-700 border-blue-400 text-white scale-110" 
                 : "bg-black hover:bg-gray-800 border-gray-700 text-white"
             )}
+            title={showWhiteboard ? "Hide Whiteboard" : "Show Whiteboard"}
           >
             <Pencil className="w-6 h-6" />
           </Button>
         </div>
       )}
       
-      {/* Annotation Overlay */}
-      {showAnnotations && (
-        <AnnotationOverlay
-          onClose={() => setShowAnnotations(false)}
-          viewOnly={false}
-          isClosing={false}
-          isTutor={isTutor}
+      {/* tldraw Whiteboard */}
+      {showWhiteboard && (
+        <TldrawWhiteboard
+          roomId={`rv2class-${meetingID}`}
+          onClose={() => setShowWhiteboard(false)}
         />
       )}
       
