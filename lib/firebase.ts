@@ -334,21 +334,34 @@ export const submitHomeworkAnswers = async (
       completedAt: serverTimestamp()
     });
 
-    // Create homework report
+    // Create homework report with answers
     const reportData = {
       studentId,
       homeworkId: assignmentId,
       score,
       correctAnswers: correctCount,
       totalQuestions: totalCount,
-      submittedAnswers: answers,
+      submittedAnswers: answers, // CRITICAL: This saves the actual answers for review
       completedAt: serverTimestamp(),
       completedVia: "web-app"
     };
 
-    await addDoc(collection(db, "telegramHomeworkReports"), reportData);
+    // Validate that answers array is not empty before saving
+    if (!answers || answers.length === 0) {
+      console.warn('⚠️ WARNING: Attempting to save homework report with EMPTY answers array!');
+      console.warn('   This might indicate a problem with answer collection.');
+    } else {
+      console.log(`✅ Saving ${answers.length} answers to database...`);
+      console.log('   Sample answer:', answers[0]);
+    }
+
+    // Save to database
+    const docRef = await addDoc(collection(db, "telegramHomeworkReports"), reportData);
     
-    console.log(`Homework submitted: ${correctCount}/${totalCount} correct (${score}%)`);
+    console.log(`✅ Homework report saved successfully!`);
+    console.log(`   Report ID: ${docRef.id}`);
+    console.log(`   Score: ${correctCount}/${totalCount} correct (${score}%)`);
+    console.log(`   Answers saved: ${answers.length}`);
     
     return {
       success: true,
@@ -357,7 +370,8 @@ export const submitHomeworkAnswers = async (
       totalQuestions: totalCount
     };
   } catch (error) {
-    console.error("Error submitting homework:", error);
+    console.error("❌ Error submitting homework:", error);
+    console.error("   This error prevented the homework from being saved!");
     return {
       success: false,
       score: 0,

@@ -479,9 +479,25 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                 <div className="space-y-6">
                   {resultsQuestions.map((question, index) => {
                     const report = getReportForAssignment(viewingResultsFor);
-                    const submittedAnswer = report?.submittedAnswers?.find(
+                    
+                    // Enhanced answer extraction with better debugging
+                    const submittedAnswerObj = report?.submittedAnswers?.find(
                       (a: any) => a.questionId === question.id
-                    )?.answer;
+                    );
+                    const submittedAnswer = submittedAnswerObj?.answer;
+                    
+                    // Debug: Log the first question to understand the data structure
+                    if (index === 0) {
+                      console.log('🔍 First Question Debug:', {
+                        questionId: question.id,
+                        submittedAnswerObj,
+                        submittedAnswer,
+                        allSubmittedAnswers: report?.submittedAnswers,
+                        reportExists: !!report,
+                        submittedAnswersExists: !!report?.submittedAnswers,
+                        submittedAnswersLength: report?.submittedAnswers?.length
+                      });
+                    }
                     
                     // More robust correctness check
                     let isCorrect = false;
@@ -580,20 +596,25 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                               }
                               
                               // Determine if this option was selected by the student
-                              // More robust comparison with trimming and case-insensitive matching
-                              const isThisSelected = submittedAnswer !== undefined && 
-                                submittedAnswer !== null && 
-                                String(submittedAnswer).trim().toLowerCase() === String(option).trim().toLowerCase();
-                              
-                              // Debug log for troubleshooting
-                              if (index === 0 && optIndex === 0) {
-                                console.log(`Q${index + 1} Option comparison:`, {
-                                  option,
-                                  submittedAnswer,
-                                  isThisSelected,
-                                  isThisCorrect,
-                                  comparison: `"${String(submittedAnswer || '').trim().toLowerCase()}" === "${String(option).trim().toLowerCase()}"`
-                                });
+                              // Fixed: More lenient comparison that handles undefined/null/empty string cases
+                              let isThisSelected = false;
+                              if (submittedAnswer !== undefined && submittedAnswer !== null && submittedAnswer !== "") {
+                                const submittedStr = String(submittedAnswer).trim().toLowerCase();
+                                const optionStr = String(option).trim().toLowerCase();
+                                isThisSelected = submittedStr === optionStr;
+                                
+                                // Debug log for troubleshooting
+                                if (index === 0 && optIndex === 0) {
+                                  console.log(`Q${index + 1} Option comparison:`, {
+                                    option,
+                                    submittedAnswer,
+                                    submittedStr,
+                                    optionStr,
+                                    isThisSelected,
+                                    isThisCorrect,
+                                    match: submittedStr === optionStr
+                                  });
+                                }
                               }
                               
                               return (

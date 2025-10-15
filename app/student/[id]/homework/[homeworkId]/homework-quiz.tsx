@@ -110,6 +110,22 @@ export default function HomeworkQuiz({ studentId, studentName, homeworkId }: Hom
         answer
       }));
 
+      // Validation: Ensure we have answers to submit
+      if (answerArray.length === 0) {
+        console.error('❌ ERROR: No answers to submit!');
+        alert("Error: No answers to submit. Please answer at least one question.");
+        setSubmitting(false);
+        return;
+      }
+
+      console.log('🚀 Submitting homework answers to database...');
+      console.log('   Homework ID:', homeworkId);
+      console.log('   Student ID:', studentId);
+      console.log('   Answers count:', answerArray.length);
+      console.log('   Questions count:', questions.length);
+      console.log('   Sample answer:', answerArray[0]);
+      console.log('   All answers:', answerArray);
+
       const result = await submitHomeworkAnswers(
         homeworkId,
         studentId,
@@ -117,14 +133,21 @@ export default function HomeworkQuiz({ studentId, studentName, homeworkId }: Hom
         questions
       );
 
+      console.log('📥 Submission result:', result);
+
       if (result.success) {
+        console.log('✅ Homework submitted successfully!');
+        console.log('   Score:', result.score + '%');
+        console.log('   Correct:', result.correctAnswers, '/', result.totalQuestions);
         setResults(result);
         setSubmitted(true);
       } else {
+        console.error('❌ Submission failed - result.success is false');
         alert("Failed to submit homework. Please try again.");
       }
     } catch (error) {
-      console.error("Error submitting homework:", error);
+      console.error("❌ ERROR submitting homework:", error);
+      console.error("   Error details:", error instanceof Error ? error.message : 'Unknown error');
       alert("An error occurred. Please try again.");
     } finally {
       setSubmitting(false);
