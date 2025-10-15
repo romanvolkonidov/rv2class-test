@@ -54,49 +54,120 @@ export default function TldrawWhiteboard({ roomId, onClose }: TldrawWhiteboardPr
         <Tldraw
           persistenceKey={`rv2class-${roomId}`}
           autoFocus
-          // Force toolbar to be visible
           inferDarkMode={false}
+          hideUi={false}
+          // Explicitly show all UI components
+          components={{
+            Toolbar: null, // Use default toolbar
+          }}
         />
       </div>
       
-      {/* Add custom CSS to ensure toolbar is always visible */}
+      {/* Add custom CSS to ensure toolbar is always visible as ONE unified bar */}
       <style jsx global>{`
         .tldraw {
           --color-background: white !important;
         }
         
-        /* Ensure toolbar is always visible and touchable */
-        .tlui-toolbar,
-        .tlui-toolbar__tools,
+        /* Hide scattered UI elements - we want one unified toolbar */
+        .tlui-layout__top,
+        .tlui-layout__top__left,
+        .tlui-layout__top__right,
+        .tlui-navigation-zone,
+        .tlui-helper-buttons {
+          display: none !important;
+        }
+        
+        /* Keep main toolbar visible as ONE BAR at bottom center */
+        .tlui-toolbar {
+          display: flex !important;
+          position: fixed !important;
+          bottom: 20px !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+          z-index: 9999 !important;
+          background: white !important;
+          border-radius: 16px !important;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.2) !important;
+          padding: 12px 16px !important;
+          gap: 8px !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+          pointer-events: auto !important;
+          flex-direction: row !important;
+          align-items: center !important;
+        }
+        
+        /* Ensure toolbar inner container shows all tools in a row */
+        .tlui-toolbar__inner {
+          display: flex !important;
+          flex-direction: row !important;
+          gap: 4px !important;
+          align-items: center !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+        
+        /* Make toolbar tools visible in a single row */
+        .tlui-toolbar__tools {
+          display: flex !important;
+          flex-direction: row !important;
+          gap: 4px !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+          pointer-events: auto !important;
+        }
+        
+        /* Ensure all toolbar buttons are visible */
+        .tlui-toolbar__tools > *,
         .tlui-button {
+          display: flex !important;
+          opacity: 1 !important;
+          visibility: visible !important;
           pointer-events: auto !important;
           touch-action: manipulation !important;
+          min-width: 48px !important;
+          min-height: 48px !important;
         }
         
-        /* Increase touch target size for mobile */
-        .tlui-button {
-          min-width: 44px !important;
-          min-height: 44px !important;
-        }
-        
-        /* Prevent tools from disappearing */
-        .tlui-toolbar__tools > * {
+        /* Keep style panel visible when tool is selected - positioned near toolbar */
+        .tlui-style-panel {
+          display: flex !important;
+          position: fixed !important;
+          bottom: 90px !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+          z-index: 9999 !important;
+          background: white !important;
+          border-radius: 12px !important;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
+          padding: 12px !important;
           opacity: 1 !important;
           visibility: visible !important;
-          display: flex !important;
-        }
-        
-        /* Make sure the toolbar container is visible */
-        .tlui-toolbar {
-          opacity: 1 !important;
-          visibility: visible !important;
-          display: flex !important;
-          z-index: 1000 !important;
+          pointer-events: auto !important;
         }
         
         /* Ensure the main canvas allows interactions */
         .tl-canvas {
           touch-action: none !important;
+        }
+        
+        /* Make sure buttons stay visible when selected */
+        .tlui-button:active,
+        .tlui-button:focus,
+        .tlui-button[data-state="selected"],
+        .tlui-button[data-state="hinted"] {
+          opacity: 1 !important;
+          visibility: visible !important;
+          display: flex !important;
+        }
+        
+        /* Keep the layout visible */
+        .tlui-layout,
+        .tlui-layout__bottom {
+          display: flex !important;
+          opacity: 1 !important;
+          visibility: visible !important;
         }
       `}</style>
     </div>
