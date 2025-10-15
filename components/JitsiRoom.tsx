@@ -70,9 +70,21 @@ export default function JitsiRoom({
   const router = useRouter();
 
   // Handle meeting end - show feedback for students, redirect teachers
-    const handleMeetingEnd = async () => {
-    console.log("Meeting ended");
+  const handleMeetingEnd = async () => {
+    console.log("Meeting ended", { isTutor, studentId });
     setMeetingEnded(true);
+    
+    if (!isTutor) {
+      // Students: show feedback screen
+      console.log("📝 Showing feedback screen for student");
+      setShowFeedback(true);
+    } else {
+      // Teachers: redirect immediately to home
+      console.log("👨‍🏫 Teacher leaving, redirecting to home");
+      setTimeout(() => {
+        handleRedirect();
+      }, 1000); // Small delay for better UX
+    }
   };
 
   // 🚪 ADMIT STUDENT TO MEETING
