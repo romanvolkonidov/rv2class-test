@@ -9,6 +9,7 @@ Previous lobby implementations failed because:
 - After clicking "Admit", students didn't successfully join
 - Events were missed due to race conditions or API timing issues
 - No backup mechanisms when primary events failed
+- **Students joining BEFORE teacher didn't work** - they became moderators or bypassed lobby
 
 ## Solution Architecture
 
@@ -60,9 +61,24 @@ const audioRef = useRef<HTMLAudioElement | null>(null);
 configOverwrite: {
   enableLobbyChat: false,    // No chat in lobby
   autoKnockLobby: true,      // Students auto-knock
-  lobbyEnabled: !isTutor,    // Lobby only for students
+  lobbyEnabled: true,        // ALWAYS enabled (room-level, not user-level)
+}
+
+userInfo: {
+  displayName: participantName,
+  email: studentId ? `student_${studentId}@rv2class.com` : undefined,
+  // Explicitly set moderator role for teachers
+  ...(isTutor && { 
+    moderator: true,
+    role: 'moderator'
+  }),
 }
 ```
+
+**Critical Change**: `lobbyEnabled: true` (always) instead of `lobbyEnabled: !isTutor`
+- This ensures the lobby exists for the room BEFORE anyone joins
+- Teachers bypass lobby automatically (as moderators)
+- Students ALWAYS go to lobby, even if they join first
 
 #### Event Listeners (For Teachers Only)
 ```typescript

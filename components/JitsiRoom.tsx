@@ -203,7 +203,7 @@ export default function JitsiRoom({
             // 🔒 ROBUST WAITING ROOM CONFIGURATION
             enableLobbyChat: false, // Don't let students chat in lobby
             autoKnockLobby: true, // Automatically knock when entering lobby
-            lobbyEnabled: !isTutor, // Enable lobby for non-moderators only
+            lobbyEnabled: true, // ALWAYS enable lobby for the room
             
             // Let Jitsi use server's default config for connection settings
             // Only override STUN servers for better connectivity
@@ -259,6 +259,11 @@ export default function JitsiRoom({
           userInfo: {
             displayName: participantName,
             email: studentId ? `student_${studentId}@rv2class.com` : undefined,
+            // Set moderator role for tutors
+            ...(isTutor && { 
+              moderator: true,
+              role: 'moderator'
+            }),
           },
           
           // 🎯 NEW: Add JWT and config params to URL to force skip prejoin
@@ -294,6 +299,24 @@ export default function JitsiRoom({
             // 🔒 ENABLE LOBBY IMMEDIATELY AFTER TEACHER JOINS
             api.executeCommand('toggleLobby', true);
             console.log("🔒 Lobby enabled - students will need approval");
+            
+            // 🔍 CHECK IF STUDENTS ARE ALREADY WAITING (joined before teacher)
+            setTimeout(() => {
+              try {
+                api.getLobbyParticipants().then((waitingParticipants: any[]) => {
+                  if (waitingParticipants && waitingParticipants.length > 0) {
+                    console.log(`🔔 Found ${waitingParticipants.length} students already waiting!`);
+                    waitingParticipants.forEach((p: any) => {
+                      handleNewKnocker(p);
+                    });
+                  }
+                }).catch((err: any) => {
+                  console.log("Could not check for waiting participants:", err);
+                });
+              } catch (err) {
+                console.log("getLobbyParticipants not available:", err);
+              }
+            }, 1000); // Wait 1 second for lobby to be fully initialized
           }
         });
 
