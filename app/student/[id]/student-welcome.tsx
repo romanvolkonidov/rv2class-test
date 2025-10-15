@@ -371,85 +371,17 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     }
 
     setIsJoining(true);
-    setIsWaitingForTeacher(true);
-    
-    // CRITICAL: Stop all preview streams before joining to prevent echo and camera lock
-    // The room will request fresh streams with proper settings
-    console.log("🛑 Stopping preview streams to prevent echo and camera lock...");
-    
-    // Stop WaitingRoom preview stream
-    if (waitingRoomRef.current) {
-      console.log("🛑 Stopping WaitingRoom preview via ref...");
-      waitingRoomRef.current.stopPreview();
-    }
-    
-    // Stop local preview streams
-    if (micStream) {
-      micStream.getTracks().forEach(track => {
-        track.stop();
-        console.log("🎤 Stopped microphone preview track");
-      });
-      setMicStream(null);
-    }
-    if (videoStream) {
-      videoStream.getTracks().forEach(track => {
-        track.stop();
-        console.log("📹 Stopped camera preview track");
-      });
-      setVideoStream(null);
-    }
-    
-    // CRITICAL: Extra safety - stop ALL active media tracks system-wide
-    // This ensures no track is holding the camera when room tries to use it
-    try {
-      const allTracks = await navigator.mediaDevices.enumerateDevices();
-      console.log("🔍 Found devices:", allTracks.length);
-      
-      // Small delay to ensure all stops are processed
-      await new Promise(resolve => setTimeout(resolve, 300));
-      console.log("✅ All preview tracks released, ready to join room");
-    } catch (err) {
-      console.warn("⚠️ Error during device enumeration:", err);
-    }
     
     // Simple room name: just the teacher's name (e.g., "roman" or "violet")
     const teacherKey = teacherName.toLowerCase();
     const roomName = teacherKey; // Simple: "roman" or "violet"
     
-    console.log(`🚀 Joining ${teacherName}'s room: ${roomName}`);
+    console.log(`🚀 Joining ${teacherName}'s BBB room directly: ${roomName}`);
     
-    // Create join request (even if room doesn't exist yet - teacher will see it when they start)
-    console.log(`� Creating join request for ${teacherName}'s room: ${roomName}`);
-    
-    try {
-      const response = await fetch("/api/join-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          roomName: roomName,
-          studentName: student.name,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log("✅ Join request created:", data.requestId);
-        console.log("⏳ Waiting for teacher to start and approve...");
-        // Store the request ID to start listening for approval
-        setJoinRequestId(data.requestId);
-        // The useEffect hook will now listen for status changes
-      } else {
-        alert("Не удалось подключиться к уроку. Попробуйте снова.");
-        setIsJoining(false);
-        setIsWaitingForTeacher(false);
-      }
-    } catch (error) {
-      console.error("Error joining class:", error);
-      alert("Не удалось подключиться к уроку. Попробуйте снова.");
-      setIsJoining(false);
-      setIsWaitingForTeacher(false);
-    }
+    // Join BBB directly - no waiting room, no approval needed
+    const roomUrl = `/bbb-room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}`;
+    console.log("🚀 Redirecting to BBB:", roomUrl);
+    router.push(roomUrl);
   };
 
   const handleCancelRequest = async () => {
