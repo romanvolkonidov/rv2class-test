@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Video, Users, BookOpen, Calendar, Play, User, X, LogIn } from "lucide-react";
+import { Video, Users, BookOpen, Calendar, Play, User, X, LogIn, MessageSquare } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import FeedbackList from "@/components/FeedbackList";
 
 interface ActiveRoom {
   name: string;
@@ -176,6 +177,17 @@ export default function Home() {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Recent Feedbacks Section */}
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <MessageSquare className="h-6 w-6 text-purple-600" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Последние отзывы
+            </h2>
+          </div>
+          <FeedbackList maxFeedbacks={10} />
         </div>
 
         <div className="mt-8 p-6 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">

@@ -9,11 +9,17 @@ import { cn } from "@/lib/utils";
 
 interface MeetingFeedbackProps {
   participantName: string;
+  teacherName: string;
+  studentId: string;
+  meetingID: string;
   onSubmit: (rating: number, comment: string) => void;
 }
 
 export default function MeetingFeedback({
   participantName,
+  teacherName,
+  studentId,
+  meetingID,
   onSubmit,
 }: MeetingFeedbackProps) {
   const [rating, setRating] = useState<number>(0);
@@ -47,10 +53,10 @@ export default function MeetingFeedback({
             </div>
           </div>
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Thank you for the lesson!
+            Спасибо за урок!
           </CardTitle>
           <p className="text-gray-600 mt-2">
-            How was your experience today, {participantName}?
+            Как прошёл урок, {participantName}?
           </p>
         </CardHeader>
         
@@ -58,7 +64,7 @@ export default function MeetingFeedback({
           {/* Star Rating */}
           <div className="space-y-3">
             <label className="text-sm font-medium text-gray-700 block text-center">
-              Rate your lesson
+              Оцените урок
             </label>
             <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -84,11 +90,11 @@ export default function MeetingFeedback({
             </div>
             {rating > 0 && (
               <p className="text-center text-sm text-gray-600">
-                {rating === 5 && "⭐ Excellent!"}
-                {rating === 4 && "😊 Great!"}
-                {rating === 3 && "👍 Good!"}
-                {rating === 2 && "🙂 Okay"}
-                {rating === 1 && "😐 Needs improvement"}
+                {rating === 5 && "⭐ Отлично!"}
+                {rating === 4 && "😊 Очень хорошо!"}
+                {rating === 3 && "👍 Хорошо!"}
+                {rating === 2 && "🙂 Нормально"}
+                {rating === 1 && "😐 Нужно улучшить"}
               </p>
             )}
           </div>
@@ -96,10 +102,10 @@ export default function MeetingFeedback({
           {/* Optional Comment */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 block">
-              Share your thoughts (optional)
+              Поделитесь своими мыслями (необязательно)
             </label>
             <Textarea
-              placeholder="What did you learn today? Any suggestions?"
+              placeholder="Что вы узнали сегодня? Есть предложения?"
               value={comment}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setComment(e.target.value)}
               className="min-h-[100px] resize-none"
@@ -122,12 +128,12 @@ export default function MeetingFeedback({
               {isSubmitting ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Submitting...
+                  Отправка...
                 </>
               ) : (
                 <>
                   <Send className="w-5 h-5 mr-2" />
-                  Submit Feedback
+                  Отправить отзыв
                 </>
               )}
             </Button>
@@ -138,7 +144,7 @@ export default function MeetingFeedback({
               variant="ghost"
               className="w-full text-gray-600 hover:text-gray-800"
             >
-              Skip for now
+              Пропустить
             </Button>
           </div>
         </CardContent>

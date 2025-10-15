@@ -169,8 +169,37 @@ export default function JitsiRoom({
 
   // Handle feedback submission
   const handleFeedbackSubmit = async (rating: number, comment: string) => {
-    // TODO: Save feedback to database
-    console.log("Feedback submitted:", { rating, comment, studentId, meetingID });
+    if (rating === 0) {
+      // Skipped feedback
+      console.log("Feedback skipped");
+      handleRedirect();
+      return;
+    }
+
+    try {
+      console.log("💾 Saving feedback to Firebase:", { rating, comment, studentId, meetingID });
+      
+      // Save feedback to Firebase
+      const feedbackData = {
+        rating,
+        comment,
+        studentId,
+        studentName: participantName,
+        teacherName,
+        roomName: meetingID,
+        subject: subject,
+        createdAt: new Date().toISOString(),
+        timestamp: Date.now(),
+      };
+
+      const { collection, addDoc } = await import('firebase/firestore');
+      await addDoc(collection(db, 'feedbacks'), feedbackData);
+      
+      console.log("✅ Feedback saved successfully");
+    } catch (error) {
+      console.error("❌ Error saving feedback:", error);
+      // Continue to redirect even if save fails
+    }
     
     // Small delay for better UX
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -545,6 +574,9 @@ export default function JitsiRoom({
     return (
       <MeetingFeedback
         participantName={participantName}
+        teacherName={teacherName || "Teacher"}
+        studentId={studentId || ""}
+        meetingID={meetingID}
         onSubmit={handleFeedbackSubmit}
       />
     );
