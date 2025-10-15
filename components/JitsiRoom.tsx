@@ -630,13 +630,19 @@ export default function JitsiRoom({
   useEffect(() => {
     if (!jitsiApiRef.current) return;
 
-    const checkScreenShare = () => {
+    console.log('🔍 Setting up screen share detection...');
+
+    // Function to check if anyone is screen sharing
+    const checkScreenShareStatus = () => {
       try {
-        // Check if screen sharing is active
-        const screenSharingStatus = jitsiApiRef.current.isVideoMuted();
+        // Method 1: Check via Jitsi API
+        const participants = jitsiApiRef.current.getParticipantsInfo();
+        const someoneSharing = participants.some((p: any) => p.screenShare === true);
         
-        // Alternative: Listen for screen share events
-        // Jitsi fires 'screenSharingStatusChanged' event
+        if (someoneSharing !== isScreenSharing) {
+          console.log('📺 Screen share status changed via polling:', someoneSharing);
+          setIsScreenSharing(someoneSharing);
+        }
       } catch (error) {
         console.error('Error checking screen share status:', error);
       }
@@ -644,7 +650,7 @@ export default function JitsiRoom({
 
     // Listen for screen share events
     const handleScreenShareToggled = (event: any) => {
-      console.log('📺 Screen share toggled:', event);
+      console.log('📺 Screen share toggled EVENT:', event);
       setIsScreenSharing(event.on);
       
       // If screen share stops, also hide annotations
@@ -657,14 +663,40 @@ export default function JitsiRoom({
       }
     };
 
+    // Listen for video quality changes (more reliable for screen share detection)
+    const handleVideoQualityChanged = (event: any) => {
+      console.log('📹 Video quality changed:', event);
+      // Recheck screen share status
+      checkScreenShareStatus();
+    };
+
+    // Listen for participant changes
+    const handleParticipantJoined = () => {
+      console.log('👤 Participant joined, checking screen share...');
+      setTimeout(checkScreenShareStatus, 500);
+    };
+
     jitsiApiRef.current.addListener('screenSharingStatusChanged', handleScreenShareToggled);
+    jitsiApiRef.current.addListener('videoQualityChanged', handleVideoQualityChanged);
+    jitsiApiRef.current.addListener('participantJoined', handleParticipantJoined);
+    jitsiApiRef.current.addListener('participantLeft', handleParticipantJoined);
+
+    // Poll every 2 seconds as fallback (in case events don't fire)
+    const pollInterval = setInterval(checkScreenShareStatus, 2000);
+
+    // Initial check
+    setTimeout(checkScreenShareStatus, 1000);
 
     return () => {
       if (jitsiApiRef.current) {
         jitsiApiRef.current.removeListener('screenSharingStatusChanged', handleScreenShareToggled);
+        jitsiApiRef.current.removeListener('videoQualityChanged', handleVideoQualityChanged);
+        jitsiApiRef.current.removeListener('participantJoined', handleParticipantJoined);
+        jitsiApiRef.current.removeListener('participantLeft', handleParticipantJoined);
       }
+      clearInterval(pollInterval);
     };
-  }, [showAnnotations]);
+  }, [showAnnotations, isScreenSharing]);
 
   // 📝 LISTEN FOR ANNOTATION TOGGLE MESSAGES (Students only)
   useEffect(() => {
@@ -985,15 +1017,22 @@ export default function JitsiRoom({
             }}
             size="icon"
             className={cn(
-              "h-14 w-14 rounded-full shadow-xl transition-all duration-200 backdrop-blur-sm",
+              "h-14 w-14 rounded-full shadow-xl transition-all duration-200 backdrop-blur-sm ring-4 ring-white/20",
               showAnnotations 
-                ? "bg-green-600/95 hover:bg-green-700 text-white border-2 border-green-400" 
-                : "bg-gray-800/90 hover:bg-gray-700/90 text-white border-2 border-gray-600"
+                ? "bg-green-600/95 hover:bg-green-700 text-white border-2 border-green-400 scale-110" 
+                : "bg-red-600/95 hover:bg-red-700 text-white border-2 border-red-400 animate-pulse"
             )}
             title={showAnnotations ? "Hide Annotations" : "Show Annotations (Drag to move)"}
           >
             <Pencil className="w-6 h-6" />
           </Button>
+        </div>
+      )}
+
+      {/* Debug indicator - Remove after testing */}
+      {!loading && isTutor && (
+        <div className="fixed top-4 right-4 z-[9999] bg-black/80 text-white px-4 py-2 rounded-lg text-sm font-mono">
+          Screen Sharing: {isScreenSharing ? '✅ YES' : '❌ NO'}
         </div>
       )}
       
