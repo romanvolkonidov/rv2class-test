@@ -467,6 +467,41 @@ export default function JitsiRoom({
           } else {
             // Student joined
             console.log("🎓 Student joined conference directly (no lobby)");
+            
+            // Set up listener for teacher broadcasts
+            console.log('👂 Student setting up message listener after joining...');
+            const handleEndpointMessage = (participant: any, data: any) => {
+              console.log('📨 Student received message from:', participant?.getId?.(), 'data:', data);
+              try {
+                const message = JSON.parse(data);
+                console.log('📨 Parsed message:', message);
+                
+                // Handle annotation toggle
+                if (message.type === 'toggleAnnotations') {
+                  console.log('🎨 Setting annotations to:', message.show);
+                  if (message.show) {
+                    setShowAnnotations(true);
+                    setAnnotationsClosing(false);
+                  } else {
+                    setAnnotationsClosing(true);
+                    setTimeout(() => {
+                      setShowAnnotations(false);
+                      setAnnotationsClosing(false);
+                    }, 300);
+                  }
+                }
+                
+                // Handle whiteboard toggle
+                if (message.type === 'toggleWhiteboard') {
+                  console.log('📋 Received whiteboard toggle from teacher:', message.show);
+                  setShowWhiteboard(message.show);
+                }
+              } catch (error) {
+                console.error('Error parsing message:', error);
+              }
+            };
+            
+            api.addListener('endpointTextMessageReceived', handleEndpointMessage);
           }
         });
 
@@ -697,47 +732,6 @@ export default function JitsiRoom({
       clearInterval(pollInterval);
     };
   }, [showAnnotations, isScreenSharing]);
-
-  // 📝 LISTEN FOR ANNOTATION & WHITEBOARD TOGGLE MESSAGES (Students only)
-  useEffect(() => {
-    if (!jitsiApiRef.current || isTutor) return;
-
-    const handleEndpointMessage = (participant: any, data: any) => {
-      try {
-        const message = JSON.parse(data);
-        
-        // Handle annotation toggle
-        if (message.type === 'toggleAnnotations') {
-          if (message.show) {
-            setShowAnnotations(true);
-            setAnnotationsClosing(false);
-          } else {
-            setAnnotationsClosing(true);
-            setTimeout(() => {
-              setShowAnnotations(false);
-              setAnnotationsClosing(false);
-            }, 300);
-          }
-        }
-        
-        // Handle whiteboard toggle
-        if (message.type === 'toggleWhiteboard') {
-          console.log('📋 Received whiteboard toggle from teacher:', message.show);
-          setShowWhiteboard(message.show);
-        }
-      } catch (error) {
-        console.error('Error parsing message:', error);
-      }
-    };
-
-    jitsiApiRef.current.addListener('endpointTextMessageReceived', handleEndpointMessage);
-
-    return () => {
-      if (jitsiApiRef.current) {
-        jitsiApiRef.current.removeListener('endpointTextMessageReceived', handleEndpointMessage);
-      }
-    };
-  }, [isTutor]);
 
   // Helper to play notification sound
   const playNotificationSound = () => {
@@ -972,13 +966,15 @@ export default function JitsiRoom({
                 // Broadcast toggle to all participants
                 if (jitsiApiRef.current) {
                   try {
-                    jitsiApiRef.current.executeCommand('sendEndpointTextMessage', '', JSON.stringify({
+                    const message = JSON.stringify({
                       type: 'toggleWhiteboard',
                       show: newState
-                    }));
-                    console.log('📋 Broadcasting whiteboard toggle:', newState);
+                    });
+                    console.log('📋 Teacher broadcasting whiteboard toggle:', newState, 'message:', message);
+                    jitsiApiRef.current.executeCommand('sendEndpointTextMessage', '', message);
+                    console.log('✅ Broadcast sent successfully');
                   } catch (error) {
-                    console.error('Error broadcasting whiteboard toggle:', error);
+                    console.error('❌ Error broadcasting whiteboard toggle:', error);
                   }
                 }
               }
