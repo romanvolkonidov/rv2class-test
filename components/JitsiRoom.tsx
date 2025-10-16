@@ -471,7 +471,14 @@ export default function JitsiRoom({
             // Set up listener for teacher broadcasts
             console.log('👂 Student setting up message listener after joining...');
             const handleEndpointMessage = (participant: any, data: any) => {
-              console.log('📨 Student received message from:', participant?.getId?.(), 'data:', data);
+              console.log('📨 Student received message from:', participant?.getId?.(), 'data:', data, 'type:', typeof data);
+              
+              // Skip if data is undefined or empty
+              if (!data || data === 'undefined' || typeof data !== 'string') {
+                console.log('⏭️ Skipping invalid message data');
+                return;
+              }
+              
               try {
                 const message = JSON.parse(data);
                 console.log('📨 Parsed message:', message);
@@ -497,7 +504,7 @@ export default function JitsiRoom({
                   setShowWhiteboard(message.show);
                 }
               } catch (error) {
-                console.error('Error parsing message:', error);
+                console.error('Error parsing message:', error, 'data was:', data);
               }
             };
             
