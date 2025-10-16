@@ -15,9 +15,10 @@ interface ExcalidrawWhiteboardProps {
   roomId: string;
   onClose: () => void;
   jitsiApi?: any;
+  isTutor?: boolean;
 }
 
-export default function ExcalidrawWhiteboard({ roomId, onClose, jitsiApi }: ExcalidrawWhiteboardProps) {
+export default function ExcalidrawWhiteboard({ roomId, onClose, jitsiApi, isTutor = false }: ExcalidrawWhiteboardProps) {
   const [excalidrawAPI, setExcalidrawAPI] = useState<any | null>(null);
   const [isCollaborating, setIsCollaborating] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -145,26 +146,28 @@ export default function ExcalidrawWhiteboard({ roomId, onClose, jitsiApi }: Exca
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setIsCollaborating(!isCollaborating)}
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            title={isCollaborating ? "Disable real-time sync" : "Enable real-time sync"}
-          >
-            {isCollaborating ? "🔗 Syncing" : "⛓️ Sync Off"}
-          </Button>
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            size="icon"
-            className="hover:bg-gray-100"
-            title="Close whiteboard"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
+        {isTutor && (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setIsCollaborating(!isCollaborating)}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              title={isCollaborating ? "Disable real-time sync" : "Enable real-time sync"}
+            >
+              {isCollaborating ? "🔗 Syncing" : "⛓️ Sync Off"}
+            </Button>
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              size="icon"
+              className="hover:bg-gray-100"
+              title="Close whiteboard"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Excalidraw Canvas */}

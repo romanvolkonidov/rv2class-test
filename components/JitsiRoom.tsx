@@ -1072,6 +1072,7 @@ export default function JitsiRoom({
             }
           }}
           jitsiApi={jitsiApiRef.current}
+          isTutor={isTutor}
         />
       )}
 
