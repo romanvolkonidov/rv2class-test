@@ -722,8 +722,8 @@ export const countUnseenHomework = async (): Promise<number> => {
   }
 };
 
-// Fetch all completed homework reports with student information
-export const fetchAllCompletedHomework = async (): Promise<Array<HomeworkReport & { studentName?: string }>> => {
+// Fetch all completed homework reports with student information and assignment details
+export const fetchAllCompletedHomework = async (): Promise<Array<HomeworkReport & { studentName?: string; topicIds?: string[] }>> => {
   try {
     const reportsRef = collection(db, "telegramHomeworkReports");
     const querySnapshot = await getDocs(reportsRef);
@@ -732,15 +732,26 @@ export const fetchAllCompletedHomework = async (): Promise<Array<HomeworkReport 
     const students = await fetchStudents();
     const studentMap = new Map(students.map(s => [s.id, s.name]));
     
-    // Map reports with student names
+    // Get all assignments to get topicIds
+    const assignmentsRef = collection(db, "telegramAssignments");
+    const assignmentsSnapshot = await getDocs(assignmentsRef);
+    const assignmentMap = new Map(
+      assignmentsSnapshot.docs.map(doc => [doc.id, doc.data()])
+    );
+    
+    // Map reports with student names and assignment details
     const reports = querySnapshot.docs.map(doc => {
       const data = serializeTimestamp(doc.data());
+      const assignment = assignmentMap.get(data.homeworkId);
+      const topicIds = assignment?.topicIds || (assignment?.topicId ? [assignment.topicId] : []);
+      
       return {
         id: doc.id,
         ...data,
-        studentName: studentMap.get(data.studentId) || "Unknown Student"
+        studentName: studentMap.get(data.studentId) || "Unknown Student",
+        topicIds
       };
-    }) as Array<HomeworkReport & { studentName?: string }>;
+    }) as Array<HomeworkReport & { studentName?: string; topicIds?: string[] }>;
     
     // Sort by completedAt, latest first
     reports.sort((a, b) => {
@@ -766,6 +777,28 @@ export const markHomeworkAsSeen = async (reportId: string): Promise<boolean> => 
     return true;
   } catch (error) {
     console.error("Error marking homework as seen:", error);
+    return false;
+  }
+};
+
+// Mark all unseen homework reports as seen by teacher
+export const markAllHomeworkAsSeen = async (): Promise<boolean> => {
+  try {
+    const reportsRef = collection(db, "telegramHomeworkReports");
+    const querySnapshot = await getDocs(reportsRef);
+    
+    // Update all reports that don't have seenByTeacher or it's false
+    const updatePromises = querySnapshot.docs
+      .filter(doc => {
+        const data = doc.data();
+        return !data.seenByTeacher;
+      })
+      .map(doc => updateDoc(doc.ref, { seenByTeacher: true }));
+    
+    await Promise.all(updatePromises);
+    return true;
+  } catch (error) {
+    console.error("Error marking all homework as seen:", error);
     return false;
   }
 };

@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { fetchAllCompletedHomework, markHomeworkAsSeen, HomeworkReport } from "@/lib/firebase";
+import { fetchAllCompletedHomework, markHomeworkAsSeen, markAllHomeworkAsSeen, fetchQuestionsForHomework, HomeworkReport, Question } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Loader2, ArrowLeft, User, Clock, Trophy, CheckCircle, Eye, X } from "lucide-react";
+import { BookOpen, Loader2, ArrowLeft, User, Clock, Trophy, CheckCircle, Eye, X, Check } from "lucide-react";
 
 export default function TeacherHomeworksPage() {
   const router = useRouter();
-  const [homeworks, setHomeworks] = useState<Array<HomeworkReport & { studentName?: string }>>([]);
+  const [homeworks, setHomeworks] = useState<Array<HomeworkReport & { studentName?: string; topicIds?: string[] }>>([]);
   const [loading, setLoading] = useState(true);
-  const [viewingReport, setViewingReport] = useState<(HomeworkReport & { studentName?: string }) | null>(null);
-  const [viewingAnswers, setViewingAnswers] = useState<any[]>([]);
-  const [loadingAnswers, setLoadingAnswers] = useState(false);
+  const [viewingReport, setViewingReport] = useState<(HomeworkReport & { studentName?: string; topicIds?: string[] }) | null>(null);
+  const [viewingQuestions, setViewingQuestions] = useState<Question[]>([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
 
   useEffect(() => {
     loadHomeworks();
@@ -24,6 +24,12 @@ export default function TeacherHomeworksPage() {
     try {
       const data = await fetchAllCompletedHomework();
       setHomeworks(data);
+      
+      // Mark all homework as seen when teacher visits this page
+      await markAllHomeworkAsSeen();
+      
+      // Update local state to reflect all homework as seen
+      setHomeworks(prev => prev.map(hw => ({ ...hw, seenByTeacher: true })));
     } catch (error) {
       console.error("Error loading homeworks:", error);
     } finally {
@@ -31,28 +37,20 @@ export default function TeacherHomeworksPage() {
     }
   };
 
-  const handleViewReport = async (report: HomeworkReport & { studentName?: string }) => {
+  const handleViewReport = async (report: HomeworkReport & { studentName?: string; topicIds?: string[] }) => {
     setViewingReport(report);
-    setLoadingAnswers(true);
+    setLoadingQuestions(true);
     
     try {
-      // Mark as seen by teacher
-      if (!report.seenByTeacher) {
-        await markHomeworkAsSeen(report.id);
-        // Update local state
-        setHomeworks(prev => prev.map(hw => 
-          hw.id === report.id ? { ...hw, seenByTeacher: true } : hw
-        ));
-      }
-
-      // Load questions to show answers
-      if (report.submittedAnswers && Array.isArray(report.submittedAnswers)) {
-        setViewingAnswers(report.submittedAnswers);
+      // Load questions based on topicIds
+      if (report.topicIds && report.topicIds.length > 0) {
+        const questions = await fetchQuestionsForHomework(report.topicIds);
+        setViewingQuestions(questions);
       }
     } catch (error) {
       console.error("Error viewing report:", error);
     } finally {
-      setLoadingAnswers(false);
+      setLoadingQuestions(false);
     }
   };
 
@@ -235,27 +233,210 @@ export default function TeacherHomeworksPage() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              {loadingAnswers ? (
+              {loadingQuestions ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                 </div>
-              ) : viewingAnswers.length > 0 ? (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Submitted Answers</h3>
-                  {viewingAnswers.map((answer, index) => (
-                    <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-600">Question {index + 1}</p>
-                          <p className="font-medium text-gray-900 mt-1">{answer.answer}</p>
+              ) : viewingQuestions.length > 0 ? (
+                <div className="space-y-6">
+                  {viewingQuestions.map((question, index) => {
+                    // Get submitted answer for this question
+                    const submittedAnswerObj = viewingReport.submittedAnswers?.find(
+                      (a: any) => a.questionId === question.id
+                    );
+                    const submittedAnswer = submittedAnswerObj?.answer;
+                    
+                    // Check if answer is correct
+                    let isCorrect = false;
+                    if (submittedAnswer !== undefined && submittedAnswer !== null && submittedAnswer !== "") {
+                      if (typeof question.correctAnswer === 'number' && question.options) {
+                        const correctOption = question.options[question.correctAnswer];
+                        isCorrect = String(submittedAnswer).trim().toLowerCase() === String(correctOption).trim().toLowerCase();
+                      } else {
+                        isCorrect = String(submittedAnswer).trim().toLowerCase() === String(question.correctAnswer).trim().toLowerCase();
+                      }
+                    }
+                    
+                    return (
+                      <div
+                        key={question.id}
+                        className={`border-2 rounded-2xl p-5 ${
+                          isCorrect
+                            ? "bg-green-50/50 border-green-300"
+                            : "bg-red-50/50 border-red-300"
+                        }`}
+                      >
+                        {/* Question Header */}
+                        <div className="flex items-start gap-3 mb-4">
+                          <div
+                            className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                              isCorrect
+                                ? "bg-green-500 text-white"
+                                : "bg-red-500 text-white"
+                            }`}
+                          >
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg text-gray-900">
+                              {question.text || question.question}
+                            </h3>
+                            {question.sentence && (
+                              <p className="text-gray-700 mt-1">{question.sentence}</p>
+                            )}
+                          </div>
+                          {isCorrect ? (
+                            <Check className="h-6 w-6 text-green-600 flex-shrink-0" />
+                          ) : (
+                            <X className="h-6 w-6 text-red-600 flex-shrink-0" />
+                          )}
                         </div>
+                        
+                        {/* Media */}
+                        {(question.mediaUrl || question.imageUrl || question.audioUrl || question.videoUrl) && (
+                          <div className="mb-4">
+                            {(question.mediaType === "image" || question.imageUrl) && (
+                              <img
+                                src={question.mediaUrl || question.imageUrl}
+                                alt="Question media"
+                                className="max-w-full h-auto rounded-lg"
+                              />
+                            )}
+                            {(question.mediaType === "audio" || question.audioUrl) && (
+                              <audio controls className="w-full">
+                                <source src={question.mediaUrl || question.audioUrl} />
+                              </audio>
+                            )}
+                            {(question.mediaType === "video" || question.videoUrl) && (
+                              <video controls className="w-full max-h-64 rounded-lg">
+                                <source src={question.mediaUrl || question.videoUrl} />
+                              </video>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Options (for multiple choice) */}
+                        {question.options && question.options.length > 0 && (
+                          <div className="space-y-2 mb-4">
+                            {question.options.map((option, optIndex) => {
+                              // Determine if this option is the correct answer
+                              let isThisCorrect = false;
+                              if (typeof question.correctAnswer === 'number') {
+                                isThisCorrect = optIndex === question.correctAnswer;
+                              } else {
+                                isThisCorrect = String(question.correctAnswer).trim().toLowerCase() === String(option).trim().toLowerCase();
+                              }
+                              
+                              // Determine if this option was selected by the student
+                              let isThisSelected = false;
+                              if (submittedAnswer !== undefined && submittedAnswer !== null && submittedAnswer !== "") {
+                                const submittedStr = String(submittedAnswer).trim().toLowerCase();
+                                const optionStr = String(option).trim().toLowerCase();
+                                isThisSelected = submittedStr === optionStr;
+                              }
+                              
+                              return (
+                                <div
+                                  key={optIndex}
+                                  className={`p-3 rounded-lg border-2 transition-all ${
+                                    isThisCorrect && isThisSelected
+                                      ? "bg-green-100 border-green-400 font-semibold shadow-md"
+                                      : isThisCorrect
+                                      ? "bg-green-50 border-green-300"
+                                      : isThisSelected
+                                      ? "bg-red-100 border-red-400 shadow-md"
+                                      : "bg-white border-gray-200"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className={isThisSelected ? "font-bold text-gray-900" : "text-gray-700"}>{option}</span>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      {isThisSelected && (
+                                        <span className={`text-sm font-bold flex items-center gap-1 px-2 py-1 rounded-md ${
+                                          isThisCorrect 
+                                            ? "text-green-700 bg-green-200" 
+                                            : "text-red-700 bg-red-200"
+                                        }`}>
+                                          {isThisCorrect ? (
+                                            <>
+                                              <Check className="h-4 w-4" /> Student's Answer
+                                            </>
+                                          ) : (
+                                            <>
+                                              <X className="h-4 w-4" /> Student's Answer
+                                            </>
+                                          )}
+                                        </span>
+                                      )}
+                                      {isThisCorrect && !isThisSelected && (
+                                        <span className="text-green-700 text-sm font-bold flex items-center gap-1 px-2 py-1 rounded-md bg-green-200">
+                                          <Check className="h-4 w-4" /> Correct Answer
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        
+                        {/* Answer Summary (for text answers or fill-in-blank) */}
+                        {(!question.options || question.options.length === 0) && (
+                          <div className="space-y-2 mb-3">
+                            <div className={`p-4 rounded-lg border-2 ${
+                              isCorrect 
+                                ? "bg-green-50 border-green-300" 
+                                : "bg-red-50 border-red-300"
+                            }`}>
+                              <div className="flex items-center gap-2 mb-2">
+                                {isCorrect ? (
+                                  <Check className="h-5 w-5 text-green-600" />
+                                ) : (
+                                  <X className="h-5 w-5 text-red-600" />
+                                )}
+                                <div className={`text-sm font-bold ${
+                                  isCorrect ? "text-green-700" : "text-red-700"
+                                }`}>
+                                  Student's Answer:
+                                </div>
+                              </div>
+                              <div className={`font-bold text-lg ${
+                                isCorrect ? "text-green-900" : "text-red-900"
+                              }`}>
+                                {submittedAnswer || "(No answer provided)"}
+                              </div>
+                            </div>
+                            {!isCorrect && (
+                              <div className="p-4 rounded-lg bg-green-50 border-2 border-green-300">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Check className="h-5 w-5 text-green-600" />
+                                  <div className="text-sm font-bold text-green-700">Correct Answer:</div>
+                                </div>
+                                <div className="font-bold text-lg text-green-900">
+                                  {typeof question.correctAnswer === 'number' && question.options 
+                                    ? question.options[question.correctAnswer] 
+                                    : question.correctAnswer}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Explanation */}
+                        {question.explanation && (
+                          <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="text-sm font-semibold text-blue-700 mb-1">💡 Explanation:</div>
+                            <div className="text-sm text-gray-700">{question.explanation}</div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-gray-600">No detailed answers available</p>
+                  <p className="text-gray-600">No questions available</p>
                 </div>
               )}
             </div>
