@@ -105,6 +105,7 @@ const WaitingRoom = forwardRef<WaitingRoomHandle, WaitingRoomProps>(({ studentNa
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
+            channelCount: 1, // Mono audio for enhanced noise cancellation
           }
         });
 

@@ -194,6 +194,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
+          channelCount: 1, // Mono audio for enhanced noise cancellation
           // Safari iOS doesn't support sampleRate constraint
           ...(!(isSafari || isIOS) && { sampleRate: 48000 })
         },
@@ -279,6 +280,7 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
+          channelCount: 1, // Mono audio for enhanced noise cancellation
           // Safari iOS doesn't support sampleRate constraint
           ...(!(isSafari || isIOS) && { sampleRate: 48000 })
         } : false
