@@ -368,6 +368,13 @@ export default function JitsiRoom({
             lobbyEnabled: false, // DISABLE lobby - we use Firebase waiting room instead
             hideLobbyButton: true, // Hide lobby button for everyone
             
+            // 🎯 IMPORTANT: Ensure tutors are ALWAYS moderators
+            // This prevents students from becoming moderators if they join first
+            ...(isTutor && {
+              iAmRecorder: false,
+              iAmSipGateway: false,
+            }),
+            
             // Prevent students from becoming moderators
             ...(!isTutor && {
               disableModeratorIndicator: true,
@@ -426,12 +433,9 @@ export default function JitsiRoom({
           },
           userInfo: {
             displayName: participantName,
-            email: studentId ? `student_${studentId}@rv2class.com` : undefined,
-            // Set moderator role for tutors
-            ...(isTutor && { 
-              moderator: true,
-              role: 'moderator'
-            }),
+            email: isTutor 
+              ? `teacher_${participantName}@rv2class.com` 
+              : (studentId ? `student_${studentId}@rv2class.com` : undefined),
           },
           
           // 🎯 NEW: Add JWT and config params to URL to force skip prejoin
