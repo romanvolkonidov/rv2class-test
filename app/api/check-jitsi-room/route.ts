@@ -17,8 +17,6 @@ export async function POST(req: NextRequest) {
 
     const jitsiDomain = 'jitsi.rv2class.com';
     const jitsiRoomName = `RV2Class_${roomName}`;
-    
-    console.log(`🔍 Checking Jitsi room: ${jitsiRoomName}`);
 
     // Try to fetch room info from Jitsi's conference info endpoint
     // This endpoint returns room data if it exists
@@ -36,7 +34,6 @@ export async function POST(req: NextRequest) {
       });
 
       if (!response.ok) {
-        console.log('❌ Jitsi server not reachable');
         return NextResponse.json({
           exists: false,
           error: 'Jitsi server not reachable'

@@ -53,17 +53,14 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
     if (allStudentRatings.length === 0) {
       setLoadingAllRatings(true);
       try {
-        console.log("📊 Fetching all student ratings for leaderboard...");
         // We need to extract teacher key from studentId or pass it as a prop
         // For now, let's assume we can get it from the student rating
         const ratings = await fetchAllStudentRatings();
-        console.log("✅ Got all ratings:", ratings);
         
         // Filter out students who have never completed any homework
         const filteredRatings = ratings.filter((rating: any) => 
           rating.completedHomeworks && rating.completedHomeworks > 0
         );
-        console.log(`📊 Filtered ratings: ${ratings.length} -> ${filteredRatings.length} (excluding students with 0 completed homework)`);
         
         setAllStudentRatings(filteredRatings);
       } catch (error) {
@@ -492,19 +489,6 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                     );
                     const submittedAnswer = submittedAnswerObj?.answer;
                     
-                    // Debug: Log the first question to understand the data structure
-                    if (index === 0) {
-                      console.log('🔍 First Question Debug:', {
-                        questionId: question.id,
-                        submittedAnswerObj,
-                        submittedAnswer,
-                        allSubmittedAnswers: report?.submittedAnswers,
-                        reportExists: !!report,
-                        submittedAnswersExists: !!report?.submittedAnswers,
-                        submittedAnswersLength: report?.submittedAnswers?.length
-                      });
-                    }
-                    
                     // More robust correctness check
                     let isCorrect = false;
                     if (submittedAnswer !== undefined && submittedAnswer !== null && submittedAnswer !== "") {
@@ -517,17 +501,6 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                         isCorrect = String(submittedAnswer) === String(question.correctAnswer);
                       }
                     }
-                    
-                    // Debug logging to see what data we have
-                    console.log(`Question ${index + 1}:`, {
-                      questionId: question.id,
-                      submittedAnswer,
-                      correctAnswer: question.correctAnswer,
-                      correctAnswerType: typeof question.correctAnswer,
-                      options: question.options,
-                      isCorrect,
-                      allSubmittedAnswers: report?.submittedAnswers
-                    });
                     
                     return (
                       <div
@@ -608,19 +581,6 @@ export default function StudentHomework({ studentId, studentName }: HomeworkPage
                                 const submittedStr = String(submittedAnswer).trim().toLowerCase();
                                 const optionStr = String(option).trim().toLowerCase();
                                 isThisSelected = submittedStr === optionStr;
-                                
-                                // Debug log for troubleshooting
-                                if (index === 0 && optIndex === 0) {
-                                  console.log(`Q${index + 1} Option comparison:`, {
-                                    option,
-                                    submittedAnswer,
-                                    submittedStr,
-                                    optionStr,
-                                    isThisSelected,
-                                    isThisCorrect,
-                                    match: submittedStr === optionStr
-                                  });
-                                }
                               }
                               
                               return (

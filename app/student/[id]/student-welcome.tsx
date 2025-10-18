@@ -104,33 +104,25 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
   // Listen for join request approval/denial
   useEffect(() => {
     if (!joinRequestId) return;
-
-    console.log("👂 Listening for join request status:", joinRequestId);
     
     const unsubscribe = onSnapshot(
       doc(db, "joinRequests", joinRequestId),
       async (docSnapshot) => {
         if (!docSnapshot.exists()) {
-          console.log("❌ Join request document not found");
           return;
         }
 
         const data = docSnapshot.data();
-        console.log("📄 Join request status:", data.status);
 
         if (data.status === "approved") {
-          console.log("✅ Join request approved! Redirecting to room...");
-          
           // Simple room name: just the teacher's name
           const teacherKey = teacherName.toLowerCase();
           const roomName = teacherKey; // "roman" or "violet"
           
           // Always use Jitsi
           const roomUrl = `/room?room=${encodeURIComponent(roomName)}&name=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.id)}&isTutor=false&subject=English&teacherName=${encodeURIComponent(teacherName)}`;
-          console.log("🚀 Joining Jitsi room:", roomUrl);
           router.push(roomUrl);
         } else if (data.status === "denied") {
-          console.log("❌ Join request denied");
           alert("😔 Учитель отклонил ваш запрос на подключение.\n\nПожалуйста, свяжитесь с учителем или попробуйте позже.");
           setIsWaitingForTeacher(false);
           setIsJoining(false);
@@ -143,7 +135,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     );
 
     return () => {
-      console.log("🔇 Unsubscribing from join request listener");
       unsubscribe();
     };
   }, [joinRequestId, teacherName, student.name, router]);
@@ -161,13 +152,11 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
           setVideoPermission(cameraPerm.state);
         } catch (permError) {
           // Safari might throw error even if API exists
-          console.log('⚠️ Permissions API not fully supported (likely Safari), using fallback');
           setMicPermission("prompt");
           setVideoPermission("prompt");
         }
       } else {
         // Fallback for Safari iOS and older browsers
-        console.log('⚠️ Permissions API not available (Safari iOS?), using fallback');
         setMicPermission("prompt");
         setVideoPermission("prompt");
       }
@@ -390,8 +379,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     const teacherKey = teacherName.toLowerCase();
     const roomName = teacherKey; // Simple: "roman" or "violet"
     
-    console.log(`Creating join request for ${teacherName}'s lesson...`);
-    
     try {
       // CREATE JOIN REQUEST in Firebase (teacher will approve from their dashboard)
       const response = await fetch("/api/join-request", {
@@ -407,7 +394,6 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
       const data = await response.json();
 
       if (response.ok) {
-        console.log("Join request created:", data.requestId);
         setJoinRequestId(data.requestId);
         setIsWaitingForTeacher(true);
         setIsJoining(false);
@@ -427,12 +413,9 @@ export default function StudentWelcome({ student }: { student: StudentData }) {
     if (!joinRequestId) return;
 
     try {
-      console.log("❌ Cancelling join request:", joinRequestId);
-      
       // Delete the join request from Firestore
       await deleteDoc(doc(db, "joinRequests", joinRequestId));
       
-      console.log("✅ Join request cancelled");
       setJoinRequestId(null);
       setIsWaitingForTeacher(false);
       setIsJoining(false);

@@ -11,8 +11,6 @@ import { db } from '@/lib/firebase';
  */
 export async function GET() {
   try {
-    console.log('🔍 Querying Firebase for Homework Reports...');
-
     // Query the most recent homework reports
     const reportsRef = collection(db, 'telegramHomeworkReports');
     const q = query(reportsRef, orderBy('completedAt', 'desc'), limit(10));

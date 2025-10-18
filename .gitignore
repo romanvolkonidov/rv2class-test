@@ -45,3 +45,4 @@ livekit-audio-agent/agent.log
 livekit-audio-agent/**/*.log
 livekit-audio-agent/__pycache__/
 livekit-audio-agent/**/__pycache__/
+key.json

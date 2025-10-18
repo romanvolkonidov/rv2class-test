@@ -17,15 +17,6 @@ function RoomContent() {
   const subject = searchParams?.get("subject") || "English"; // Default to English
   const teacherName = searchParams?.get("teacherName") || (isTutor ? userName : "Teacher"); // Use teacher's name for title
 
-  console.log("Room Page - Jitsi Integration", { 
-    roomName, 
-    userName, 
-    isTutor, 
-    studentId,
-    subject,
-    teacherName
-  });
-
   if (!roomName || !userName) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-red-50 to-pink-100">
@@ -44,7 +35,6 @@ function RoomContent() {
   }
 
   const handleLeave = () => {
-    console.log("Leaving room...", { isTutor, studentId });
     if (isTutor) {
       // Teacher goes to home page
       router.push('/');

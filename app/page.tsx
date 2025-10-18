@@ -30,11 +30,6 @@ export default function Home() {
       const teacherKey = teacher.toLowerCase(); // "roman" or "violet"
       const room = teacherKey; // Simple room name: just "roman" or "violet"
       
-      console.log(`🚀 Starting lesson for ${teacher} on jitsi:`, {
-        roomName: room,
-        teacherKey
-      });
-      
       // Store the active room in Firebase (no platform needed - always Jitsi)
       await setDoc(doc(db, 'activeRooms', room), {
         teacher: teacher,

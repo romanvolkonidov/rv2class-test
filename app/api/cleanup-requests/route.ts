@@ -4,8 +4,6 @@ import { collection, query, where, getDocs, deleteDoc, doc, Timestamp } from "fi
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("🧹 Cleaning up old join requests...");
-    
     // Get all join requests older than 24 hours
     const oneDayAgo = Timestamp.fromDate(new Date(Date.now() - 24 * 60 * 60 * 1000));
     
@@ -17,7 +15,6 @@ export async function POST(req: NextRequest) {
     const snapshot = await getDocs(q);
     
     if (snapshot.empty) {
-      console.log("✅ No old requests to clean up");
       return NextResponse.json({ 
         success: true, 
         message: "No old requests found",
@@ -31,8 +28,6 @@ export async function POST(req: NextRequest) {
     );
     
     await Promise.all(deletePromises);
-    
-    console.log(`✅ Cleaned up ${snapshot.size} old join requests`);
     
     return NextResponse.json({ 
       success: true, 
