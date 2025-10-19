@@ -81,6 +81,23 @@ jobs:
         echo " Building Next.js app..."
         npm run build
         
+        echo "🏗️  Building Jitsi Meet..."
+        cd jitsi-custom/jitsi-meet
+        
+        # Install Jitsi dependencies if needed
+        if [ ! -d "node_modules" ]; then
+          echo "  → Installing Jitsi dependencies (this may take a while)..."
+          npm install
+        fi
+        
+        echo "  → Building Jitsi Meet bundle..."
+        make
+        
+        echo "  → Copying built files to /usr/share/jitsi-meet/"
+        cp -r css libs sounds images fonts static lang *.html *.js /usr/share/jitsi-meet/
+        
+        cd /var/www/rv2class
+        
         echo "📋 Deploying Jitsi config files..."
         if [ -f "jitsi-custom/jitsi-meet/config.js" ]; then
           echo "  → Copying config.js to /etc/jitsi/meet/"
@@ -90,6 +107,11 @@ jobs:
         if [ -f "jitsi-custom/jitsi-meet/interface_config.js" ]; then
           echo "  → Copying interface_config.js to /usr/share/jitsi-meet/"
           cp jitsi-custom/jitsi-meet/interface_config.js /usr/share/jitsi-meet/interface_config.js
+        fi
+        
+        echo "📄 Deploying custom HTML pages..."
+        if [ -d "jitsi-custom" ]; then
+          cp jitsi-custom/*.html /usr/share/jitsi-meet/ 2>/dev/null || echo "  ⚠️  No custom HTML files found"
         fi
         
         echo "♻️  Restarting all services..."
