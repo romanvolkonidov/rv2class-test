@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RV2Class - Join Meeting</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 48px;
+            max-width: 480px;
+            width: 90%;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo h1 {
+            font-size: 32px;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .logo p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .auth-section {
+            margin-top: 32px;
+        }
+
+        .welcome-text {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .welcome-text h2 {
+            font-size: 24px;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .welcome-text p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .google-btn {
+            width: 100%;
+            padding: 16px;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #1f2937;
+            transition: all 0.2s;
+        }
+
+        .google-btn:hover {
+            background: #f9fafb;
+            border-color: #667eea;
+        }
+
+        .google-btn:active {
+            transform: scale(0.98);
+        }
+
+        .google-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .user-info {
+            display: none;
+            text-align: center;
+            padding: 24px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .user-info.active {
+            display: block;
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            border: 3px solid #667eea;
+        }
+
+        .user-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .user-email {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .join-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: none;
+        }
+
+        .join-btn.active {
+            display: block;
+        }
+
+        .join-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .join-btn:active {
+            transform: translateY(0);
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            color: #6b7280;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .logout-btn.active {
+            display: block;
+        }
+
+        .logout-btn:hover {
+            color: #1f2937;
+        }
+
+        .loading {
+            text-align: center;
+            color: #6b7280;
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>RV2Class</h1>
+            <p>Virtual Classroom Platform</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="auth-section">
+            <div class="welcome-text">
+                <h2>Welcome!</h2>
+                <p>Sign in to join your virtual classroom</p>
+            </div>
+
+            <!-- Google Sign In Button -->
+            <button class="google-btn" id="googleSignInBtn">
+                <svg class="google-icon" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Continue with Google
+            </button>
+
+            <!-- User Info (shown after login) -->
+            <div class="user-info" id="userInfo">
+                <img class="user-avatar" id="userAvatar" src="" alt="User Avatar">
+                <div class="user-name" id="userName"></div>
+                <div class="user-email" id="userEmail"></div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Connecting to meeting...</p>
+            </div>
+
+            <!-- Join Button (shown after login) -->
+            <button class="join-btn" id="joinBtn">Join Meeting</button>
+            
+            <!-- Logout Button -->
+            <button class="logout-btn" id="logoutBtn">Sign out</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getDatabase, ref, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004",
+            authDomain: "tracking-budget-app.firebaseapp.com",
+            databaseURL: "https://tracking-budget-app-default-rtdb.firebaseio.com",
+            projectId: "tracking-budget-app",
+            storageBucket: "tracking-budget-app.appspot.com",
+            messagingSenderId: "912992088190",
+            appId: "1:912992088190:web:926c8826b3bc39e2eb282f"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+        const provider = new GoogleAuthProvider();
+
+        // DOM elements
+        const googleSignInBtn = document.getElementById('googleSignInBtn');
+        const userInfo = document.getElementById('userInfo');
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const userEmail = document.getElementById('userEmail');
+        const joinBtn = document.getElementById('joinBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Get room name from URL query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room') || 'DefaultRoom';
+
+        // Show error
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('active');
+            setTimeout(() => {
+                errorMessage.classList.remove('active');
+            }, 5000);
+        }
+
+        // Update UI based on auth state
+        function updateUI(user) {
+            if (user) {
+                // User is signed in
+                googleSignInBtn.style.display = 'none';
+                userInfo.classList.add('active');
+                joinBtn.classList.add('active');
+                logoutBtn.classList.add('active');
+                
+                userAvatar.src = user.photoURL || 'https://via.placeholder.com/80';
+                userName.textContent = user.displayName || 'User';
+                userEmail.textContent = user.email || '';
+
+                // Save user to database
+                saveUserToDatabase(user);
+            } else {
+                // User is signed out
+                googleSignInBtn.style.display = 'flex';
+                userInfo.classList.remove('active');
+                joinBtn.classList.remove('active');
+                logoutBtn.classList.remove('active');
+            }
+            loading.classList.remove('active');
+        }
+
+        // Save user to Firebase database
+        async function saveUserToDatabase(user) {
+            try {
+                await set(ref(database, `users/${user.uid}`), {
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL,
+                    lastLogin: Date.now()
+                });
+            } catch (error) {
+                console.error('Error saving user:', error);
+            }
+        }
+
+        // Google Sign In
+        googleSignInBtn.addEventListener('click', async () => {
+            try {
+                loading.classList.add('active');
+                googleSignInBtn.style.display = 'none';
+                const result = await signInWithPopup(auth, provider);
+                console.log('Signed in:', result.user.email);
+            } catch (error) {
+                console.error('Sign in error:', error);
+                showError('Failed to sign in. Please try again.');
+                googleSignInBtn.style.display = 'flex';
+                loading.classList.remove('active');
+            }
+        });
+
+        // Join meeting
+        joinBtn.addEventListener('click', () => {
+            loading.classList.add('active');
+            joinBtn.style.display = 'none';
+            logoutBtn.style.display = 'none';
+            
+            // Redirect to Jitsi prejoin page
+            setTimeout(() => {
+                window.location.href = `/meet/${roomName}`;
+            }, 500);
+        });
+
+        // Logout
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                console.log('Signed out');
+            } catch (error) {
+                console.error('Sign out error:', error);
+                showError('Failed to sign out. Please try again.');
+            }
+        });
+
+        // Auth state observer
+        onAuthStateChanged(auth, (user) => {
+            updateUI(user);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="theme-color" content="#2A3A4B">
+    <title>Welcome - RV2Class</title>
+
+    <link rel="stylesheet" href="/css/all.css?v=8821">
+    
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background: #1E1E1E;
+            color: #E7E7E7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .welcome-container {
+            background: #292929;
+            border-radius: 8px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+        .welcome-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #E7E7E7;
+            margin-bottom: 16px;
+        }
+        .student-name {
+            font-size: 32px;
+            font-weight: 700;
+            color: #3D7CC9;
+            margin-bottom: 24px;
+        }
+        .welcome-message {
+            color: #A4B5B8;
+            font-size: 16px;
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+        .join-btn {
+            width: 100%;
+            padding: 16px;
+            background: #3D7CC9;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .join-btn:hover {
+            background: #4A8BD6;
+        }
+        .join-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .info-box {
+            background: #1E1E1E;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 24px;
+            border-left: 3px solid #3D7CC9;
+        }
+        .info-box p {
+            color: #A4B5B8;
+            font-size: 14px;
+            margin: 8px 0;
+            text-align: left;
+        }
+        .info-box strong {
+            color: #E7E7E7;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #A4B5B8;
+        }
+        .error {
+            background: #E15350;
+            color: white;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+    </style>
+  </head>
+  <body>
+    <div class="welcome-container">
+        <div id="content">
+            <div class="loading">Loading...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004",
+            authDomain: "tracking-budget-app.firebaseapp.com",
+            databaseURL: "https://tracking-budget-app-default-rtdb.firebaseio.com",
+            projectId: "tracking-budget-app",
+            storageBucket: "tracking-budget-app.appspot.com",
+            messagingSenderId: "912992088190",
+            appId: "1:912992088190:web:926c8826b3bc39e2eb282f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Get student ID from URL path
+        const pathParts = window.location.pathname.split('/');
+        const studentId = pathParts[pathParts.length - 1];
+
+        async function loadStudent() {
+            const contentDiv = document.getElementById('content');
+
+            if (!studentId) {
+                contentDiv.innerHTML = '<div class="error">Student not found</div>';
+                return;
+            }
+
+            try {
+                let student = null;
+
+                // Try shared 'students' collection first
+                const sharedDoc = await getDoc(doc(db, 'students', studentId));
+                if (sharedDoc.exists()) {
+                    student = { id: sharedDoc.id, ...sharedDoc.data() };
+                } else {
+                    // Try 'teacherStudents' collection
+                    const teacherDoc = await getDoc(doc(db, 'teacherStudents', studentId));
+                    if (teacherDoc.exists()) {
+                        student = { id: teacherDoc.id, ...teacherDoc.data() };
+                    }
+                }
+
+                if (!student) {
+                    contentDiv.innerHTML = '<div class="error">Student not found</div>';
+                    return;
+                }
+
+                const teacherName = student.teacher || student.teacherName || 'Roman';
+                const teacherUid = student.teacherUid;
+                
+                if (!teacherUid) {
+                    contentDiv.innerHTML = '<div class="error">Teacher information incomplete. Please contact your teacher.</div>';
+                    return;
+                }
+
+                const teacherRoom = 'teacher-' + teacherUid.substring(0, 8);
+
+                contentDiv.innerHTML = `
+                    <div class="welcome-title">🎓 Welcome to your lesson!</div>
+                    <div class="student-name">${student.name}</div>
+                    <div class="welcome-message">
+                        Click the button below to join your lesson with ${teacherName}
+                    </div>
+                    <button class="join-btn" onclick="joinLesson()">
+                        📹 Join Lesson
+                    </button>
+                    <div class="info-box">
+                        <p><strong>Before joining:</strong></p>
+                        <p>✓ Make sure your camera and microphone are working</p>
+                        <p>✓ Find a quiet place for your lesson</p>
+                        <p>✓ Have your materials ready</p>
+                    </div>
+                `;
+
+                // Store student data for join function
+                window.studentData = {
+                    id: student.id,
+                    name: student.name,
+                    teacherName: teacherName,
+                    teacherRoom: teacherRoom
+                };
+
+            } catch (error) {
+                console.error('Error loading student:', error);
+                contentDiv.innerHTML = '<div class="error">Error loading student data. Please refresh.</div>';
+            }
+        }
+
+        window.joinLesson = function() {
+            if (!window.studentData) return;
+
+            const { teacherRoom } = window.studentData;
+            
+            // Redirect to the teacher's permanent room prejoin page
+            window.location.href = '/' + teacherRoom;
+        };
+
+        loadStudent();
+    </script>
+  </body>
+</html>

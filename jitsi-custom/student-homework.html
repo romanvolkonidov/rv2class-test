@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="theme-color" content="#2A3A4B">
+    <title>My Homework - RV2Class</title>
+    <link rel="stylesheet" href="/css/all.css?v=8821">
+    
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #1E1E1E;
+            color: #E7E7E7;
+            overflow-y: auto;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            color: #E7E7E7;
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        .header p {
+            color: #A4B5B8;
+            font-size: 14px;
+        }
+        .homework-card {
+            background: #292929;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .homework-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(61, 124, 201, 0.3);
+        }
+        .homework-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #E7E7E7;
+            margin-bottom: 12px;
+        }
+        .homework-meta {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .meta-item {
+            color: #A4B5B8;
+            font-size: 14px;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-pending {
+            background: #E15350;
+            color: white;
+        }
+        .status-completed {
+            background: #31B76F;
+            color: white;
+        }
+        .btn {
+            padding: 12px 24px;
+            background: #3D7CC9;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn:hover {
+            background: #4A8BD6;
+        }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid #525A5E;
+            color: #A4B5B8;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #A4B5B8;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #A4B5B8;
+        }
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 My Homework</h1>
+            <p id="studentName">Loading...</p>
+        </div>
+
+        <div id="homeworkList">
+            <div class="loading">Loading homework...</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 24px;">
+            <button class="btn btn-secondary" onclick="window.location.href='/student/' + studentId">Back to Welcome</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, query, where, getDocs, doc, getDoc, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004",
+            authDomain: "tracking-budget-app.firebaseapp.com",
+            databaseURL: "https://tracking-budget-app-default-rtdb.firebaseio.com",
+            projectId: "tracking-budget-app",
+            storageBucket: "tracking-budget-app.appspot.com",
+            messagingSenderId: "912992088190",
+            appId: "1:912992088190:web:926c8826b3bc39e2eb282f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const pathParts = window.location.pathname.split('/');
+        const studentId = pathParts[pathParts.length - 2]; // /student-homework/{studentId}
+        window.studentId = studentId;
+
+        async function loadHomework() {
+            try {
+                // Load student info
+                let student = null;
+                const sharedDoc = await getDoc(doc(db, 'students', studentId));
+                if (sharedDoc.exists()) {
+                    student = sharedDoc.data();
+                } else {
+                    const teacherDoc = await getDoc(doc(db, 'teacherStudents', studentId));
+                    if (teacherDoc.exists()) student = teacherDoc.data();
+                }
+
+                if (student) {
+                    document.getElementById('studentName').textContent = student.name;
+                }
+
+                // Load homework assignments
+                const assignmentsRef = collection(db, 'telegramAssignments');
+                const q = query(assignmentsRef, where('studentId', '==', studentId), orderBy('assignedAt', 'desc'));
+                const snapshot = await getDocs(q);
+
+                if (snapshot.empty) {
+                    document.getElementById('homeworkList').innerHTML = `
+                        <div class="empty-state">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+                                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+                            </svg>
+                            <h3>No homework yet</h3>
+                            <p>Your teacher hasn't assigned any homework.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Load reports to check completion status
+                const reportsRef = collection(db, 'telegramHomeworkReports');
+                const reportsQuery = query(reportsRef, where('studentId', '==', studentId));
+                const reportsSnapshot = await getDocs(reportsQuery);
+                const reports = {};
+                reportsSnapshot.forEach(doc => {
+                    reports[doc.data().homeworkId] = doc.data();
+                });
+
+                const homeworkHTML = snapshot.docs.map(doc => {
+                    const hw = doc.data();
+                    const report = reports[doc.id];
+                    const isCompleted = !!report;
+                    const score = report ? `${report.correctAnswers || 0}/${report.totalQuestions || 0}` : '';
+
+                    return `
+                        <div class="homework-card" onclick="openHomework('${doc.id}', ${isCompleted})">
+                            <div class="homework-title">${hw.topicName || 'Homework'}</div>
+                            <div class="homework-meta">
+                                <span class="meta-item">📖 ${hw.courseName || 'Course'}</span>
+                                <span class="meta-item">📅 ${new Date(hw.assignedAt?.toDate()).toLocaleDateString()}</span>
+                                ${isCompleted ? `<span class="meta-item">✓ Score: ${score}</span>` : ''}
+                                <span class="status-badge ${isCompleted ? 'status-completed' : 'status-pending'}">
+                                    ${isCompleted ? 'Completed' : 'Pending'}
+                                </span>
+                            </div>
+                            <button class="btn" onclick="event.stopPropagation(); openHomework('${doc.id}', ${isCompleted})">
+                                ${isCompleted ? 'View Results' : 'Start Homework'}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById('homeworkList').innerHTML = homeworkHTML;
+
+            } catch (error) {
+                console.error('Error loading homework:', error);
+                document.getElementById('homeworkList').innerHTML = '<div class="error">Error loading homework</div>';
+            }
+        }
+
+        window.openHomework = function(homeworkId, isCompleted) {
+            if (isCompleted) {
+                window.location.href = `/homework-results/${studentId}/${homeworkId}`;
+            } else {
+                window.location.href = `/do-homework/${studentId}/${homeworkId}`;
+            }
+        };
+
+        loadHomework();
+    </script>
+  </body>
+</html>
