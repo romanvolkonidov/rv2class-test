@@ -18,7 +18,7 @@
 ### Step 1: SSH to server
 ```bash
 ssh root@108.61.245.179
-# Password: R2n@ww2TPS3(M8PF
+# Password: [Your server password]
 ```
 
 ### Step 2: Install Jitsi Meet
