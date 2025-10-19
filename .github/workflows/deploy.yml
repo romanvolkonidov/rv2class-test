@@ -23,16 +23,20 @@ jobs:
     - name: Deploy to Vultr Server
       env:
         SERVER_IP: ${{ secrets.SERVER_IP }}
-        SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |
-        # Install sshpass
-        sudo apt-get update -qq
-        sudo apt-get install -y sshpass
-        
         echo "🚀 Deploying to production server..."
         
-        # SSH and deploy
-        sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no root@$SERVER_IP << 'ENDSSH'
+        # Setup SSH key
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        
+        # Add server to known hosts
+        ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
+        
+        # SSH and deploy using key authentication
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@$SERVER_IP << 'ENDSSH'
         set -e
         
         echo "📂 Navigating to app directory..."
