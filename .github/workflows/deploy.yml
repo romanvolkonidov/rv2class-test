@@ -63,11 +63,8 @@ jobs:
         echo "🏗️  Building Jitsi Meet..."
         cd jitsi-custom/jitsi-meet
         
-        # Install Jitsi dependencies if needed
-        if [ ! -d "node_modules" ]; then
-          echo "  → Installing Jitsi dependencies (this may take a while)..."
-          npm install
-        fi
+        echo "  → Installing Jitsi dependencies..."
+        npm install --legacy-peer-deps
         
         echo "  → Building Jitsi Meet bundle..."
         make
