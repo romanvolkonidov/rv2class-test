@@ -354,19 +354,23 @@ export default function JitsiRoom({
           configOverwrite: {
             startWithAudioMuted: false, // Everyone starts with audio ON (unmuted)
             startWithVideoMuted: false, // Everyone starts with video ON
-            // Enable standard Jitsi UX: welcome page and prejoin
-            enableWelcomePage: false, // Disable welcome page for direct room join
-            prejoinPageEnabled: true, // Keep prejoin to show name/camera/mic selection
+            
+            // Prejoin settings - EVERYONE sees prejoin (name/camera/mic check)
+            enableWelcomePage: false, // Skip welcome page, go straight to prejoin
+            prejoinPageEnabled: true, // Show prejoin for all users
+            
             disableDeepLinking: true,
             defaultLanguage: "en",
             enableClosePage: false,
+            
             // Set meeting title: "English with Roman" or "English with Violet"
             subject: `${subject} with ${teacherName || (isTutor ? participantName : 'Teacher')}`,
-            // Lobby settings - teachers skip lobby, students wait
+            
+            // Lobby settings - teachers bypass lobby, students wait in lobby
             enableLobbyChat: true,
-            autoKnockLobby: !isTutor, // Only students auto-knock
-            lobbyEnabled: !isTutor, // Only enable lobby for students
-            hideLobbyButton: false,
+            autoKnockLobby: false, // Don't auto-knock, let teachers join directly
+            lobbyEnabled: true, // Enable lobby feature
+            hideLobbyButton: !isTutor, // Hide lobby button for students, show for teachers
             
             // Prevent students from becoming moderators (keep moderator UX for tutors)
             ...(!isTutor && {
