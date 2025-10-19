@@ -1,0 +1,67 @@
+name: Auto Deploy to Vultr
+
+on:
+  # Deploy on every push to main
+  push:
+    branches: [ main ]
+  
+  # Also deploy every night at 2 AM UTC
+  schedule:
+    - cron: '0 2 * * *'
+  
+  # Allow manual deployment
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Deploy to Vultr Server
+      env:
+        SERVER_IP: ${{ secrets.SERVER_IP }}
+        SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+      run: |
+        # Install sshpass
+        sudo apt-get update -qq
+        sudo apt-get install -y sshpass
+        
+        echo "🚀 Deploying to production server..."
+        
+        # SSH and deploy
+        sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no root@$SERVER_IP << 'ENDSSH'
+        set -e
+        
+        echo "📂 Navigating to app directory..."
+        cd /var/www/rv2class
+        
+        echo "📥 Pulling latest code..."
+        git fetch origin
+        git reset --hard origin/main
+        
+        echo "📦 Installing dependencies..."
+        npm install
+        
+        echo "🔨 Building Next.js app..."
+        npm run build
+        
+        echo "♻️  Restarting application..."
+        pm2 restart rv2class || pm2 start ecosystem.config.js
+        pm2 save
+        
+        echo "✅ Deployment complete!"
+        pm2 list
+        ENDSSH
+    
+    - name: Deployment Status
+      if: always()
+      run: |
+        if [ $? -eq 0 ]; then
+          echo "✅ Deployment successful!"
+        else
+          echo "❌ Deployment failed!"
+          exit 1
+        fi
