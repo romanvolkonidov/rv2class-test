@@ -19,10 +19,10 @@ export default function JitsiRedirect({
   useEffect(() => {
     // Build Jitsi URL with name prefilled
     const domain = process.env.NEXT_PUBLIC_JITSI_DOMAIN || "app.rv2class.com";
-    const roomName = `RV2Class_${meetingID}`;
+    const roomName = `${meetingID}`;
     
-    // Jitsi URL format: https://domain/room#userInfo.displayName="Name"
-    const jitsiUrl = `https://${domain}/${roomName}#userInfo.displayName="${encodeURIComponent(participantName)}"`;
+    // Jitsi URL format: https://domain/meet/room#userInfo.displayName="Name"
+    const jitsiUrl = `https://${domain}/meet/${roomName}#userInfo.displayName="${encodeURIComponent(participantName)}"`;
     
     console.log("🚀 Redirecting to Jitsi:", jitsiUrl);
     
