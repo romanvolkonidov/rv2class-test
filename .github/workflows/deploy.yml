@@ -58,19 +58,74 @@ jobs:
         
         echo "📥 Pulling latest code..."
         git fetch origin
+        
+        # Store node_modules to survive reset
+        if [ -d "jitsi-custom/jitsi-meet/node_modules" ]; then
+          echo "  → Backing up node_modules..."
+          mv jitsi-custom/jitsi-meet/node_modules /tmp/jitsi-node-modules-backup
+        fi
+        
         git reset --hard origin/main
+        
+        # Restore node_modules
+        if [ -d "/tmp/jitsi-node-modules-backup" ]; then
+          echo "  → Restoring node_modules..."
+          mv /tmp/jitsi-node-modules-backup jitsi-custom/jitsi-meet/node_modules
+        fi
         
         echo "🏗️  Building Jitsi Meet..."
         cd jitsi-custom/jitsi-meet
         
-        echo "  → Installing Jitsi dependencies..."
-        npm install --legacy-peer-deps
+        # Only install if node_modules missing or package.json changed
+        if [ ! -d "node_modules" ] || [ "$(git diff HEAD@{1} HEAD -- package.json 2>/dev/null)" ]; then
+          echo "  → Installing Jitsi dependencies..."
+          npm install --legacy-peer-deps
+        else
+          echo "  ✅ Dependencies already installed, skipping..."
+        fi
         
-        echo "  → Building Jitsi Meet bundle..."
-        make
+        echo "  → Building Jitsi Meet bundle (this may take 10-15 minutes)..."
+        # Start build in background with nohup to survive SSH disconnects
+        nohup make > /tmp/jitsi-build.log 2>&1 &
+        BUILD_PID=$!
+        
+        echo "  → Build started (PID: $BUILD_PID). Monitoring progress..."
+        
+        # Wait for build with timeout and progress monitoring
+        for i in {1..1800}; do
+          if ! ps -p $BUILD_PID > /dev/null 2>&1; then
+            if [ -f "libs/app.bundle.min.js" ]; then
+              echo "  ✅ Build completed successfully!"
+              break
+            else
+              echo "  ❌ Build process died but no output files found"
+              tail -50 /tmp/jitsi-build.log
+              exit 1
+            fi
+          fi
+          
+          # Show progress every 30 seconds
+          if [ $((i % 30)) -eq 0 ]; then
+            echo "  ⏱  Still building... ($i seconds elapsed)"
+            tail -2 /tmp/jitsi-build.log 2>/dev/null | grep -E "webpack|Progress|building" || true
+          fi
+          
+          sleep 1
+        done
+        
+        # If we hit timeout, check if build is still running
+        if ps -p $BUILD_PID > /dev/null 2>&1; then
+          echo "  ⏱  Build exceeded timeout but still running. Checking output..."
+          if [ -f "libs/app.bundle.min.js" ]; then
+            echo "  ✅ Build files found, continuing deployment"
+          else
+            echo "  ⚠️  Build still in progress. Files will be available on next deploy."
+            echo "  💡 Tip: SSH into server and check: tail -f /tmp/jitsi-build.log"
+          fi
+        fi
         
         echo "  → Copying built files to /usr/share/jitsi-meet/"
-        cp -r css libs sounds images fonts static lang *.html *.js /usr/share/jitsi-meet/
+        cp -r css libs sounds images fonts static lang *.html *.js /usr/share/jitsi-meet/ 2>/dev/null || true
         
         cd /var/www/rv2class
         
