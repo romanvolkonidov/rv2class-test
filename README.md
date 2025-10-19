@@ -178,3 +178,4 @@ Server 325211 created
 
 MIT license
 # Test GitHub Actions deployment
+# Test auto-deploy with SERVER_IP
