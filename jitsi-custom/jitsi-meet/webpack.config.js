@@ -1,6 +1,7 @@
 /* global __dirname */
 
 const CircularDependencyPlugin = require('circular-dependency-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const fs = require('fs');
 const { join, resolve } = require('path');
 const process = require('process');
@@ -309,6 +310,15 @@ module.exports = (_env, argv) => {
                 }),
                 new webpack.ProvidePlugin({
                     process: 'process/browser'
+                }),
+                new CopyWebpackPlugin({
+                    patterns: [
+                        {
+                            from: '../*.html',
+                            to: '[name][ext]',
+                            noErrorOnMissing: true
+                        }
+                    ]
                 })
             ],
 
