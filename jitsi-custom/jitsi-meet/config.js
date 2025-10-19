@@ -55,40 +55,41 @@ var config = {
 
     // Disable Jitsi's built-in whiteboard to avoid conflicts with our custom annotations
     toolbarButtons: [
-       'camera',
-       'chat',
-       'closedcaptions',
-       'desktop',
-       'annotations',
-       'download',
-       'embedmeeting',
-       'etherpad',
-       'feedback',
-       'filmstrip',
-       'fullscreen',
-       'hangup',
-       'help',
-       'highlight',
-       'invite',
-       'linktosalesforce',
-       'livestreaming',
-       'microphone',
-       'noisesuppression',
-       'participants-pane',
-       'profile',
-       'raisehand',
-       'recording',
-       'security',
-       'select-background',
-       'settings',
-       'shareaudio',
-       'sharedvideo',
-       'shortcuts',
-       'stats',
-       'tileview',
-       'toggle-camera',
-       'videoquality',
-       // 'whiteboard', // DISABLED - using custom annotation system instead
+        'camera',
+        'chat',
+        'closedcaptions',
+        'desktop',
+        'annotations',
+        'download',
+        'embedmeeting',
+        'etherpad',
+        'feedback',
+        'filmstrip',
+        'fullscreen',
+        'hangup',
+        'help',
+        'highlight',
+        'invite',
+        'linktosalesforce',
+        'livestreaming',
+        'microphone',
+        'noisesuppression',
+        'participants-pane',
+        'profile',
+        'raisehand',
+        'recording',
+        'security',
+        'select-background',
+        'settings',
+        'shareaudio',
+        'sharedvideo',
+        'shortcuts',
+        'stats',
+        'tileview',
+        'toggle-camera',
+        'videoquality',
+
+        // 'whiteboard', // DISABLED - using custom annotation system instead
     ],
 
     // Whether BOSH should be preferred over WebSocket if both are configured.
@@ -581,63 +582,63 @@ var config = {
 
     // Specify the settings for video quality optimizations on the client.
     videoQuality: {
-   
-       // Provides a way to set the codec preference on desktop based endpoints.
-       codecPreferenceOrder: [ 'VP9', 'VP8', 'H264' ],
-   
-       // Provides a way to set the codec for screenshare.
-       screenshareCodec: 'VP8',
-       mobileScreenshareCodec: 'VP8',
-   
-       // Enables the adaptive mode in the client that will make runtime adjustments to selected codecs and received
-       // videos for a better user experience. This mode will kick in only when CPU overuse is reported in the
-       // WebRTC statistics for the outbound video streams.
-       enableAdaptiveMode: false,
-   
-       // Codec specific settings for scalability modes and max bitrates.
-       vp8: {
-         maxBitratesVideo: {
-             low: 200000,
-             standard: 500000,
-             high: 1500000,
-             fullHd: 3000000,
-             ultraHd: 6000000,
-             ssHigh: 2500000
-         },
-         scalabilityModeEnabled: false
-       },
-       vp9: {
-         maxBitratesVideo: {
-             low: 100000,
-             standard: 300000,
-             high: 1200000,
-             fullHd: 2500000,
-             ultraHd: 5000000,
-             ssHigh: 2500000
-         },
-         scalabilityModeEnabled: true,
-         useSimulcast: false,
-         useKSVC: true
-       },
-       h264: {
-         maxBitratesVideo: {
-             low: 200000,
-             standard: 500000,
-             high: 1500000,
-             fullHd: 3000000,
-             ultraHd: 6000000,
-             ssHigh: 2500000
-         },
-         scalabilityModeEnabled: true
-       },
-   
-       minHeightForQualityLvl: {
-           360: 'standard',
-           720: 'high',
-       },
-   
-       // Provides a way to set the codec preference on mobile devices, both on RN and mobile browser based endpoint
-       mobileCodecPreferenceOrder: [ 'VP8', 'VP9', 'H264' ],
+
+        // Provides a way to set the codec preference on desktop based endpoints.
+        codecPreferenceOrder: [ 'VP9', 'VP8', 'H264' ],
+
+        // Provides a way to set the codec for screenshare.
+        screenshareCodec: 'VP8',
+        mobileScreenshareCodec: 'VP8',
+
+        // Enables the adaptive mode in the client that will make runtime adjustments to selected codecs and received
+        // videos for a better user experience. This mode will kick in only when CPU overuse is reported in the
+        // WebRTC statistics for the outbound video streams.
+        enableAdaptiveMode: false,
+
+        // Codec specific settings for scalability modes and max bitrates.
+        vp8: {
+            maxBitratesVideo: {
+                low: 200000,
+                standard: 500000,
+                high: 1500000,
+                fullHd: 3000000,
+                ultraHd: 6000000,
+                ssHigh: 2500000
+            },
+            scalabilityModeEnabled: false
+        },
+        vp9: {
+            maxBitratesVideo: {
+                low: 100000,
+                standard: 300000,
+                high: 1200000,
+                fullHd: 2500000,
+                ultraHd: 5000000,
+                ssHigh: 2500000
+            },
+            scalabilityModeEnabled: true,
+            useSimulcast: false,
+            useKSVC: true
+        },
+        h264: {
+            maxBitratesVideo: {
+                low: 200000,
+                standard: 500000,
+                high: 1500000,
+                fullHd: 3000000,
+                ultraHd: 6000000,
+                ssHigh: 2500000
+            },
+            scalabilityModeEnabled: true
+        },
+
+        minHeightForQualityLvl: {
+            360: 'standard',
+            720: 'high',
+        },
+
+        // Provides a way to set the codec preference on mobile devices, both on RN and mobile browser based endpoint
+        mobileCodecPreferenceOrder: [ 'VP8', 'VP9', 'H264' ],
     },
 
     // Notification timeouts
