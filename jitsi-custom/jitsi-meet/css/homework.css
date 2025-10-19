@@ -1,0 +1,860 @@
+/* Homework Feature Styles - Jitsi Style */
+
+/* ==================== */
+/* Common Styles */
+/* ==================== */
+
+.homework-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    width: 100%;
+}
+
+.spinner {
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid #0376da;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+.spinner-small {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.homework-button {
+    align-items: center;
+    background-color: #0376da;
+    border: none;
+    border-radius: 6px;
+    box-sizing: border-box;
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 0.875rem;
+    font-weight: 600;
+    gap: 8px;
+    line-height: 1.5rem;
+    padding: 12px 16px;
+    transition: background-color 0.2s;
+}
+
+.homework-button:hover {
+    background-color: #0262b6;
+}
+
+.homework-button:disabled {
+    background-color: #5e6d7a;
+    color: #afb6bc;
+    cursor: not-allowed;
+}
+
+.homework-button.secondary {
+    background-color: #3d3d3d;
+    border: 1px solid transparent;
+}
+
+.homework-button.secondary:hover {
+    background-color: #525252;
+}
+
+.homework-button.primary {
+    background-color: #0376da;
+}
+
+.homework-back-button {
+    align-items: center;
+    background: transparent;
+    border: 1px solid #5e6d7a;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 0.875rem;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 8px 16px;
+    transition: background-color 0.2s;
+}
+
+.homework-back-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.homework-empty-state {
+    align-items: center;
+    background-color: #131519;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 48px 24px;
+    text-align: center;
+}
+
+.homework-empty-state p {
+    color: #fff;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.homework-empty-state span {
+    color: #afb6bc;
+    font-size: 0.875rem;
+}
+
+/* ==================== */
+/* Student Homework List */
+/* ==================== */
+
+.homework-screen {
+    background-color: #040404;
+    color: #fff;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+.homework-header {
+    margin-bottom: 24px;
+}
+
+.homework-header-card {
+    background: linear-gradient(135deg, #0376da 0%, #0262b6 100%);
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 24px;
+}
+
+.homework-header-content {
+    align-items: center;
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.homework-header-icon {
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    height: 64px;
+    justify-content: center;
+    width: 64px;
+}
+
+.homework-header-text h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 2rem;
+    margin: 0 0 8px 0;
+}
+
+.homework-header-text p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    margin: 0;
+}
+
+.homework-stats {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.homework-stat-item {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+}
+
+.stat-value {
+    color: #fff;
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 2rem;
+}
+
+.stat-label {
+    color: rgba(255, 255, 255, 0.8);
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
+
+.homework-assignments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.homework-assignment-card {
+    background-color: #131519;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 20px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.homework-assignment-card:hover {
+    border-color: #0376da;
+    box-shadow: 0 4px 12px rgba(3, 118, 218, 0.2);
+}
+
+.homework-assignment-card.completed {
+    border-color: #31b76a;
+}
+
+.assignment-header {
+    align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.assignment-title-section {
+    flex: 1;
+}
+
+.assignment-title-section h3 {
+    color: #fff;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+}
+
+.assignment-meta-info {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.meta-badge {
+    background-color: rgba(3, 118, 218, 0.15);
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+.meta-badge.course-badge {
+    background-color: rgba(3, 118, 218, 0.15);
+}
+
+.meta-badge.chapter-badge {
+    background-color: rgba(147, 51, 234, 0.15);
+}
+
+.badge-label {
+    color: #0376da;
+    display: block;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.meta-badge.chapter-badge .badge-label {
+    color: #9333ea;
+}
+
+.badge-value {
+    color: #fff;
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.assignment-info {
+    align-items: center;
+    color: #afb6bc;
+    display: flex;
+    font-size: 0.875rem;
+    gap: 16px;
+}
+
+.info-item {
+    align-items: center;
+    display: flex;
+    gap: 4px;
+}
+
+.assignment-status-section {
+    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.status-badge {
+    align-items: center;
+    border-radius: 20px;
+    display: inline-flex;
+    font-size: 0.875rem;
+    font-weight: 600;
+    gap: 4px;
+    padding: 6px 12px;
+}
+
+.status-badge.completed {
+    background-color: rgba(49, 183, 106, 0.2);
+    color: #31b76a;
+}
+
+.status-badge.pending {
+    background-color: rgba(248, 174, 26, 0.2);
+    color: #f8ae1a;
+}
+
+.assignment-score {
+    align-items: center;
+    color: #f8ae1a;
+    display: flex;
+    font-size: 1.125rem;
+    font-weight: 700;
+    gap: 4px;
+}
+
+.assignment-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+/* ==================== */
+/* Homework Quiz */
+/* ==================== */
+
+.homework-quiz {
+    background-color: #040404;
+    color: #fff;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+.quiz-header {
+    margin-bottom: 24px;
+}
+
+.quiz-progress {
+    background-color: #131519;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.progress-info {
+    align-items: center;
+    color: #afb6bc;
+    display: flex;
+    font-size: 0.875rem;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.progress-bar {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    height: 8px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, #0376da 0%, #0262b6 100%);
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.quiz-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.question-card {
+    background-color: #131519;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    padding: 24px;
+}
+
+.question-header {
+    align-items: flex-start;
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.question-number {
+    align-items: center;
+    background: linear-gradient(135deg, #0376da 0%, #0262b6 100%);
+    border-radius: 8px;
+    color: #fff;
+    display: flex;
+    flex-shrink: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    height: 40px;
+    justify-content: center;
+    width: 40px;
+}
+
+.question-text {
+    color: #fff;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.question-media {
+    margin-bottom: 24px;
+}
+
+.media-item {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    padding: 12px;
+}
+
+.media-item img,
+.media-item audio,
+.media-item video {
+    border-radius: 4px;
+    max-width: 100%;
+}
+
+.question-answers {
+    margin-top: 24px;
+}
+
+.answer-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.answer-choice {
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    font-size: 1rem;
+    gap: 12px;
+    padding: 16px;
+    text-align: left;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.answer-choice:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.answer-choice.selected {
+    background-color: rgba(3, 118, 218, 0.2);
+    border-color: #0376da;
+}
+
+.choice-indicator {
+    align-items: center;
+    border: 2px solid #5e6d7a;
+    border-radius: 50%;
+    display: flex;
+    flex-shrink: 0;
+    height: 24px;
+    justify-content: center;
+    width: 24px;
+}
+
+.answer-choice.selected .choice-indicator {
+    background-color: #0376da;
+    border-color: #0376da;
+}
+
+.choice-text {
+    flex: 1;
+}
+
+.answer-text-input textarea {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 2px solid #5e6d7a;
+    border-radius: 8px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    padding: 12px;
+    resize: vertical;
+    width: 100%;
+}
+
+.answer-text-input textarea:focus {
+    border-color: #0376da;
+    outline: none;
+}
+
+.quiz-navigation {
+    align-items: center;
+    background-color: #131519;
+    border-radius: 12px;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.nav-button {
+    align-items: center;
+    background-color: #3d3d3d;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    font-size: 0.875rem;
+    font-weight: 600;
+    gap: 8px;
+    padding: 12px 20px;
+    transition: background-color 0.2s;
+}
+
+.nav-button:hover {
+    background-color: #525252;
+}
+
+.nav-button:disabled {
+    background-color: #2a2a2a;
+    color: #5e6d7a;
+    cursor: not-allowed;
+}
+
+.nav-button.primary {
+    background-color: #31b76a;
+}
+
+.nav-button.primary:hover {
+    background-color: #28a05e;
+}
+
+.nav-info {
+    text-align: center;
+}
+
+.current-page {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.answer-status {
+    color: #afb6bc;
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
+
+/* Results */
+.homework-results {
+    align-items: center;
+    background-color: #040404;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+    text-align: center;
+}
+
+.results-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 24px 0;
+}
+
+.results-score {
+    margin-bottom: 32px;
+}
+
+.score-circle {
+    align-items: center;
+    background: linear-gradient(135deg, #0376da 0%, #0262b6 100%);
+    border-radius: 50%;
+    display: flex;
+    height: 160px;
+    justify-content: center;
+    margin: 0 auto 16px;
+    width: 160px;
+}
+
+.score-value {
+    color: #fff;
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.score-message {
+    color: #afb6bc;
+    font-size: 1.125rem;
+    margin: 0;
+}
+
+/* ==================== */
+/* Teacher Homework Review */
+/* ==================== */
+
+.teacher-homework-review {
+    background-color: #040404;
+    color: #fff;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+.review-header {
+    margin-bottom: 24px;
+}
+
+.review-header-card {
+    align-items: center;
+    background: linear-gradient(135deg, #9333ea 0%, #7928ca 100%);
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    overflow: hidden;
+    padding: 24px;
+}
+
+.review-header-content {
+    align-items: center;
+    display: flex;
+    gap: 16px;
+}
+
+.review-header-icon {
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    height: 64px;
+    justify-content: center;
+    width: 64px;
+}
+
+.review-header-text h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 2rem;
+    margin: 0 0 8px 0;
+}
+
+.review-header-text p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    margin: 0;
+}
+
+.unseen-badge {
+    background-color: #e04757;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(224, 71, 87, 0.4);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+    padding: 8px 16px;
+}
+
+.review-homework-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.review-homework-card {
+    background-color: #131519;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+.review-homework-card.unseen {
+    border-color: #e04757;
+}
+
+.homework-summary {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.summary-left {
+    flex: 1;
+}
+
+.student-info {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.student-info h3 {
+    color: #fff;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.new-badge {
+    background-color: #e04757;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 0.625rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    text-transform: uppercase;
+}
+
+.homework-meta {
+    align-items: center;
+    color: #afb6bc;
+    display: flex;
+    font-size: 0.875rem;
+    gap: 16px;
+}
+
+.meta-item {
+    align-items: center;
+    display: flex;
+    gap: 4px;
+}
+
+.summary-right {
+    display: flex;
+    gap: 12px;
+}
+
+.expand-button {
+    align-items: center;
+    background-color: #0376da;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    font-size: 0.875rem;
+    font-weight: 600;
+    gap: 8px;
+    padding: 10px 16px;
+    transition: background-color 0.2s;
+}
+
+.expand-button:hover {
+    background-color: #0262b6;
+}
+
+.homework-details {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid #5e6d7a;
+    padding: 20px;
+}
+
+.details-header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.details-header h4 {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.score-display {
+    align-items: center;
+    color: #f8ae1a;
+    display: flex;
+    font-size: 1.5rem;
+    font-weight: 700;
+    gap: 8px;
+}
+
+.question-answers-list {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    padding: 16px;
+}
+
+.details-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* ==================== */
+/* Responsive Styles */
+/* ==================== */
+
+@media (max-width: 768px) {
+    .homework-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .assignment-header {
+        flex-direction: column;
+    }
+
+    .assignment-status-section {
+        align-items: flex-start;
+        margin-top: 12px;
+    }
+
+    .quiz-navigation {
+        flex-direction: column;
+    }
+
+    .nav-button {
+        width: 100%;
+    }
+
+    .review-header-card {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .homework-summary {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .summary-right {
+        width: 100%;
+    }
+
+    .expand-button {
+        width: 100%;
+    }
+}

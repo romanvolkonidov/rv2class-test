@@ -1,0 +1,8 @@
+/**
+ * Action types for annotations
+ */
+
+export const TOGGLE_ANNOTATIONS = 'TOGGLE_ANNOTATIONS';
+export const SET_ANNOTATION_TOOL = 'SET_ANNOTATION_TOOL';
+export const SET_ANNOTATION_COLOR = 'SET_ANNOTATION_COLOR';
+export const CLEAR_ANNOTATIONS = 'CLEAR_ANNOTATIONS';
