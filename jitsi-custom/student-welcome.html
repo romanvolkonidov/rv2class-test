@@ -152,14 +152,14 @@
                 }
 
                 const teacherName = student.teacher || student.teacherName || 'Roman';
-                const teacherUid = student.teacherUid;
-                
-                if (!teacherUid) {
-                    contentDiv.innerHTML = '<div class="error">Teacher information incomplete. Please contact your teacher.</div>';
-                    return;
-                }
-
+                // Use teacherUid from student, or fallback to a default room for Roman
+                const teacherUid = student.teacherUid || 'romanvolkonidov';
                 const teacherRoom = 'teacher-' + teacherUid.substring(0, 8);
+                
+                // Store teacher's first name for room display
+                const teacherFirstName = teacherName.split(' ')[0];
+                localStorage.setItem('teacherFirstName', teacherFirstName);
+                localStorage.setItem('teacherRoomId', teacherRoom);
 
                 contentDiv.innerHTML = `
                     <div class="welcome-title">🎓 Welcome to your lesson!</div>

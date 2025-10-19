@@ -70,6 +70,12 @@
                     if (wantsToStartLesson) {
                         // Redirect to teacher's permanent room prejoin
                         const teacherRoom = 'teacher-' + user.uid.substring(0, 8);
+                        
+                        // Store teacher's first name for room display
+                        const firstName = user.displayName ? user.displayName.split(' ')[0] : 'Teacher';
+                        localStorage.setItem('teacherFirstName', firstName);
+                        localStorage.setItem('teacherRoomId', teacherRoom);
+                        
                         sessionStorage.removeItem('start_lesson');
                         window.location.href = '/' + teacherRoom;
                     } else {

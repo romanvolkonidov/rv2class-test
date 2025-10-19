@@ -248,9 +248,10 @@
                 const isSharedList = SHARED_LIST_EMAILS.includes(currentUser.email);
 
                 if (isSharedList) {
-                    // Load from shared 'students' collection
+                    // Load from shared 'students' collection - filter by teacher
                     const studentsRef = collection(db, 'students');
-                    const snapshot = await getDocs(studentsRef);
+                    const q = query(studentsRef, where('teacherEmail', '==', currentUser.email));
+                    const snapshot = await getDocs(q);
                     students = snapshot.docs.map(doc => ({
                         id: doc.id,
                         ...doc.data(),
