@@ -57,7 +57,7 @@ jobs:
         NEXT_PUBLIC_FIREBASE_APP_ID=1:912992088190:web:926c8826b3bc39e2eb282f
         
         # Jitsi Configuration
-        NEXT_PUBLIC_JITSI_DOMAIN=jitsi.rv2class.com
+        NEXT_PUBLIC_JITSI_DOMAIN=app.rv2class.com
         EOF
         
         echo "�🔨 Building Next.js app..."

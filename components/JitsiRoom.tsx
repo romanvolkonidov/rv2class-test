@@ -320,7 +320,8 @@ export default function JitsiRoom({
         }
 
         const script = document.createElement("script");
-        script.src = "https://jitsi.rv2class.com/external_api.js"; // ✅ Your server!
+        const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN || "app.rv2class.com";
+        script.src = `https://${jitsiDomain}/external_api.js`;
         script.async = true;
         script.onload = () => resolve(true);
         script.onerror = () => reject(new Error("Failed to load Jitsi API"));
@@ -341,7 +342,7 @@ export default function JitsiRoom({
         }
 
         // Configure Jitsi options
-        const domain = "jitsi.rv2class.com"; // ✅ Your self-hosted Jitsi server!
+        const domain = process.env.NEXT_PUBLIC_JITSI_DOMAIN || "app.rv2class.com";
         const roomName = `RV2Class_${meetingID}`; // Prefix to avoid conflicts
         
         const options = {
@@ -377,7 +378,7 @@ export default function JitsiRoom({
             p2p: {
               enabled: true,
               stunServers: [
-                { urls: 'stun:jitsi.rv2class.com:3478' }, // Your Coturn STUN
+                { urls: `stun:${domain}:3478` }, // Your Coturn STUN
                 { urls: 'stun:stun.l.google.com:19302' }, // Google backup
                 { urls: 'stun:stun1.l.google.com:19302' }
               ],
@@ -604,7 +605,7 @@ export default function JitsiRoom({
               // Send submit prejoin command via postMessage (cross-origin safe)
               iframe.contentWindow.postMessage({
                 type: 'submit-prejoin'
-              }, 'https://jitsi.rv2class.com');
+              }, `https://${domain}`);
               console.log("📤 Sent submit-prejoin postMessage to iframe");
             }
           } catch (err) {
@@ -622,7 +623,7 @@ export default function JitsiRoom({
               if (iframe && iframe.contentWindow) {
                 iframe.contentWindow.postMessage({
                   type: 'submit-prejoin'
-                }, 'https://jitsi.rv2class.com');
+                }, `https://${domain}`);
                 console.log("📤 Sent submit-prejoin postMessage");
               }
             } catch (err) {
