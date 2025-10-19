@@ -355,17 +355,17 @@ export default function JitsiRoom({
             startWithAudioMuted: false, // Everyone starts with audio ON (unmuted)
             startWithVideoMuted: false, // Everyone starts with video ON
             // Enable standard Jitsi UX: welcome page and prejoin
-            enableWelcomePage: true,
-            prejoinPageEnabled: true,
+            enableWelcomePage: false, // Disable welcome page for direct room join
+            prejoinPageEnabled: true, // Keep prejoin to show name/camera/mic selection
             disableDeepLinking: true,
             defaultLanguage: "en",
             enableClosePage: false,
             // Set meeting title: "English with Roman" or "English with Violet"
             subject: `${subject} with ${teacherName || (isTutor ? participantName : 'Teacher')}`,
-            // Lobby & prejoin settings - enable standard Jitsi lobby behavior
+            // Lobby settings - teachers skip lobby, students wait
             enableLobbyChat: true,
-            autoKnockLobby: true,
-            lobbyEnabled: true,
+            autoKnockLobby: !isTutor, // Only students auto-knock
+            lobbyEnabled: !isTutor, // Only enable lobby for students
             hideLobbyButton: false,
             
             // Prevent students from becoming moderators (keep moderator UX for tutors)
@@ -594,43 +594,6 @@ export default function JitsiRoom({
           console.log("Jitsi: User left the conference");
           handleMeetingEnd();
         });
-
-        // Listen for prejoin page rendered
-        api.on('prejoinVideoChanged', () => {
-          console.log("🎥 Jitsi: Prejoin video changed, attempting auto-submit");
-          // Use postMessage to trigger prejoin submit via iframe communication
-          try {
-            const iframe = api.getIFrame();
-            if (iframe && iframe.contentWindow) {
-              // Send submit prejoin command via postMessage (cross-origin safe)
-              iframe.contentWindow.postMessage({
-                type: 'submit-prejoin'
-              }, `https://${domain}`);
-              console.log("📤 Sent submit-prejoin postMessage to iframe");
-            }
-          } catch (err) {
-            console.error("Failed to send prejoin submit message:", err);
-          }
-        });
-
-        // Also try executeCommand approach after delay
-        setTimeout(() => {
-          if (!hasJoined && loading) {
-            console.log("⚠️ Jitsi: Auto-join taking too long, trying alternative methods");
-            try {
-              // Send postMessage to trigger join
-              const iframe = api.getIFrame();
-              if (iframe && iframe.contentWindow) {
-                iframe.contentWindow.postMessage({
-                  type: 'submit-prejoin'
-                }, `https://${domain}`);
-                console.log("📤 Sent submit-prejoin postMessage");
-              }
-            } catch (err) {
-              console.error("Failed alternative auto-join methods:", err);
-            }
-          }
-        }, 4000); // Wait 4 seconds before trying alternatives
 
         // Error handling - only show for actual errors (not normal meeting end)
         api.addEventListener("errorOccurred", (event: any) => {
