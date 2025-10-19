@@ -353,22 +353,21 @@ export default function JitsiRoom({
           configOverwrite: {
             startWithAudioMuted: false, // Everyone starts with audio ON (unmuted)
             startWithVideoMuted: false, // Everyone starts with video ON
-            enableWelcomePage: false,
-            prejoinPageEnabled: false, // CRITICAL: Disable prejoin page completely
+            // Enable standard Jitsi UX: welcome page and prejoin
+            enableWelcomePage: true,
+            prejoinPageEnabled: true,
             disableDeepLinking: true,
             defaultLanguage: "en",
             enableClosePage: false,
             // Set meeting title: "English with Roman" or "English with Violet"
             subject: `${subject} with ${teacherName || (isTutor ? participantName : 'Teacher')}`,
+            // Lobby & prejoin settings - enable standard Jitsi lobby behavior
+            enableLobbyChat: true,
+            autoKnockLobby: true,
+            lobbyEnabled: true,
+            hideLobbyButton: false,
             
-            // 🔒 CRITICAL FIX: Disable lobby entirely - we handle waiting room via Firebase
-            // The lobby causes "membersOnly" errors for approved students
-            enableLobbyChat: false,
-            autoKnockLobby: false, // Don't auto-knock
-            lobbyEnabled: false, // DISABLE lobby - we use Firebase waiting room instead
-            hideLobbyButton: true, // Hide lobby button for everyone
-            
-            // Prevent students from becoming moderators
+            // Prevent students from becoming moderators (keep moderator UX for tutors)
             ...(!isTutor && {
               disableModeratorIndicator: true,
             }),
@@ -438,7 +437,7 @@ export default function JitsiRoom({
           jwt: undefined, // No JWT for now, but this enables the feature
         };
 
-        // Create Jitsi instance
+  // Create Jitsi instance
         const api = new window.JitsiMeetExternalAPI(domain, options);
         jitsiApiRef.current = api;
 
@@ -512,9 +511,49 @@ export default function JitsiRoom({
           }
         });
 
-        // 🔔 WAITING ROOM: We use Firebase instead of Jitsi lobby
-        // No lobby event listeners needed - students join directly after Firebase approval
-        if (isTutor) {
+        // 🔔 WAITING ROOM: If Jitsi lobby is enabled we'll use Jitsi native lobby/events.
+        // Otherwise we fall back to the existing Firebase waiting-room implementation.
+        const jitsiLobbyEnabled = !!(options?.configOverwrite && options.configOverwrite.lobbyEnabled);
+
+        if (jitsiLobbyEnabled) {
+          console.log("👨‍🏫 Using Jitsi lobby for waiting-room flow");
+
+          // Listen for knocking participants and surface admit/reject UI
+          try {
+            api.addListener('knockingParticipant', (p: any) => {
+              try {
+                const id = p?.id || p?.participantId || p?.participant?.id;
+                const name = p?.name || p?.displayName || p?.participant?.name || 'Guest';
+                console.log('🔔 Jitsi: Knocking participant received', { id, name, raw: p });
+
+                if (!id) return;
+
+                setKnockingParticipants(prev => {
+                  // avoid duplicates
+                  if (prev.some(x => x.id === id)) return prev;
+                  return [...prev, { id, name, timestamp: Date.now() }];
+                });
+                playNotificationSound();
+              } catch (err) {
+                console.error('Error handling knockingParticipant event', err, p);
+              }
+            });
+
+            // When participant is admitted/joins, remove from knocking list
+            api.addListener('participantJoined', (participant: any) => {
+              try {
+                const id = participant?.id || participant?.participantId || participant?.participant?.id;
+                if (!id) return;
+                setKnockingParticipants(prev => prev.filter(k => k.id !== id));
+              } catch (err) {
+                // ignore
+              }
+            });
+          } catch (err) {
+            console.warn('Could not register lobby listeners on Jitsi API:', err);
+          }
+
+        } else if (isTutor) {
           console.log("👨‍🏫 Teacher: Using Firebase waiting room system");
         }
 
