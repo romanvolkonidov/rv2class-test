@@ -580,7 +580,7 @@ export default function AnnotationOverlay({
         
         // Hide hint after 1 second
         setTimeout(() => setShowDragHint(false), 1000);
-      }, 2000); // 2 seconds for buttons
+      }, 2000) as unknown as number; // 2 seconds for buttons
     } else {
       // Clicked on empty space - immediate drag
       e.preventDefault();
@@ -644,7 +644,7 @@ export default function AnnotationOverlay({
         
         // Hide hint after 1 second
         setTimeout(() => setShowDragHint(false), 1000);
-      }, 2000); // 2 seconds for buttons
+      }, 2000) as unknown as number; // 2 seconds for buttons
     } else {
       // Touched empty space - immediate drag
       e.stopPropagation();
@@ -916,7 +916,7 @@ export default function AnnotationOverlay({
       clearTimeout(orientationDebounceTimeoutRef.current);
     }
     
-    orientationDebounceTimeoutRef.current = setTimeout(updateOrientation, 150);
+    orientationDebounceTimeoutRef.current = setTimeout(updateOrientation, 150) as unknown as number;
     
     return () => {
       if (orientationDebounceTimeoutRef.current) {
