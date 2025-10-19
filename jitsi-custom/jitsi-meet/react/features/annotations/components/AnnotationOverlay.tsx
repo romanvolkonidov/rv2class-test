@@ -131,11 +131,11 @@ export default function AnnotationOverlay({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [isToolbarPositioned, setIsToolbarPositioned] = useState(false);
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
   const [showDragHint, setShowDragHint] = useState(false);
   const [toolbarOrientation, setToolbarOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
   const lastOrientationChangeRef = useRef<number>(0);
-  const orientationDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const orientationDebounceTimeoutRef = useRef<number | null>(null);
   const isOrientationLocked = useRef<boolean>(false);
   const lastUserDragPositionRef = useRef<{ x: number; y: number } | null>(null);
   const snappedEdgeRef = useRef<'left' | 'right' | 'top' | 'bottom' | null>(null); // Track which edge we're snapped to
@@ -300,7 +300,7 @@ export default function AnnotationOverlay({
       const videos = document.querySelectorAll('video');
       console.log('🎨 Found', videos.length, 'video elements');
       
-      for (const video of videos) {
+      for (const video of Array.from(videos)) {
         // Check if this is a screen share video (LiveKit adds data-lk-source attribute)
         const source = video.getAttribute('data-lk-source');
         if (source === 'screen_share' || source === 'screen_share_audio') {
