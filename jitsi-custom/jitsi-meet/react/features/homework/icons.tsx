@@ -2,6 +2,8 @@
  * Homework-related icon definitions for Jitsi.
  */
 
+import React from 'react';
+
 export const IconBook: React.ComponentType<any> = ({ ...props }) => (
     <svg
         fill = 'currentColor'
