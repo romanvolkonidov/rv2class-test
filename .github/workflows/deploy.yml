@@ -60,15 +60,36 @@ jobs:
         NEXT_PUBLIC_JITSI_DOMAIN=app.rv2class.com
         EOF
         
-        echo "�🔨 Building Next.js app..."
+        echo " Building Next.js app..."
         npm run build
         
-        echo "♻️  Restarting application..."
+        echo "📋 Deploying Jitsi config files..."
+        if [ -f "jitsi-custom/jitsi-meet/config.js" ]; then
+          echo "  → Copying config.js to /etc/jitsi/meet/"
+          cp jitsi-custom/jitsi-meet/config.js /etc/jitsi/meet/app.rv2class.com-config.js
+        fi
+        
+        if [ -f "jitsi-custom/jitsi-meet/interface_config.js" ]; then
+          echo "  → Copying interface_config.js to /usr/share/jitsi-meet/"
+          cp jitsi-custom/jitsi-meet/interface_config.js /usr/share/jitsi-meet/interface_config.js
+        fi
+        
+        echo "♻️  Restarting all services..."
+        echo "  → Restarting Jitsi services..."
+        systemctl restart prosody jicofo jitsi-videobridge2 2>/dev/null || echo "  ⚠️  Jitsi services not found (skip if not installed)"
+        
+        echo "  → Reloading Nginx..."
+        systemctl reload nginx
+        
+        echo "  → Restarting frontend..."
         pm2 restart rv2class || pm2 start ecosystem.config.js
         pm2 save
         
         echo "✅ Deployment complete!"
+        echo ""
+        echo "📊 Service Status:"
         pm2 list
+        systemctl status prosody jicofo jitsi-videobridge2 --no-pager 2>/dev/null || echo "Jitsi not installed"
         ENDSSH
     
     - name: Deployment Status
