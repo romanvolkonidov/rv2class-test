@@ -277,16 +277,17 @@
                 students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
                 container.innerHTML = '<div class="student-list">' + students.map(student => {
-                    const linkUrl = `${window.location.origin}/student/${student.id}`;
+                    const linkUrl = `/student-welcome.html?student=${student.id}`;
+                    const fullUrl = `${window.location.origin}${linkUrl}`;
                     return `
                         <div class="student-item">
                             <div class="student-info">
                                 <h4>${student.name}</h4>
-                                <p class="student-link">${linkUrl}</p>
+                                <p class="student-link">${fullUrl}</p>
                             </div>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-small btn-secondary" onclick="copyLink('${linkUrl}')">Copy Link</button>
-                                <button class="btn btn-small btn-secondary" onclick="window.open('${linkUrl}', '_blank')">Open</button>
+                                <button class="btn btn-small btn-secondary" onclick="copyLink('${fullUrl}')">Copy Link</button>
+                                <button class="btn btn-small btn-secondary" onclick="window.location.href='${linkUrl}'">Open</button>
                                 ${student.isShared ? '<span style="color: #A4B5B8; font-size: 12px;">(Shared)</span>' : `<button class="btn btn-small btn-danger" onclick="deleteStudent('${student.id}')">Delete</button>`}
                             </div>
                         </div>

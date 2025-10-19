@@ -124,7 +124,7 @@
         </div>
 
         <div style="text-align: center; margin-top: 24px;">
-            <button class="btn btn-secondary" onclick="window.location.href='/student/' + studentId">Back to Welcome</button>
+            <button class="btn btn-secondary" onclick="window.location.href='/student-welcome.html?student=' + studentId">Back to Welcome</button>
         </div>
     </div>
 
@@ -145,8 +145,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        const pathParts = window.location.pathname.split('/');
-        const studentId = pathParts[pathParts.length - 2]; // /student-homework/{studentId}
+        // Get student ID from URL query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const studentId = urlParams.get('studentId') || urlParams.get('student');
         window.studentId = studentId;
 
         async function loadHomework() {

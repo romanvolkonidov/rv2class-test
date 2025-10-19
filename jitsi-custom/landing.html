@@ -156,6 +156,56 @@
             transform: translateY(0);
         }
 
+        .action-buttons {
+            display: none;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .action-buttons.active {
+            display: flex;
+        }
+
+        .start-btn,
+        .students-btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .students-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .students-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .start-btn:active,
+        .students-btn:active {
+            transform: translateY(0);
+        }
+
         .logout-btn {
             width: 100%;
             padding: 12px;
@@ -255,8 +305,21 @@
                 <p>Connecting to meeting...</p>
             </div>
 
-            <!-- Join Button (shown after login) -->
-            <button class="join-btn" id="joinBtn">Join Meeting</button>
+            <!-- Teacher Action Buttons (shown after login) -->
+            <div class="action-buttons" id="actionButtons">
+                <button class="start-btn" id="startBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                    Start Meeting
+                </button>
+                <button class="students-btn" id="studentsBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    Students
+                </button>
+            </div>
             
             <!-- Logout Button -->
             <button class="logout-btn" id="logoutBtn">Sign out</button>
@@ -292,7 +355,9 @@
         const userAvatar = document.getElementById('userAvatar');
         const userName = document.getElementById('userName');
         const userEmail = document.getElementById('userEmail');
-        const joinBtn = document.getElementById('joinBtn');
+        const actionButtons = document.getElementById('actionButtons');
+        const startBtn = document.getElementById('startBtn');
+        const studentsBtn = document.getElementById('studentsBtn');
         const logoutBtn = document.getElementById('logoutBtn');
         const loading = document.getElementById('loading');
         const errorMessage = document.getElementById('errorMessage');
@@ -316,7 +381,7 @@
                 // User is signed in
                 googleSignInBtn.style.display = 'none';
                 userInfo.classList.add('active');
-                joinBtn.classList.add('active');
+                actionButtons.classList.add('active');
                 logoutBtn.classList.add('active');
                 
                 userAvatar.src = user.photoURL || 'https://via.placeholder.com/80';
@@ -329,7 +394,7 @@
                 // User is signed out
                 googleSignInBtn.style.display = 'flex';
                 userInfo.classList.remove('active');
-                joinBtn.classList.remove('active');
+                actionButtons.classList.remove('active');
                 logoutBtn.classList.remove('active');
             }
             loading.classList.remove('active');
@@ -364,16 +429,25 @@
             }
         });
 
-        // Join meeting
-        joinBtn.addEventListener('click', () => {
+        // Start meeting button - goes to Jitsi prejoin
+        startBtn.addEventListener('click', () => {
             loading.classList.add('active');
-            joinBtn.style.display = 'none';
+            actionButtons.style.display = 'none';
             logoutBtn.style.display = 'none';
+            
+            // Get room name from URL or use default
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomName = urlParams.get('room') || 'DefaultRoom';
             
             // Redirect to Jitsi prejoin page
             setTimeout(() => {
                 window.location.href = `/meet/${roomName}`;
             }, 500);
+        });
+
+        // Students button - goes to students list page
+        studentsBtn.addEventListener('click', () => {
+            window.location.href = '/students.html';
         });
 
         // Logout

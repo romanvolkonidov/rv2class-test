@@ -65,23 +65,8 @@
 
             firebaseAuth.onAuthStateChanged(auth, (user) => {
                 if (user) {
-                    // User is signed in, check if they want to start lesson
-                    const wantsToStartLesson = sessionStorage.getItem('start_lesson');
-                    if (wantsToStartLesson) {
-                        // Redirect to teacher's permanent room prejoin
-                        const teacherRoom = 'teacher-' + user.uid.substring(0, 8);
-                        
-                        // Store teacher's first name for room display
-                        const firstName = user.displayName ? user.displayName.split(' ')[0] : 'Teacher';
-                        localStorage.setItem('teacherFirstName', firstName);
-                        localStorage.setItem('teacherRoomId', teacherRoom);
-                        
-                        sessionStorage.removeItem('start_lesson');
-                        window.location.href = '/' + teacherRoom;
-                    } else {
-                        // Show teacher home page
-                        showTeacherHome(user);
-                    }
+                    // User is signed in, redirect to landing page (teacher dashboard)
+                    window.location.href = '/landing.html';
                 } else {
                     // Not signed in, show auth page
                     showAuthPage();
