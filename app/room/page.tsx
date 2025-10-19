@@ -1,21 +1,18 @@
 "use client";
 
 import { Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import JitsiRoom from "@/components/JitsiRoom";
+import { useSearchParams } from "next/navigation";
+import JitsiRedirect from "@/components/JitsiRedirect";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
 function RoomContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const roomName = searchParams?.get("room") || "";
   const userName = searchParams?.get("name") || "";
   const isTutor = searchParams?.get("isTutor") === "true" || searchParams?.get("tutor") === "true";
-  const studentId = searchParams?.get("studentId") || searchParams?.get("sessionCode") || undefined;
   const subject = searchParams?.get("subject") || "English"; // Default to English
-  const teacherName = searchParams?.get("teacherName") || (isTutor ? userName : "Teacher"); // Use teacher's name for title
 
   if (!roomName || !userName) {
     return (
@@ -34,29 +31,13 @@ function RoomContent() {
     );
   }
 
-  const handleLeave = () => {
-    if (isTutor) {
-      // Teacher goes to home page
-      router.push('/');
-    } else if (studentId) {
-      // Student goes back to their welcome page
-      router.push(`/student/${studentId}`);
-    } else {
-      // Fallback to home
-      router.push('/');
-    }
-  };
-
-  // Always use Jitsi
+  // Redirect directly to Jitsi
   return (
-    <JitsiRoom
+    <JitsiRedirect
       meetingID={roomName}
       participantName={userName}
       isTutor={isTutor}
-      studentId={studentId}
       subject={subject}
-      teacherName={teacherName}
-      onLeave={handleLeave}
     />
   );
 }
