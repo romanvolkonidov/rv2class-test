@@ -1,0 +1,191 @@
+import React, { useState, useEffect } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+
+import StudentWelcome from './StudentWelcome';
+
+// Firebase configuration
+const firebaseConfig = {
+    apiKey: 'AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004',
+    authDomain: 'tracking-budget-app.firebaseapp.com',
+    databaseURL: 'https://tracking-budget-app-default-rtdb.firebaseio.com',
+    projectId: 'tracking-budget-app',
+    storageBucket: 'tracking-budget-app.appspot.com',
+    messagingSenderId: '912992088190',
+    appId: '1:912992088190:web:926c8826b3bc39e2eb282f'
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig, 'student-portal');
+const db = getFirestore(app);
+
+interface IStudentData {
+    id: string;
+    name: string;
+    teacher?: string;
+    teacherName?: string;
+    teacherUid?: string;
+}
+
+interface IPageProps {
+    /**
+     * Student ID from URL parameter.
+     */
+    studentId?: string;
+}
+
+/**
+ * Container component for Student Welcome page.
+ * Handles Firebase data loading and navigation logic.
+ *
+ * @param {IPageProps} props - Component props.
+ * @returns {JSX.Element}
+ */
+const StudentWelcomePage: React.FC<IPageProps> = ({ studentId: propStudentId }) => {
+    const [student, setStudent] = useState<IStudentData | null>(null);
+    const [uncompletedCount, setUncompletedCount] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        loadStudentData();
+    }, [propStudentId]);
+
+    const loadStudentData = async () => {
+        // Get student ID from props or URL query parameter
+        const params = new URLSearchParams(window.location.search);
+        const studentId = propStudentId || params.get('student');
+
+        if (!studentId) {
+            setError('Student not found');
+            setLoading(false);
+
+            return;
+        }
+
+        try {
+            // Try shared 'students' collection first
+            const sharedDoc = await getDoc(doc(db, 'students', studentId));
+            let studentData: IStudentData | null = null;
+
+            if (sharedDoc.exists()) {
+                const data = sharedDoc.data();
+
+                studentData = {
+                    id: sharedDoc.id,
+                    name: data.name || 'Student',
+                    teacher: data.teacher || data.teacherName,
+                    teacherName: data.teacherName || data.teacher,
+                    teacherUid: data.teacherUid
+                };
+            } else {
+                // Try 'teacherStudents' collection
+                const teacherDoc = await getDoc(doc(db, 'teacherStudents', studentId));
+
+                if (teacherDoc.exists()) {
+                    const data = teacherDoc.data();
+
+                    studentData = {
+                        id: teacherDoc.id,
+                        name: data.name || 'Student',
+                        teacher: data.teacher || data.teacherName,
+                        teacherName: data.teacherName || data.teacher,
+                        teacherUid: data.teacherUid
+                    };
+                }
+            }
+
+            if (!studentData) {
+                setError('Student not found');
+                setLoading(false);
+
+                return;
+            }
+
+            setStudent(studentData);
+
+            // Count uncompleted homework
+            const homeworkQuery = query(
+                collection(db, 'telegramAssignments'),
+                where('studentId', '==', studentId),
+                where('completed', '==', false)
+            );
+            const homeworkSnapshot = await getDocs(homeworkQuery);
+
+            setUncompletedCount(homeworkSnapshot.docs.length);
+            setLoading(false);
+
+        } catch (err) {
+            console.error('Error loading student:', err);
+            setError('Error loading student data. Please refresh.');
+            setLoading(false);
+        }
+    };
+
+    const handleJoinLesson = () => {
+        if (!student) {
+            return;
+        }
+
+        const teacherUid = student.teacherUid || 'romanvolkonidov';
+        const teacherRoom = `teacher-${teacherUid.substring(0, 8)}`;
+
+        // Store teacher info in localStorage for room
+        const teacherFirstName = (student.teacher || 'Roman').split(' ')[0];
+
+        localStorage.setItem('teacherFirstName', teacherFirstName);
+        localStorage.setItem('teacherRoomId', teacherRoom);
+
+        // Redirect to Jitsi room (native lobby will handle entry)
+        window.location.href = `/${teacherRoom}`;
+    };
+
+    const handleViewHomework = () => {
+        if (!student) {
+            return;
+        }
+
+        // Navigate to homework page
+        window.location.href = `/student-homework.html?studentId=${encodeURIComponent(student.id)}`;
+    };
+
+    if (loading) {
+        return (
+            <div style = {{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '100vh',
+                fontSize: '18px',
+                color: '#A4B5B8'
+            }}>
+                Loading...
+            </div>
+        );
+    }
+
+    if (error || !student) {
+        return (
+            <div style = {{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '100vh',
+                fontSize: '18px',
+                color: '#E15350'
+            }}>
+                {error || 'Student not found'}
+            </div>
+        );
+    }
+
+    return (
+        <StudentWelcome
+            onJoinLesson = { handleJoinLesson }
+            onViewHomework = { handleViewHomework }
+            student = { student }
+            uncompletedCount = { uncompletedCount } />
+    );
+};
+
+export default StudentWelcomePage;

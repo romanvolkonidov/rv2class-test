@@ -8,6 +8,7 @@ import { getJitsiMeetGlobalNS, getJitsiMeetGlobalNSConnectionTimes } from './fea
 import DialInSummaryApp from './features/invite/components/dial-in-summary/web/DialInSummaryApp';
 import PrejoinApp from './features/prejoin/components/web/PrejoinApp';
 import WhiteboardApp from './features/whiteboard/components/web/WhiteboardApp';
+import StudentPortalApp from './features/student-portal/components/web/StudentPortalApp';
 
 const logger = getLogger('app:index.web');
 
@@ -69,7 +70,8 @@ globalNS.entryPoints = {
     APP: App,
     PREJOIN: PrejoinApp,
     DIALIN: DialInSummaryApp,
-    WHITEBOARD: WhiteboardApp
+    WHITEBOARD: WhiteboardApp,
+    STUDENT_PORTAL: StudentPortalApp
 };
 
 globalNS.renderEntryPoint = ({

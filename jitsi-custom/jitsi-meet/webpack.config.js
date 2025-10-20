@@ -78,7 +78,8 @@ function devServerProxyBypass({ path }) {
             || tpath.startsWith('/lang/')
             || tpath.startsWith('/sounds/')
             || tpath.startsWith('/static/')
-            || tpath.endsWith('.wasm')) {
+            || tpath.endsWith('.wasm')
+            || tpath.endsWith('.html')) {
 
         return tpath;
     }

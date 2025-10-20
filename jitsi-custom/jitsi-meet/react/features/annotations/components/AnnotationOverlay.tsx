@@ -2,26 +2,15 @@ import React, { useRef, useState, useEffect, useLayoutEffect } from "react";
 import { Button } from "./ui/button";
 import { 
   Pencil, 
-  Eraser, 
-  Square, 
-  Circle, 
   Undo, 
-  Redo, 
-  Trash2, 
-  X, 
-  ChevronDown, 
-  ChevronUp, 
   Type, 
-  MousePointer2, 
-  Edit, 
-  GripVertical, 
-  Move 
+  ArrowUpRight
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useSelector } from 'react-redux';
 import { IReduxState } from '../../app/types';
 
-type AnnotationTool = "pointer" | "pencil" | "eraser" | "rectangle" | "circle" | "text";
+type AnnotationTool = "pencil" | "text" | "arrow";
 
 // Use relative coordinates (0-1 range) instead of absolute pixels
 interface RelativePoint {
@@ -488,7 +477,7 @@ export default function AnnotationOverlay({
     };
   }, [screenShareElement, zoomLevel]); // Re-run when zoom changes
 
-  // Initialize toolbar position - center it horizontally
+  // Initialize toolbar position - top center or left middle based on screen dimensions
   useEffect(() => {
     if (!isToolbarPositioned && toolbarRef.current) {
       // Small delay to ensure toolbar has rendered with proper dimensions
@@ -497,10 +486,23 @@ export default function AnnotationOverlay({
         
         const toolbar = toolbarRef.current;
         const toolbarRect = toolbar.getBoundingClientRect();
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
         
-        // Center horizontally, position at the bottom
-        const x = Math.max(20, (window.innerWidth - toolbarRect.width) / 2);
-        const y = window.innerHeight - toolbarRect.height - 80; // Above control bar
+        let x, y;
+        
+        // Position based on which dimension is longer
+        if (screenWidth > screenHeight) {
+          // Landscape: Position at top center (horizontal toolbar)
+          setToolbarOrientation('horizontal');
+          x = Math.max(20, (screenWidth - toolbarRect.width) / 2);
+          y = 80; // Below Jitsi's top bar
+        } else {
+          // Portrait: Position at left middle (vertical toolbar)
+          setToolbarOrientation('vertical');
+          x = 20;
+          y = Math.max(80, (screenHeight - toolbarRect.height) / 2);
+        }
         
         setToolbarPosition({ x, y });
         setIsToolbarPositioned(true);
@@ -1082,6 +1084,33 @@ export default function AnnotationOverlay({
       ctx.beginPath();
       ctx.arc(start.x, start.y, radius, 0, 2 * Math.PI);
       ctx.stroke();
+    } else if (action.tool === "arrow" && action.startPoint && action.endPoint) {
+      // Draw arrow from start to end point
+      const start = toAbsolute(action.startPoint);
+      const end = toAbsolute(action.endPoint);
+      
+      // Draw the line
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+      
+      // Draw arrowhead
+      const headLength = absoluteWidth * 4; // Length of the arrowhead
+      const angle = Math.atan2(end.y - start.y, end.x - start.x);
+      
+      ctx.beginPath();
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(
+        end.x - headLength * Math.cos(angle - Math.PI / 6),
+        end.y - headLength * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(
+        end.x - headLength * Math.cos(angle + Math.PI / 6),
+        end.y - headLength * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.stroke();
     } else if (action.tool === "text" && action.text && action.startPoint) {
       const pos = toAbsolute(action.startPoint);
       const absoluteFontSize = action.fontSize ? action.fontSize * effectiveWidth : 24;
@@ -1313,7 +1342,7 @@ export default function AnnotationOverlay({
         drawAction(currentAction);
         sendAnnotationData(currentAction);
       }
-    } else if ((tool === "rectangle" || tool === "circle") && startPoint) {
+    } else if ((tool === "rectangle" || tool === "circle" || tool === "arrow") && startPoint) {
       redrawCanvas();
       
       // Store relative line width
@@ -1359,7 +1388,7 @@ export default function AnnotationOverlay({
     // Convert to relative coordinates (0-1 range)
     const relativePoint = toRelative(canvasX, canvasY);
 
-    if ((tool === "rectangle" || tool === "circle") && startPoint) {
+    if ((tool === "rectangle" || tool === "circle" || tool === "arrow") && startPoint) {
       // Store relative line width
       const metrics = metricsRef.current;
       const effectiveWidth = metrics.contentWidth || metrics.cssWidth || canvas.width;
@@ -2045,294 +2074,117 @@ export default function AnnotationOverlay({
           </span>
         </div>
 
-          {/* Main Toolbar with glass morphism */}
+          {/* Main Toolbar with Jitsi-native styling */}
           <div 
             className={cn(
-              "backdrop-blur-xl bg-black/30 border border-white/15 rounded-xl shadow-2xl transition-all duration-300 ease-in-out",
-              toolbarCollapsed ? 'p-1.5' : 'p-2',
+              "backdrop-blur-md bg-gray-800/95 border border-gray-700/80 rounded-xl shadow-2xl p-2.5 transition-all",
               toolbarOrientation === 'horizontal' && "max-w-[calc(100vw-40px)]",
               toolbarOrientation === 'vertical' && "max-h-[calc(100vh-40px)]"
             )}
           >
-            {toolbarCollapsed ? (
-              /* Collapsed View - Essential drawing tools + utilities */
+              /* Toolbar - Native Jitsi style */
               <div className={cn(
-                "flex items-center gap-1.5",
-                toolbarOrientation === 'vertical' && "flex-col",
-                toolbarOrientation === 'horizontal' && "",
-                shouldWrap && "flex-wrap"
+                "flex items-center gap-2.5",
+                toolbarOrientation === 'vertical' && "flex-col"
               )}>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setToolbarCollapsed(false)}
-                  title="Expand Toolbar"
-                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                >
-                  <ChevronDown className="h-5 w-5 stroke-[2.5]" />
-                </Button>
-                
-                {!viewOnly && (
-                  <>
-                    <div className={cn(
-                      "bg-white/20",
-                      toolbarOrientation === 'horizontal' ? "w-px h-6" : "h-px w-6"
-                    )} />
-                    
-                    {/* Quick Drawing Tools */}
-                    <Button
-                      size="icon"
-                      variant={tool === "pencil" ? "default" : "ghost"}
-                      onClick={() => setTool("pencil")}
-                      title="Pencil"
-                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
-                        tool === "pencil" 
-                          ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
-                          : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
-                      }`}
-                    >
-                      <Pencil className="h-5 w-5 stroke-[2.5]" />
-                    </Button>
-                    
-                    <Button
-                      size="icon"
-                      variant={tool === "text" ? "default" : "ghost"}
-                      onClick={() => setTool("text")}
-                      title="Text"
-                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
-                        tool === "text" 
-                          ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
-                          : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
-                      }`}
-                    >
-                      <Type className="h-5 w-5 stroke-[2.5]" />
-                    </Button>
-                    
-                    <Button
-                      size="icon"
-                      variant={tool === "eraser" ? "default" : "ghost"}
-                      onClick={() => setTool("eraser")}
-                      title="Eraser"
-                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
-                        tool === "eraser" 
-                          ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
-                          : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
-                      }`}
-                    >
-                      <Eraser className="h-5 w-5 stroke-[2.5]" />
-                    </Button>
-                    
-                    <div className={cn(
-                      "bg-white/20",
-                      toolbarOrientation === 'horizontal' ? "w-px h-6" : "h-px w-6"
-                    )} />
-                    
-                    {isTutor ? (
-                      <div className="relative clear-options-container">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => setShowClearOptions(!showClearOptions)}
-                          title="Clear Options"
-                          className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                        >
-                          <Trash2 className="h-5 w-5 stroke-[2.5]" />
-                        </Button>
-                        {showClearOptions && (
-                          <div className="absolute top-full mt-2 left-0 bg-black/90 backdrop-blur-xl border border-white/20 rounded-lg p-2 shadow-2xl min-w-[180px] z-[70]">
-                            <div className="text-xs text-white/80 font-semibold mb-2 px-2">Clear:</div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => clearByAuthor("all")}
-                              className="w-full justify-start text-white hover:bg-white/10 border border-white/10 mb-1"
-                            >
-                              All Drawings
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => clearByAuthor("teacher")}
-                              className="w-full justify-start text-white hover:bg-white/10 border border-white/10 mb-1"
-                            >
-                              Teacher's Drawings
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => clearByAuthor("students")}
-                              className="w-full justify-start text-white hover:bg-white/10 border border-white/10"
-                            >
-                              Students' Drawings
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={clearAndBroadcast}
-                        title="Clear All"
-                        className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                      >
-                        <Trash2 className="h-5 w-5 stroke-[2.5]" />
-                      </Button>
-                    )}
-                  </>
-                )}
-                
-                {/* Drag Handle - Looks like a divider */}
-                <div className={cn(
-                  "bg-white/20",
-                  toolbarOrientation === 'horizontal' ? "w-px h-6" : "h-px w-6"
-                )} />
-                <div
-                  title="Drag to move toolbar"
-                  className={cn(
-                    "cursor-move flex items-center justify-center select-none touch-manipulation text-white/40 hover:text-white/70 transition-colors",
-                    toolbarOrientation === 'horizontal' ? "px-2" : "py-2"
-                  )}
-                >
-                  <Move className="h-4 w-4 stroke-[2]" />
-                </div>
-              </div>
-            ) : (
-              /* Expanded View - Full toolbar */
-              <div className={cn(
-                "flex items-center gap-2 justify-center",
-                toolbarOrientation === 'vertical' && "flex-col",
-                shouldWrap && "flex-wrap"
-              )}>
-                {/* Collapse Button */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setToolbarCollapsed(true)}
-                  title="Collapse Toolbar"
-                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                >
-                  <ChevronUp className="h-5 w-5 stroke-[2.5]" />
-                </Button>
-
-                <div className={cn(
-                  "bg-white/20",
-                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
-                )} />
-
                 {/* Drawing Tools */}
                 <div className={cn(
-                  "flex gap-1.5",
+                  "flex gap-2",
                   toolbarOrientation === 'vertical' && "flex-col"
                 )}>
-                  <Button
-                    size="icon"
-                    variant={tool === "pointer" ? "default" : "ghost"}
-                    onClick={() => setTool("pointer")}
-                    title="Pointer - Click text to edit"
-                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
-                      tool === "pointer" 
-                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
-                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
-                    }`}
-                  >
-                    <MousePointer2 className="h-5 w-5 stroke-[2.5]" />
-                  </Button>
+                  {/* Pencil */}
                   <Button
                     size="icon"
                     variant={tool === "pencil" ? "default" : "ghost"}
                     onClick={() => setTool("pencil")}
                     title="Pencil"
-                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
+                    className={`h-11 w-11 rounded-lg transition-all active:scale-95 ${
                       tool === "pencil" 
-                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
-                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg' 
+                        : 'bg-gray-700/90 hover:bg-gray-600/90 text-white'
                     }`}
                   >
-                    <Pencil className="h-5 w-5 stroke-[2.5]" />
+                    <Pencil className="h-5 w-5" />
                   </Button>
-                  <Button
-                    size="icon"
-                    variant={tool === "eraser" ? "default" : "ghost"}
-                    onClick={() => setTool("eraser")}
-                    title="Eraser"
-                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
-                      tool === "eraser" 
-                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
-                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
-                    }`}
-                  >
-                    <Eraser className="h-5 w-5 stroke-[2.5]" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant={tool === "rectangle" ? "default" : "ghost"}
-                    onClick={() => setTool("rectangle")}
-                    title="Rectangle"
-                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
-                      tool === "rectangle" 
-                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
-                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
-                    }`}
-                  >
-                    <Square className="h-5 w-5 stroke-[2.5]" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant={tool === "circle" ? "default" : "ghost"}
-                    onClick={() => setTool("circle")}
-                    title="Circle"
-                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
-                      tool === "circle" 
-                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
-                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
-                    }`}
-                  >
-                    <Circle className="h-5 w-5 stroke-[2.5]" />
-                  </Button>
+
+                  {/* Text */}
                   <Button
                     size="icon"
                     variant={tool === "text" ? "default" : "ghost"}
                     onClick={() => setTool("text")}
                     title="Text"
-                    className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg transition-all border active:scale-95 touch-manipulation select-none ${
+                    className={`h-11 w-11 rounded-lg transition-all active:scale-95 ${
                       tool === "text" 
-                        ? 'bg-blue-500/80 hover:bg-blue-600/80 text-white border-blue-400/30 shadow-lg backdrop-blur-sm' 
-                        : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg' 
+                        : 'bg-gray-700/90 hover:bg-gray-600/90 text-white'
                     }`}
                   >
-                    <Type className="h-5 w-5 stroke-[2.5]" />
+                    <Type className="h-5 w-5" />
+                  </Button>
+
+                  {/* Arrow */}
+                  <Button
+                    size="icon"
+                    variant={tool === "arrow" ? "default" : "ghost"}
+                    onClick={() => setTool("arrow")}
+                    title="Arrow"
+                    className={`h-11 w-11 rounded-lg transition-all active:scale-95 ${
+                      tool === "arrow" 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg' 
+                        : 'bg-gray-700/90 hover:bg-gray-600/90 text-white'
+                    }`}
+                  >
+                    <ArrowUpRight className="h-5 w-5" />
                   </Button>
                 </div>
 
+                {/* Divider */}
                 <div className={cn(
-                  "bg-white/20",
+                  "bg-gray-500/30",
+                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+                )} />
+
+                {/* Undo Button */}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={undo}
+                  disabled={historyStep === 0}
+                  title="Undo"
+                  className="h-11 w-11 rounded-lg bg-gray-700/90 hover:bg-gray-600/90 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all active:scale-95"
+                >
+                  <Undo className="h-5 w-5" />
+                </Button>
+
+                {/* Divider */}
+                <div className={cn(
+                  "bg-gray-500/30",
                   toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
                 )} />
 
                 {/* Color Picker */}
                 <div className="relative color-picker-container">
                   <button
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg transition-all border-2 border-white/40 hover:border-white/60 active:scale-95 touch-manipulation select-none shadow-md"
+                    className="h-11 w-11 rounded-lg transition-all border-2 border-gray-600 hover:border-gray-500 active:scale-95 shadow-md"
                     style={{ backgroundColor: color }}
                     onClick={() => setShowColorPicker(!showColorPicker)}
-                    title={`Current color: ${availableColors.find(c => c.value === color)?.label || color}`}
+                    title={`Color: ${availableColors.find(c => c.value === color)?.label || color}`}
                     aria-label="Choose color"
                   />
                   {showColorPicker && (
                     <div className={cn(
-                      "absolute z-[70] bg-black/95 backdrop-blur-xl border border-white/30 rounded-lg p-3 shadow-2xl",
+                      "absolute z-[70] bg-gray-800/95 backdrop-blur-sm border border-gray-600 rounded-lg p-3 shadow-2xl",
                       toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
                     )}>
-                      <div className="text-xs text-white/80 font-semibold mb-2">Select Color:</div>
+                      <div className="text-xs text-gray-300 font-medium mb-2">Color:</div>
                       <div className="grid grid-cols-2 gap-2">
                         {availableColors.map((c) => (
                           <button
                             key={c.value}
-                            className={`w-10 h-10 rounded-md transition-all border active:scale-95 touch-manipulation select-none ${
+                            className={`w-10 h-10 rounded-md transition-all border active:scale-95 ${
                               color === c.value 
-                                ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-black/20 border-white/60' 
-                                : 'border-white/30 hover:border-white/50'
+                                ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-800 border-gray-500' 
+                                : 'border-gray-600 hover:border-gray-500'
                             }`}
                             style={{ backgroundColor: c.value }}
                             onClick={() => {
@@ -2347,152 +2199,7 @@ export default function AnnotationOverlay({
                     </div>
                   )}
                 </div>
-
-                <div className={cn(
-                  "bg-white/20",
-                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
-                )} />
-
-                {/* Size Picker (Line Width or Font Size) */}
-                <div className="relative size-picker-container">
-                  <button
-                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none flex items-center justify-center"
-                    onClick={() => setShowSizePicker(!showSizePicker)}
-                    title={tool === "text" ? `Font Size: ${fontSize}px` : `Line Width: ${lineWidth}px`}
-                  >
-                    <span className="text-sm font-bold">{tool === "text" ? fontSize : lineWidth}</span>
-                  </button>
-                  {showSizePicker && (
-                    <div className={cn(
-                      "absolute z-[70] bg-black/95 backdrop-blur-xl border border-white/30 rounded-lg p-4 shadow-2xl",
-                      toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
-                    )}>
-                      <div className="text-xs text-white/80 font-semibold mb-3">
-                        {tool === "text" ? "Font Size:" : "Line Width:"}
-                      </div>
-                      {tool === "text" ? (
-                        <div className="flex flex-col gap-2 min-w-[120px]">
-                          <input
-                            type="range"
-                            min="12"
-                            max="72"
-                            value={fontSize}
-                            onChange={(e) => setFontSize(Number(e.target.value))}
-                            className="accent-blue-400 w-full"
-                          />
-                          <div className="text-center text-white font-bold">{fontSize}px</div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-2 min-w-[120px]">
-                          <input
-                            type="range"
-                            min="1"
-                            max="20"
-                            value={lineWidth}
-                            onChange={(e) => setLineWidth(Number(e.target.value))}
-                            className="accent-blue-400 w-full"
-                          />
-                          <div className="text-center text-white font-bold">{lineWidth}px</div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className={cn(
-                  "bg-white/20",
-                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
-                )} />
-
-                {/* Undo Button */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={undo}
-                  disabled={historyStep === 0}
-                  title="Undo"
-                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                >
-                  <Undo className="h-5 w-5 stroke-[2.5]" />
-                </Button>
-
-                <div className={cn(
-                  "bg-white/20",
-                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
-                )} />
-
-                {/* Clear - Teachers get options, students get simple clear */}
-                {isTutor ? (
-                  <div className="relative clear-options-container">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => setShowClearOptions(!showClearOptions)}
-                      title="Clear Options"
-                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                    >
-                      <Trash2 className="h-5 w-5 stroke-[2.5]" />
-                    </Button>
-                    
-                    {/* Clear options dropdown */}
-                    {showClearOptions && (
-                      <div className="absolute top-full mt-2 right-0 bg-black/90 backdrop-blur-xl border border-white/20 rounded-lg p-2 shadow-2xl min-w-[180px] z-[70]">
-                        <div className="text-xs text-white/80 font-semibold mb-2 px-2">Clear:</div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => clearByAuthor("all")}
-                          className="w-full justify-start text-white hover:bg-white/10 border border-white/10 mb-1"
-                        >
-                          All Drawings
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => clearByAuthor("teacher")}
-                          className="w-full justify-start text-white hover:bg-white/10 border border-white/10 mb-1"
-                        >
-                          Teacher's Drawings
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => clearByAuthor("students")}
-                          className="w-full justify-start text-white hover:bg-white/10 border border-white/10"
-                        >
-                          Students' Drawings
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={clearAndBroadcast}
-                    title="Clear All"
-                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white/10 hover:bg-red-500/30 hover:text-red-300 border border-white/20 text-white transition-colors active:scale-95 touch-manipulation select-none"
-                  >
-                    <Trash2 className="h-5 w-5 stroke-[2.5]" />
-                  </Button>
-                )}
-                
-                {/* Drag Handle - Looks like a divider */}
-                <div className={cn(
-                  "bg-white/20",
-                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
-                )} />
-                <div
-                  title="Drag to move toolbar"
-                  className={cn(
-                    "cursor-move flex items-center justify-center select-none touch-manipulation text-white/40 hover:text-white/70 transition-colors",
-                    toolbarOrientation === 'horizontal' ? "px-2" : "py-2"
-                  )}
-                >
-                  <Move className="h-4 w-4 stroke-[2]" />
-                </div>
               </div>
-            )}
           </div>
         </div>
       </>

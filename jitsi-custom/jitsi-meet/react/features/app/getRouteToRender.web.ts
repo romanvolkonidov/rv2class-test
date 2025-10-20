@@ -1,4 +1,3 @@
-// @ts-expect-error
 import { generateRoomWithoutSeparator } from '@jitsi/js-utils/random';
 
 import { getTokenAuthUrl } from '../authentication/functions.web';
@@ -9,7 +8,8 @@ import { browser } from '../base/lib-jitsi-meet';
 import { toState } from '../base/redux/functions';
 import { parseURIString } from '../base/util/uri';
 import Conference from '../conference/components/web/Conference';
-import { getDeepLinkingPage } from '../deep-linking/functions';
+import { getDeepLinkingPage } from '../deep-linking/functions.web';
+import TeacherAuthPage from '../teacher-auth/components/TeacherAuthPage';
 import UnsupportedDesktopBrowser from '../unsupported-browser/components/UnsupportedDesktopBrowser';
 import BlankPage from '../welcome/components/BlankPage.web';
 import WelcomePage from '../welcome/components/WelcomePage.web';
@@ -90,7 +90,7 @@ function _getWebConferenceRoute(state: IReduxState) {
     }
 
     return getDeepLinkingPage(state)
-        .then(deepLinkComponent => {
+        .then((deepLinkComponent: any) => {
             if (deepLinkComponent) {
                 route.component = deepLinkComponent;
             } else if (isSupportedBrowser()) {
@@ -112,26 +112,8 @@ function _getWebConferenceRoute(state: IReduxState) {
 function _getWebWelcomePageRoute(state: IReduxState) {
     const route = _getEmptyRoute();
 
-    if (isWelcomePageEnabled(state)) {
-        if (isSupportedBrowser()) {
-            const customLandingPage = getCustomLandingPageURL(state);
-
-            if (customLandingPage) {
-                route.href = customLandingPage;
-            } else {
-                route.component = WelcomePage;
-            }
-        } else {
-            route.component = UnsupportedDesktopBrowser;
-        }
-    } else {
-        // Web: if the welcome page is disabled, go directly to a random room.
-        const url = new URL(window.location.href);
-
-        url.pathname += generateRoomWithoutSeparator();
-        route.href = url.href;
-    }
-
+    // Custom routing: show teacher auth page with Jitsi styling
+    route.component = TeacherAuthPage;
     return Promise.resolve(route);
 }
 

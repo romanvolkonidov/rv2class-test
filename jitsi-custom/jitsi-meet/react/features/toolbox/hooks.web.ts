@@ -175,16 +175,20 @@ const help = {
 
 
 /**
- * A hook that returns the annotation button.
+ * A hook that returns the annotation button only when screen sharing is active.
  *
- * @returns {Object}
+ * @returns {Object | undefined}
  */
 function useAnnotationButton() {
-    return {
-        key: 'annotations',
-        Content: AnnotationButton,
-        group: 2
-    };
+    const isScreenSharing = useSelector(isScreenVideoShared);
+
+    if (isScreenSharing) {
+        return {
+            key: 'annotations',
+            Content: AnnotationButton,
+            group: 2
+        };
+    }
 }
 
 /**

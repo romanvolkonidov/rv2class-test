@@ -30,31 +30,31 @@ export const THRESHOLDS = [
     },
     {
         width: 565,
-        order: [ 'microphone', 'camera', 'desktop', 'annotations', 'chat', 'raisehand', 'reactions', 'participants-pane', 'tileview' ]
+        order: [ 'microphone', 'camera', 'desktop', 'annotations', 'chat', 'whiteboard', 'raisehand', 'reactions', 'participants-pane', 'tileview' ]
     },
     {
         width: 520,
-        order: [ 'microphone', 'camera', 'desktop', 'annotations', 'chat', 'raisehand', 'participants-pane', 'tileview' ]
+        order: [ 'microphone', 'camera', 'desktop', 'annotations', 'chat', 'whiteboard', 'raisehand', 'participants-pane', 'tileview' ]
     },
     {
         width: 470,
-        order: [ 'microphone', 'camera', 'desktop', 'annotations', 'chat', 'raisehand', 'participants-pane' ]
+        order: [ 'microphone', 'camera', 'desktop', 'annotations', 'chat', 'whiteboard', 'raisehand', 'participants-pane' ]
     },
     {
         width: 420,
-        order: [ 'microphone', 'camera', 'desktop', 'annotations', 'chat', 'participants-pane' ]
+        order: [ 'microphone', 'camera', 'desktop', 'annotations', 'chat', 'whiteboard', 'participants-pane' ]
     },
     {
         width: 370,
-        order: [ 'microphone', 'camera', 'annotations', 'chat', 'participants-pane' ]
+        order: [ 'microphone', 'camera', 'annotations', 'chat', 'whiteboard', 'participants-pane' ]
     },
     {
         width: 225,
-        order: [ 'microphone', 'camera', 'annotations', 'chat' ]
+        order: [ 'microphone', 'camera', 'annotations', 'chat', 'whiteboard' ]
     },
     {
         width: 200,
-        order: [ 'microphone', 'camera', 'annotations' ]
+        order: [ 'microphone', 'camera', 'annotations', 'whiteboard' ]
     }
 ];
 
@@ -94,6 +94,7 @@ export const MAIN_TOOLBAR_BUTTONS_PRIORITY = [
     'desktop',
     'annotations',
     'chat',
+    'whiteboard',
     'raisehand',
     'reactions',
     'participants-pane',
@@ -112,7 +113,6 @@ export const MAIN_TOOLBAR_BUTTONS_PRIORITY = [
     'sharedvideo',
     'shareaudio',
     'noisesuppression',
-    'whiteboard',
     'etherpad',
     'select-background',
     'stats',

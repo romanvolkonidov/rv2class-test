@@ -6,7 +6,7 @@ import { isWhiteboardButtonVisible } from './functions';
 const whiteboard = {
     key: 'whiteboard',
     Content: WhiteboardButton,
-    group: 3
+    group: 2
 };
 
 /**
