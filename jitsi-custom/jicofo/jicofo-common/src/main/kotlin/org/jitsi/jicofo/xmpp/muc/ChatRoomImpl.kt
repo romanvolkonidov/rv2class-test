@@ -338,6 +338,12 @@ class ChatRoomImpl(
         // Make the room non-anonymous, so that others can recognize focus JID
         val answer = config.fillableForm
         answer.setAnswer(MucConfigFields.WHOIS, "anyone")
+        
+        // RV2CLASS: Enable lobby (members-only) by default for all rooms
+        // This ensures students must wait in lobby for teacher approval
+        answer.setAnswer(MucConfigFormManager.MUC_ROOMCONFIG_MEMBERSONLY, true)
+        logger.info("RV2CLASS: Enabling lobby (members-only) for room by default")
+        
         muc.sendConfigurationForm(answer)
 
         // Read the breakout room and meetingId.

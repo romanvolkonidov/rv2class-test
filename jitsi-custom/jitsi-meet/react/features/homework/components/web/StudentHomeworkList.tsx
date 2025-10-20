@@ -4,6 +4,7 @@ import { connect } from 'react-redux';
 import { IReduxState } from '../../../app/types';
 import Icon from '../../../base/icons/components/Icon';
 import { IconArrowLeft, IconCheck, IconPlay } from '../../../base/icons/svg';
+import ThemeToggle from '../../../base/ui/components/web/ThemeToggle';
 import { IconBook, IconClock, IconEye, IconTrophy } from '../../icons';
 
 interface IProps {
@@ -46,6 +47,16 @@ interface IProps {
      * Function to view results.
      */
     onViewResults: (homeworkId: string) => void;
+
+    /**
+     * Current theme mode.
+     */
+    theme?: 'dark' | 'light';
+
+    /**
+     * Callback when theme changes.
+     */
+    onThemeChange?: (newTheme: 'dark' | 'light') => void;
 }
 
 /**
@@ -62,7 +73,9 @@ function StudentHomeworkList({
     loading,
     onBack,
     onStartHomework,
-    onViewResults
+    onViewResults,
+    theme = 'dark',
+    onThemeChange
 }: IProps) {
     const [questionCounts, setQuestionCounts] = useState<Record<string, { total: number; incomplete: number }>>({});
 
@@ -126,14 +139,23 @@ function StudentHomeworkList({
     return (
         <div className = 'homework-screen'>
             <div className = 'homework-header'>
-                <button
-                    className = 'homework-back-button'
-                    onClick = { onBack }>
-                    <Icon
-                        size = { 20 }
-                        src = { IconArrowLeft } />
-                    <span>Back to Welcome Page</span>
-                </button>
+                <div style = {{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <button
+                        className = 'homework-back-button'
+                        onClick = { onBack }>
+                        <Icon
+                            size = { 20 }
+                            src = { IconArrowLeft } />
+                        <span>Back to Welcome Page</span>
+                    </button>
+
+                    {/* Theme Toggle */}
+                    {onThemeChange && (
+                        <ThemeToggle
+                            onThemeChange = { onThemeChange }
+                            theme = { theme } />
+                    )}
+                </div>
 
                 <div className = 'homework-header-card'>
                     <div className = 'homework-header-content'>

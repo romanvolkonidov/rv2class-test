@@ -3,8 +3,7 @@ import { makeStyles } from 'tss-react/mui';
 
 import { IconUsers, IconVideo, IconMessage } from '../../../base/icons/svg';
 import Icon from '../../../base/icons/components/Icon';
-import Button from '../../../base/ui/components/web/Button';
-import { BUTTON_TYPES } from '../../../base/ui/constants.web';
+import ThemeToggle from '../../../base/ui/components/web/ThemeToggle';
 
 interface IProps {
     /**
@@ -32,6 +31,16 @@ interface IProps {
      * Number of uncompleted homework assignments.
      */
     uncompletedCount?: number;
+
+    /**
+     * Current theme mode.
+     */
+    theme?: 'dark' | 'light';
+
+    /**
+     * Callback when theme changes.
+     */
+    onThemeChange?: (newTheme: 'dark' | 'light') => void;
 }
 
 const useStyles = makeStyles()(theme => {
@@ -42,17 +51,24 @@ const useStyles = makeStyles()(theme => {
             alignItems: 'center',
             justifyContent: 'center',
             minHeight: '100vh',
-            backgroundColor: theme.palette.uiBackground,
-            padding: theme.spacing(3)
+            backgroundColor: 'var(--rv2class-bg-primary, #111111)',
+            padding: theme.spacing(3),
+            position: 'relative'
+        },
+
+        themeToggleWrapper: {
+            position: 'absolute',
+            top: theme.spacing(3),
+            right: theme.spacing(3)
         },
 
         card: {
-            backgroundColor: theme.palette.ui01,
+            backgroundColor: 'var(--rv2class-card-bg, #1c1c1c)',
             borderRadius: theme.shape.borderRadius * 2,
             padding: theme.spacing(5),
             maxWidth: '500px',
             width: '100%',
-            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.25)'
+            boxShadow: '0 4px 24px var(--rv2class-card-shadow, rgba(0, 0, 0, 0.25))'
         },
 
         header: {
@@ -67,21 +83,21 @@ const useStyles = makeStyles()(theme => {
 
         title: {
             ...theme.typography.heading4,
-            color: theme.palette.text01,
+            color: 'var(--rv2class-text-primary, #ffffff)',
             marginBottom: theme.spacing(1)
         },
 
         studentName: {
             ...theme.typography.heading3,
-            color: theme.palette.action01,
+            color: 'var(--rv2class-accent, #1c9ba4)',
             marginBottom: theme.spacing(2),
             fontWeight: 700
         },
 
         message: {
             ...theme.typography.bodyShortRegular,
-            color: theme.palette.text02,
-            marginBottom: theme.spacing(3)
+            color: 'var(--rv2class-text-secondary, #a4b5b8)',
+            marginBottom: theme.spacing(1)
         },
 
         buttonContainer: {
@@ -91,39 +107,45 @@ const useStyles = makeStyles()(theme => {
             marginTop: theme.spacing(3)
         },
 
-        homeworkButton: {
-            position: 'relative',
+        joinButton: {
             width: '100%',
-            padding: `${theme.spacing(2)} ${theme.spacing(3)}`,
-            backgroundColor: theme.palette.action01,
-            color: theme.palette.text01,
+            padding: `${theme.spacing(3)} ${theme.spacing(4)}`,
+            backgroundColor: 'var(--rv2class-accent, #1c9ba4)',
+            color: 'var(--rv2class-text-primary, #ffffff)',
             borderRadius: theme.shape.borderRadius,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: theme.spacing(2),
             border: 0,
-            ...theme.typography.bodyShortBold,
+            ...theme.typography.heading6,
+            fontWeight: 700,
             cursor: 'pointer',
             transition: 'all 0.2s',
+            fontSize: '20px',
 
             '&:hover': {
-                backgroundColor: theme.palette.action01Hover,
+                backgroundColor: 'var(--rv2class-accent-hover, #1a8a92)',
                 transform: 'translateY(-2px)',
-                boxShadow: '0 6px 20px rgba(59, 130, 246, 0.4)'
+                boxShadow: '0 8px 24px rgba(28, 155, 164, 0.5)'
             },
 
             '&:active': {
-                backgroundColor: theme.palette.action01Active,
+                backgroundColor: 'var(--rv2class-accent-hover, #1a8a92)',
                 transform: 'translateY(0)'
             }
         },
 
-        joinButton: {
+        homeworkButtonWrapper: {
+            position: 'relative',
+            width: '100%'
+        },
+
+        homeworkButton: {
             width: '100%',
             padding: `${theme.spacing(2)} ${theme.spacing(3)}`,
-            backgroundColor: theme.palette.action02,
-            color: theme.palette.text04,
+            backgroundColor: 'var(--rv2class-bg-tertiary, #292929)',
+            color: 'var(--rv2class-text-primary, #ffffff)',
             borderRadius: theme.shape.borderRadius,
             display: 'flex',
             alignItems: 'center',
@@ -135,11 +157,11 @@ const useStyles = makeStyles()(theme => {
             transition: 'background 0.2s',
 
             '&:hover': {
-                backgroundColor: theme.palette.action02Hover
+                backgroundColor: 'var(--rv2class-hover, #2a2a2a)'
             },
 
             '&:active': {
-                backgroundColor: theme.palette.action02Active
+                backgroundColor: 'var(--rv2class-hover, #2a2a2a)'
             }
         },
 
@@ -147,8 +169,8 @@ const useStyles = makeStyles()(theme => {
             position: 'absolute',
             top: '-8px',
             right: '-8px',
-            backgroundColor: theme.palette.actionDanger,
-            color: theme.palette.text01,
+            backgroundColor: 'var(--rv2class-error, #e04757)',
+            color: 'var(--rv2class-text-primary, #ffffff)',
             borderRadius: '50%',
             width: '28px',
             height: '28px',
@@ -157,45 +179,23 @@ const useStyles = makeStyles()(theme => {
             justifyContent: 'center',
             fontSize: '14px',
             fontWeight: 700,
-            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.5)'
-        },
-
-        infoBox: {
-            backgroundColor: theme.palette.ui02,
-            borderLeft: `3px solid ${theme.palette.action01}`,
-            borderRadius: theme.shape.borderRadius,
-            padding: theme.spacing(3),
-            marginTop: theme.spacing(4)
-        },
-
-        infoTitle: {
-            ...theme.typography.bodyShortBold,
-            color: theme.palette.text01,
-            marginBottom: theme.spacing(2)
-        },
-
-        infoItem: {
-            ...theme.typography.bodyShortRegular,
-            color: theme.palette.text02,
-            marginBottom: theme.spacing(1),
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: theme.spacing(1)
+            boxShadow: '0 2px 8px rgba(224, 71, 87, 0.5)',
+            border: '2px solid var(--rv2class-card-bg, #1c1c1c)'
         },
 
         teacherInfo: {
             display: 'flex',
             alignItems: 'center',
             gap: theme.spacing(2),
-            backgroundColor: theme.palette.ui02,
+            backgroundColor: 'var(--rv2class-bg-secondary, #1c1c1c)',
             borderRadius: theme.shape.borderRadius,
             padding: theme.spacing(2),
-            marginBottom: theme.spacing(3)
+            marginBottom: theme.spacing(2)
         },
 
         teacherText: {
             ...theme.typography.bodyShortRegular,
-            color: theme.palette.text02
+            color: 'var(--rv2class-text-secondary, #a4b5b8)'
         },
 
         teacherName: {
@@ -222,21 +222,32 @@ const StudentWelcome: React.FC<IProps> = ({
     student,
     onJoinLesson,
     onViewHomework,
-    uncompletedCount = 0
+    uncompletedCount = 0,
+    theme = 'dark',
+    onThemeChange
 }) => {
     const { classes } = useStyles();
-    const teacherName = student.teacher || student.teacherName || 'Roman';
+    const teacherName = student.teacher || student.teacherName || 'Роман';
 
     return (
         <div className = { classes.container }>
+            {/* Theme Toggle */}
+            {onThemeChange && (
+                <div className = { classes.themeToggleWrapper }>
+                    <ThemeToggle
+                        onThemeChange = { onThemeChange }
+                        theme = { theme } />
+                </div>
+            )}
+
             <div className = { classes.card }>
                 {/* Header */}
                 <div className = { classes.header }>
                     <div className = { classes.welcomeIcon }>🎓</div>
-                    <h1 className = { classes.title }>Welcome to your lesson!</h1>
+                    <h1 className = { classes.title }>Добро пожаловать на урок!</h1>
                     <h2 className = { classes.studentName }>{student.name}</h2>
                     <p className = { classes.message }>
-                        Ready to start learning with {teacherName}?
+                        Готовы начать обучение?
                     </p>
                 </div>
 
@@ -248,53 +259,44 @@ const StudentWelcome: React.FC<IProps> = ({
                             src = { IconUsers } />
                     </div>
                     <div>
-                        <div className = { classes.teacherText }>Your teacher:</div>
+                        <div className = { classes.teacherText }>Ваш учитель:</div>
                         <div className = { classes.teacherName }>{teacherName}</div>
                     </div>
                 </div>
 
                 {/* Action Buttons */}
                 <div className = { classes.buttonContainer }>
-                    {/* Homework Button with Badge */}
+                    {/* Join Lesson Button - Primary/Prominent */}
                     <button
-                        className = { classes.homeworkButton }
-                        onClick = { onViewHomework }
+                        className = { classes.joinButton }
+                        onClick = { () => {
+                            console.log('Join lesson clicked!');
+                            onJoinLesson();
+                        } }
                         type = 'button'>
                         <Icon
-                            size = { 20 }
-                            src = { IconMessage } />
-                        <span>📚 Homework</span>
+                            size = { 24 }
+                            src = { IconVideo } />
+                        <span>📹 Присоединиться к уроку</span>
+                    </button>
+
+                    {/* Homework Button with Badge - Secondary */}
+                    <div className = { classes.homeworkButtonWrapper }>
+                        <button
+                            className = { classes.homeworkButton }
+                            onClick = { () => {
+                                console.log('Homework clicked!');
+                                onViewHomework();
+                            } }
+                            type = 'button'>
+                            <Icon
+                                size = { 20 }
+                                src = { IconMessage } />
+                            <span>📚 Домашние задания</span>
+                        </button>
                         {uncompletedCount > 0 && (
                             <span className = { classes.badge }>{uncompletedCount}</span>
                         )}
-                    </button>
-
-                    {/* Join Lesson Button */}
-                    <button
-                        className = { classes.joinButton }
-                        onClick = { onJoinLesson }
-                        type = 'button'>
-                        <Icon
-                            size = { 20 }
-                            src = { IconVideo } />
-                        <span>📹 Join Lesson</span>
-                    </button>
-                </div>
-
-                {/* Info Box */}
-                <div className = { classes.infoBox }>
-                    <div className = { classes.infoTitle }>Before joining:</div>
-                    <div className = { classes.infoItem }>
-                        <span>✓</span>
-                        <span>Make sure your camera and microphone are working</span>
-                    </div>
-                    <div className = { classes.infoItem }>
-                        <span>✓</span>
-                        <span>Find a quiet place for your lesson</span>
-                    </div>
-                    <div className = { classes.infoItem }>
-                        <span>✓</span>
-                        <span>Have your materials ready</span>
                     </div>
                 </div>
             </div>

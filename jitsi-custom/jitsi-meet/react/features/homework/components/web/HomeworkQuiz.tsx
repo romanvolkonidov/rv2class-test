@@ -4,6 +4,7 @@ import { connect } from 'react-redux';
 import { IReduxState } from '../../../app/types';
 import Icon from '../../../base/icons/components/Icon';
 import { IconArrowLeft, IconCheck } from '../../../base/icons/svg';
+import ThemeToggle from '../../../base/ui/components/web/ThemeToggle';
 import { IconX, IconPlay, IconImage, IconAudio, IconVideo } from '../../icons';
 
 interface IQuestion {
@@ -61,6 +62,16 @@ interface IProps {
      * Function to submit homework.
      */
     onSubmit: (answers: Record<string, string>) => void;
+
+    /**
+     * Current theme mode.
+     */
+    theme?: 'dark' | 'light';
+
+    /**
+     * Callback when theme changes.
+     */
+    onThemeChange?: (newTheme: 'dark' | 'light') => void;
 }
 
 /**
@@ -78,7 +89,9 @@ function HomeworkQuiz({
     submitting,
     results,
     onBack,
-    onSubmit
+    onSubmit,
+    theme = 'dark',
+    onThemeChange
 }: IProps) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -153,8 +166,26 @@ function HomeworkQuiz({
     return (
         <div className = 'homework-quiz'>
             <div className = 'quiz-header'>
+                <div style = {{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px' }}>
+                    <button
+                        className = 'homework-back-button'
+                        onClick = { onBack }>
+                        <Icon
+                            size = { 20 }
+                            src = { IconArrowLeft } />
+                        <span>Назад</span>
+                    </button>
+
+                    {/* Theme Toggle */}
+                    {onThemeChange && (
+                        <ThemeToggle
+                            onThemeChange = { onThemeChange }
+                            theme = { theme } />
+                    )}
+                </div>
+
                 <button
-                    className = 'homework-back-button'
+                    className = 'homework-back-button-hidden'
                     onClick = { onBack }>
                     <Icon
                         size = { 20 }

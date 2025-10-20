@@ -9,6 +9,9 @@ import DialInSummaryApp from './features/invite/components/dial-in-summary/web/D
 import PrejoinApp from './features/prejoin/components/web/PrejoinApp';
 import WhiteboardApp from './features/whiteboard/components/web/WhiteboardApp';
 import StudentPortalApp from './features/student-portal/components/web/StudentPortalApp';
+import StudentHomeworkApp from './features/homework/components/web/StudentHomeworkApp';
+import HomeworkQuizApp from './features/homework/components/web/HomeworkQuizApp';
+import HomeworkResultsApp from './features/homework/components/web/HomeworkResultsApp';
 
 const logger = getLogger('app:index.web');
 
@@ -71,7 +74,10 @@ globalNS.entryPoints = {
     PREJOIN: PrejoinApp,
     DIALIN: DialInSummaryApp,
     WHITEBOARD: WhiteboardApp,
-    STUDENT_PORTAL: StudentPortalApp
+    STUDENT_PORTAL: StudentPortalApp,
+    STUDENT_HOMEWORK: StudentHomeworkApp,
+    HOMEWORK_QUIZ: HomeworkQuizApp,
+    HOMEWORK_RESULTS: HomeworkResultsApp
 };
 
 globalNS.renderEntryPoint = ({

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#1E1E1E" />
     
-    <title>Мои задания - RV2Class</title>
+    <title>Выполнение задания - RV2Class</title>
     
     <link rel="stylesheet" href="css/all.css" />
     
@@ -36,10 +36,10 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Render the student homework entry point
+            // Render the homework quiz entry point
             if (window.JitsiMeetJS && window.JitsiMeetJS.app) {
                 window.JitsiMeetJS.app.renderEntryPoint({
-                    Component: window.JitsiMeetJS.app.entryPoints.STUDENT_HOMEWORK,
+                    Component: window.JitsiMeetJS.app.entryPoints.HOMEWORK_QUIZ,
                     props: {},
                     elementId: 'react'
                 });

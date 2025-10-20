@@ -761,23 +761,26 @@ var config = {
      * to listen for Jitsi 'knockingParticipant' events when lobby is enabled.
      */
 
+    // ENABLED: Prejoin page for camera/mic preview (for everyone)
+    prejoinPageEnabled: true,
+
     // Configs for the lobby screen.
-    // lobby: {
-    //     // If Lobby is enabled, it starts knocking automatically. Replaces `autoKnockLobby`.
-    //     autoKnock: false,
-    //     // Enables the lobby chat. Replaces `enableLobbyChat`.
-    //     enableChat: true,
-    //     // Shows the hangup button in the lobby screen.
-    //     showHangUp: true,
-    // },
+    lobby: {
+        // If Lobby is enabled, it starts knocking automatically. Replaces `autoKnockLobby`.
+        autoKnock: true,
+        // Enables the lobby chat. Replaces `enableLobbyChat`.
+        enableChat: true,
+        // Shows the hangup button in the lobby screen.
+        showHangUp: true,
+    },
 
     // Configs for the security related UI elements.
-    // securityUi: {
-    //     // Hides the lobby button. Replaces `hideLobbyButton`.
-    //     hideLobbyButton: false,
-    //     // Hides the possibility to set and enter a lobby password.
-    //     disableLobbyPassword: false,
-    // },
+    securityUi: {
+        // Hides the lobby button. Replaces `hideLobbyButton`.
+        hideLobbyButton: false,
+        // Hides the possibility to set and enter a lobby password.
+        disableLobbyPassword: false,
+    },
 
     // Disable app shortcuts that are registered upon joining a conference
     // disableShortcuts: false,
@@ -1887,7 +1890,7 @@ var config = {
     // },
 
     // Application logo url
-    // defaultLogoUrl: 'images/watermark.svg',
+    defaultLogoUrl: 'images/logo-white.png',
 
     // Settings for the Excalidraw whiteboard integration.
     // whiteboard: {

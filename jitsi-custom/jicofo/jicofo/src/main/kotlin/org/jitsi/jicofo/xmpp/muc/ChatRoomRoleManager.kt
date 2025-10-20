@@ -57,13 +57,30 @@ sealed class ChatRoomRoleManager(
 /**
  * A [ChatRoomRoleManager] which grants ownership to a single occupant in the room (if the room is left without an
  * owner, it elects a new one).
+ * 
+ * RV2CLASS MODIFICATION: Prioritizes teachers (identified by email) for ownership.
  */
 class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
     private var owner: ChatRoomMember? = null
+    
+    // RV2CLASS: List of teacher emails who should get auto-moderator
+    private val TEACHER_EMAILS = setOf(
+        "romanvolkonidov@gmail.com"
+        // Add more teacher emails here
+    )
 
     override fun grantOwnership() = queue.add { electNewOwner() }
     override fun memberJoined(member: ChatRoomMember) {
-        if (owner == null) {
+        logger.info("RV2CLASS: Member joined: ${member.name}, JID: ${member.jid}")
+        
+        // RV2CLASS: If a teacher joins, grant them ownership immediately
+        if (isTeacher(member)) {
+            queue.add {
+                logger.info("RV2CLASS: Teacher detected, granting ownership immediately to ${member.name}")
+                chatRoom.grantOwnership(member)
+                owner = member
+            }
+        } else if (owner == null) {
             electNewOwner()
         }
     }
@@ -96,6 +113,19 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
                 return@add
             }
 
+            // RV2CLASS: Prioritize teachers when electing owner
+            val teacher = chatRoom.members.find {
+                !(it.isJibri || it.isJigasi) && it.role != MemberRole.VISITOR && isTeacher(it)
+            }
+            
+            if (teacher != null) {
+                logger.info("RV2CLASS: Electing teacher as owner: $teacher")
+                chatRoom.grantOwnership(teacher)
+                owner = teacher
+                return@add
+            }
+
+            // Fallback: elect first non-teacher participant
             val newOwner = chatRoom.members.find { !(it.isJibri || it.isJigasi) && it.role != MemberRole.VISITOR }
             if (newOwner != null) {
                 logger.info("Electing new owner: $newOwner")
@@ -104,11 +134,39 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
             }
         }
     }
+    
+    /**
+     * RV2CLASS: Check if a member is a teacher based on their email address
+     */
+    private fun isTeacher(member: ChatRoomMember): Boolean {
+        val jid = member.jid?.toString() ?: member.occupantJid.toString()
+        val email = extractEmail(jid)
+        
+        if (email != null && TEACHER_EMAILS.contains(email)) {
+            logger.info("RV2CLASS: Identified teacher by email: $email")
+            return true
+        }
+        
+        return false
+    }
+    
+    /**
+     * RV2CLASS: Extract email from JID string
+     */
+    private fun extractEmail(jid: String): String? {
+        val cleanJid = jid.split("/")[0] // Remove resource if present
+        return if (cleanJid.contains("@")) {
+            cleanJid.lowercase()
+        } else {
+            null
+        }
+    }
 
     override val debugState
         get() = OrderedJsonObject().apply {
             put("class", this@AutoOwnerRoleManager.javaClass.simpleName)
             put("owner", owner?.jid?.toString() ?: "null")
+            put("rv2class_teacher_emails", TEACHER_EMAILS.toString())
         }
 }
 

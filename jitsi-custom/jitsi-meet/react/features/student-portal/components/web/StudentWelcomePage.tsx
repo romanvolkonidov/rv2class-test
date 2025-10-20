@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
+import { ThemeProvider, useTheme } from '../../../base/ui/components/web/ThemeProvider';
+
 import StudentWelcome from './StudentWelcome';
 
 // Firebase configuration
@@ -35,17 +37,17 @@ interface IPageProps {
 }
 
 /**
- * Container component for Student Welcome page.
- * Handles Firebase data loading and navigation logic.
+ * Inner component that uses the theme context.
  *
  * @param {IPageProps} props - Component props.
  * @returns {JSX.Element}
  */
-const StudentWelcomePage: React.FC<IPageProps> = ({ studentId: propStudentId }) => {
+const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentId }) => {
     const [student, setStudent] = useState<IStudentData | null>(null);
     const [uncompletedCount, setUncompletedCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { theme, setTheme } = useTheme();
 
     useEffect(() => {
         loadStudentData();
@@ -123,12 +125,18 @@ const StudentWelcomePage: React.FC<IPageProps> = ({ studentId: propStudentId }) 
     };
 
     const handleJoinLesson = () => {
+        console.log('handleJoinLesson called, student:', student);
+
         if (!student) {
+            console.error('No student data available');
+
             return;
         }
 
         const teacherUid = student.teacherUid || 'romanvolkonidov';
         const teacherRoom = `teacher-${teacherUid.substring(0, 8)}`;
+
+        console.log('Joining room:', teacherRoom);
 
         // Store teacher info in localStorage for room
         const teacherFirstName = (student.teacher || 'Roman').split(' ')[0];
@@ -137,16 +145,28 @@ const StudentWelcomePage: React.FC<IPageProps> = ({ studentId: propStudentId }) 
         localStorage.setItem('teacherRoomId', teacherRoom);
 
         // Redirect to Jitsi room (native lobby will handle entry)
+        console.log('Redirecting to:', `/${teacherRoom}`);
         window.location.href = `/${teacherRoom}`;
     };
 
     const handleViewHomework = () => {
+        console.log('handleViewHomework called, student:', student);
+
         if (!student) {
+            console.error('No student data available');
+
             return;
         }
 
         // Navigate to homework page
-        window.location.href = `/student-homework.html?studentId=${encodeURIComponent(student.id)}`;
+        const homeworkUrl = `/student-homework.html?studentId=${encodeURIComponent(student.id)}`;
+
+        console.log('Redirecting to:', homeworkUrl);
+        window.location.href = homeworkUrl;
+    };
+
+    const handleThemeChange = (newTheme: 'dark' | 'light') => {
+        setTheme(newTheme);
     };
 
     if (loading) {
@@ -182,10 +202,24 @@ const StudentWelcomePage: React.FC<IPageProps> = ({ studentId: propStudentId }) 
     return (
         <StudentWelcome
             onJoinLesson = { handleJoinLesson }
+            onThemeChange = { handleThemeChange }
             onViewHomework = { handleViewHomework }
             student = { student }
+            theme = { theme }
             uncompletedCount = { uncompletedCount } />
     );
 };
+
+/**
+ * Container component for Student Welcome page wrapped with ThemeProvider.
+ *
+ * @param {IPageProps} props - Component props.
+ * @returns {JSX.Element}
+ */
+const StudentWelcomePage: React.FC<IPageProps> = (props) => (
+    <ThemeProvider>
+        <StudentWelcomePageInner {...props} />
+    </ThemeProvider>
+);
 
 export default StudentWelcomePage;

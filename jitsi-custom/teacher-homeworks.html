@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Homeworks - RV2Class</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #111111;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #525A5E;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background: #292929;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #3a3a3a;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: #292929;
+            color: #A4B5B8;
+            border: 1px solid #525A5E;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: #1c9ba4;
+            color: #ffffff;
+            border-color: #1c9ba4;
+        }
+
+        .filter-btn:hover {
+            background: #3a3a3a;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            font-size: 18px;
+            color: #A4B5B8;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #A4B5B8;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .homework-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .homework-card {
+            background: #1c1c1c;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .homework-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .homework-card.new::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #e04757;
+            border-radius: 8px 0 0 8px;
+        }
+
+        .homework-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .student-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .homework-title {
+            font-size: 16px;
+            color: #1c9ba4;
+            font-weight: 500;
+        }
+
+        .homework-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 14px;
+            color: #A4B5B8;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .score {
+            font-size: 24px;
+            font-weight: 700;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .score.excellent {
+            color: #31b76a;
+        }
+
+        .score.good {
+            color: #f8ae1a;
+        }
+
+        .score.needs-work {
+            color: #e04757;
+        }
+
+        .view-btn {
+            padding: 10px 24px;
+            background: #1c9ba4;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .view-btn:hover {
+            background: #1a8a92;
+        }
+
+        .new-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e04757;
+            color: #ffffff;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+            .homework-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .score {
+                align-self: flex-end;
+            }
+
+            .view-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Completed Homeworks</h1>
+            <button class="back-btn" id="backBtn">← Back to Dashboard</button>
+        </div>
+
+        <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all">All Homeworks</button>
+            <button class="filter-btn" data-filter="new">New (Unread)</button>
+            <button class="filter-btn" data-filter="excellent">Excellent (90%+)</button>
+            <button class="filter-btn" data-filter="needs-review">Needs Review (&lt;70%)</button>
+        </div>
+
+        <div id="content">
+            <div class="loading">Loading homeworks...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, collection, query, where, getDocs, doc, getDoc, orderBy, updateDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004",
+            authDomain: "tracking-budget-app.firebaseapp.com",
+            databaseURL: "https://tracking-budget-app-default-rtdb.firebaseio.com",
+            projectId: "tracking-budget-app",
+            storageBucket: "tracking-budget-app.appspot.com",
+            messagingSenderId: "912992088190",
+            appId: "1:912992088190:web:926c8826b3bc39e2eb282f"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentFilter = 'all';
+        let allHomeworks = [];
+        let viewedHomeworks = new Set();
+        let currentTeacherEmail = null;
+
+        // Special teachers who share students
+        const SHARED_TEACHER_EMAILS = ['romanvolkonidov@gmail.com'];
+
+        // Back button
+        document.getElementById('backBtn').addEventListener('click', () => {
+            window.location.href = '/landing.html';
+        });
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderHomeworks();
+            });
+        });
+
+        // Load viewed homeworks from Firestore
+        async function loadViewedHomeworks(teacherEmail) {
+            try {
+                const viewedDoc = await getDoc(doc(db, 'teacherViewed', teacherEmail));
+                if (viewedDoc.exists()) {
+                    const data = viewedDoc.data();
+                    viewedHomeworks = new Set(data.homeworkIds || []);
+                }
+            } catch (error) {
+                console.error('Error loading viewed homeworks:', error);
+            }
+        }
+
+        // Mark homework as viewed
+        async function markAsViewed(homeworkId) {
+            if (!currentTeacherEmail || viewedHomeworks.has(homeworkId)) return;
+
+            viewedHomeworks.add(homeworkId);
+            
+            try {
+                await setDoc(doc(db, 'teacherViewed', currentTeacherEmail), {
+                    homeworkIds: Array.from(viewedHomeworks),
+                    lastUpdated: new Date().toISOString()
+                }, { merge: true });
+            } catch (error) {
+                console.error('Error marking as viewed:', error);
+            }
+        }
+
+        // Load all completed homeworks
+        async function loadHomeworks(teacherEmail) {
+            try {
+                console.log('Loading homeworks for teacher:', teacherEmail);
+
+                // Determine if this is a shared teacher
+                const isShared = SHARED_TEACHER_EMAILS.includes(teacherEmail);
+                
+                // Get all students for this teacher
+                let studentIds = [];
+                
+                if (isShared) {
+                    // Load ALL students from shared collection
+                    const studentsSnap = await getDocs(collection(db, 'students'));
+                    studentIds = studentsSnap.docs.map(doc => doc.id);
+                } else {
+                    // Load students from teacherStudents collection
+                    const studentsQuery = query(
+                        collection(db, 'teacherStudents'),
+                        where('teacherEmail', '==', teacherEmail)
+                    );
+                    const studentsSnap = await getDocs(studentsQuery);
+                    studentIds = studentsSnap.docs.map(doc => doc.id);
+                }
+
+                console.log('Found students:', studentIds.length);
+
+                // Load all homework reports for these students
+                const allReports = [];
+                
+                for (const studentId of studentIds) {
+                    const reportsQuery = query(
+                        collection(db, 'homeworkReports'),
+                        where('studentId', '==', studentId),
+                        orderBy('completedAt', 'desc')
+                    );
+                    
+                    const reportsSnap = await getDocs(reportsQuery);
+                    
+                    for (const reportDoc of reportsSnap.docs) {
+                        const reportData = reportDoc.data();
+                        
+                        // Get student name
+                        let studentName = 'Unknown Student';
+                        try {
+                            const studentDoc = await getDoc(doc(db, isShared ? 'students' : 'teacherStudents', studentId));
+                            if (studentDoc.exists()) {
+                                studentName = studentDoc.data().name || studentName;
+                            }
+                        } catch (e) {
+                            console.error('Error loading student:', e);
+                        }
+
+                        // Get homework title
+                        let homeworkTitle = 'Homework';
+                        try {
+                            const hwDoc = await getDoc(doc(db, 'homework', reportData.homeworkId));
+                            if (hwDoc.exists()) {
+                                homeworkTitle = hwDoc.data().title || homeworkTitle;
+                            }
+                        } catch (e) {
+                            console.error('Error loading homework:', e);
+                        }
+
+                        allReports.push({
+                            id: reportDoc.id,
+                            studentId,
+                            studentName,
+                            homeworkId: reportData.homeworkId,
+                            homeworkTitle,
+                            score: reportData.score || 0,
+                            totalQuestions: reportData.totalQuestions || 0,
+                            completedAt: reportData.completedAt?.toDate?.() || new Date(reportData.completedAt),
+                            isNew: !viewedHomeworks.has(reportDoc.id)
+                        });
+                    }
+                }
+
+                // Sort by completion date (latest first)
+                allReports.sort((a, b) => b.completedAt - a.completedAt);
+
+                allHomeworks = allReports;
+                console.log('Loaded homeworks:', allHomeworks.length);
+                renderHomeworks();
+
+            } catch (error) {
+                console.error('Error loading homeworks:', error);
+                document.getElementById('content').innerHTML = `
+                    <div class="empty-state">
+                        <p>Error loading homeworks: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Render homeworks based on current filter
+        function renderHomeworks() {
+            let filtered = allHomeworks;
+
+            switch (currentFilter) {
+                case 'new':
+                    filtered = allHomeworks.filter(hw => hw.isNew);
+                    break;
+                case 'excellent':
+                    filtered = allHomeworks.filter(hw => {
+                        const percentage = (hw.score / hw.totalQuestions) * 100;
+                        return percentage >= 90;
+                    });
+                    break;
+                case 'needs-review':
+                    filtered = allHomeworks.filter(hw => {
+                        const percentage = (hw.score / hw.totalQuestions) * 100;
+                        return percentage < 70;
+                    });
+                    break;
+            }
+
+            const content = document.getElementById('content');
+
+            if (filtered.length === 0) {
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p>No homeworks found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = `
+                <div class="homework-list">
+                    ${filtered.map(hw => {
+                        const percentage = (hw.score / hw.totalQuestions) * 100;
+                        const scoreClass = percentage >= 90 ? 'excellent' : percentage >= 70 ? 'good' : 'needs-work';
+                        const dateStr = hw.completedAt.toLocaleString('ru-RU', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        return `
+                            <div class="homework-card ${hw.isNew ? 'new' : ''}" data-id="${hw.id}">
+                                ${hw.isNew ? '<span class="new-badge">NEW</span>' : ''}
+                                <div class="homework-info">
+                                    <div class="student-name">${hw.studentName}</div>
+                                    <div class="homework-title">${hw.homeworkTitle}</div>
+                                    <div class="homework-meta">
+                                        <div class="meta-item">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            ${dateStr}
+                                        </div>
+                                        <div class="meta-item">
+                                            📝 ${hw.totalQuestions} questions
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="score ${scoreClass}">
+                                    ${percentage.toFixed(0)}%
+                                </div>
+                                <button class="view-btn" onclick="viewResults('${hw.homeworkId}', '${hw.studentId}', '${hw.id}')">
+                                    View Results
+                                </button>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+
+            content.innerHTML = html;
+        }
+
+        // View results
+        window.viewResults = async function(homeworkId, studentId, reportId) {
+            // Mark as viewed
+            await markAsViewed(reportId);
+            
+            // Update UI
+            const card = document.querySelector(`[data-id="${reportId}"]`);
+            if (card) {
+                card.classList.remove('new');
+                const badge = card.querySelector('.new-badge');
+                if (badge) badge.remove();
+            }
+
+            // Update the homework object
+            const hw = allHomeworks.find(h => h.id === reportId);
+            if (hw) hw.isNew = false;
+
+            // Navigate to results page
+            window.location.href = `/homework-results.html?homework=${encodeURIComponent(homeworkId)}&student=${encodeURIComponent(studentId)}`;
+        };
+
+        // Initialize
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentTeacherEmail = user.email;
+                await loadViewedHomeworks(user.email);
+                await loadHomeworks(user.email);
+            } else {
+                window.location.href = '/auth-page.html';
+            }
+        });
+    </script>
+</body>
+</html>
