@@ -6,16 +6,21 @@ const useStyles = makeStyles()(theme => ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
-        background: '#1E1E1E'
+        minHeight: '100vh',
+        background: '#1E1E1E',
+        position: 'relative',
+        overflow: 'auto',
+        padding: '20px'
     },
     content: {
         background: '#292929',
         padding: '40px',
-        borderRadius: '8px',
+        borderRadius: '16px',
         maxWidth: '400px',
         width: '90%',
-        textAlign: 'center'
+        textAlign: 'center',
+        border: '1px solid #3A3A3A',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
     },
     title: {
         color: '#E7E7E7',
@@ -59,7 +64,8 @@ const useStyles = makeStyles()(theme => ({
         fontSize: '14px'
     },
     dashboardContent: {
-        maxWidth: '500px'
+        maxWidth: '500px',
+        width: '100%'
     },
     header: {
         display: 'flex',
@@ -94,9 +100,10 @@ const useStyles = makeStyles()(theme => ({
         background: 'transparent',
         color: '#A4B5B8',
         border: '1px solid #525A5E',
-        borderRadius: '4px',
+        borderRadius: '8px',
         fontSize: '14px',
         cursor: 'pointer',
+        transition: 'all 0.3s',
         '&:hover': {
             background: '#2A2A2A'
         }
@@ -313,7 +320,17 @@ const TeacherAuthPage = () => {
     };
 
     const handleStartMeeting = () => {
-        const roomName = `teacher-room-${Date.now()}`;
+        // Create permanent room based on teacher's UID
+        // This ensures students always join the same room
+        const teacherUid = user?.uid || 'romanvolkonidov';
+        const roomName = `teacher-${teacherUid.substring(0, 8)}`;
+        
+        // Store teacher info for the room
+        const teacherFirstName = (user?.displayName || 'Roman').split(' ')[0];
+        localStorage.setItem('teacherFirstName', teacherFirstName);
+        localStorage.setItem('teacherRoomId', roomName);
+        
+        console.log('Teacher starting permanent room:', roomName);
         window.location.href = `/${roomName}`;
     };
 
@@ -390,7 +407,11 @@ const TeacherAuthPage = () => {
         return (
             <div className={classes.container}>
                 <div className={classes.content}>
-                    <h1 className={classes.title}>RV2Class</h1>
+                    <img 
+                        src="/images/logo-white.png" 
+                        alt="RV2Class" 
+                        style={{ width: '150px', marginBottom: '12px' }}
+                    />
                     <h2 className={classes.subtitle}>Welcome!</h2>
                     <p className={classes.description}>Sign in to join your virtual classroom</p>
                     <button 

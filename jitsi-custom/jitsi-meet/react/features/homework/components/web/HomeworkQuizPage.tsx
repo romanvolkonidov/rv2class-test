@@ -1,25 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 
 import { ThemeProvider, useTheme } from '../../../base/ui/components/web/ThemeProvider';
 
 import HomeworkQuiz from './HomeworkQuiz';
 
-// Firebase configuration
-const firebaseConfig = {
-    apiKey: 'AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004',
-    authDomain: 'tracking-budget-app.firebaseapp.com',
-    databaseURL: 'https://tracking-budget-app-default-rtdb.firebaseio.com',
-    projectId: 'tracking-budget-app',
-    storageBucket: 'tracking-budget-app.appspot.com',
-    messagingSenderId: '912992088190',
-    appId: '1:912992088190:web:926c8826b3bc39e2eb282f'
-};
-
-// Initialize Firebase (use different name to avoid conflicts)
-const app = initializeApp(firebaseConfig, 'homework-quiz');
-const db = getFirestore(app);
+// Use Firebase Compat API from window
+declare global {
+    interface Window {
+        firebaseApp: any;
+        firebaseDb: any;
+        firebaseAuth: any;
+    }
+}
 
 interface IPageProps {
     homeworkId?: string;
@@ -59,17 +51,25 @@ const HomeworkQuizPageInner: React.FC<IPageProps> = ({ homeworkId: propHomeworkI
             return;
         }
 
+        if (!window.firebaseDb) {
+            setError('Firebase not initialized');
+            setLoading(false);
+            return;
+        }
+
+        const db = window.firebaseDb;
+
         try {
             // Load student
             let studentData: any = null;
-            const sharedDoc = await getDoc(doc(db, 'students', studentId));
+            const sharedDoc = await db.collection('students').doc(studentId).get();
 
-            if (sharedDoc.exists()) {
+            if (sharedDoc.exists) {
                 studentData = { id: sharedDoc.id, ...sharedDoc.data() };
             } else {
-                const teacherDoc = await getDoc(doc(db, 'teacherStudents', studentId));
+                const teacherDoc = await db.collection('teacherStudents').doc(studentId).get();
 
-                if (teacherDoc.exists()) {
+                if (teacherDoc.exists) {
                     studentData = { id: teacherDoc.id, ...teacherDoc.data() };
                 }
             }
@@ -84,9 +84,9 @@ const HomeworkQuizPageInner: React.FC<IPageProps> = ({ homeworkId: propHomeworkI
             setStudent(studentData);
 
             // Load homework
-            const homeworkDoc = await getDoc(doc(db, 'telegramAssignments', homeworkId));
+            const homeworkDoc = await db.collection('telegramAssignments').doc(homeworkId).get();
 
-            if (!homeworkDoc.exists()) {
+            if (!homeworkDoc.exists) {
                 setError('Homework not found');
                 setLoading(false);
 
@@ -98,10 +98,11 @@ const HomeworkQuizPageInner: React.FC<IPageProps> = ({ homeworkId: propHomeworkI
             setHomework(homeworkData);
 
             // Load questions
-            const questionsRef = collection(db, 'telegramAssignmentQuestions');
-            const questionsQuery = query(questionsRef, where('assignmentId', '==', homeworkId));
-            const questionsSnapshot = await getDocs(questionsQuery);
-            const questionsData = questionsSnapshot.docs.map(doc => ({
+            const questionsSnapshot = await db.collection('telegramAssignmentQuestions')
+                .where('assignmentId', '==', homeworkId)
+                .get();
+            
+            const questionsData = questionsSnapshot.docs.map((doc: any) => ({
                 id: doc.id,
                 ...doc.data()
             }));
@@ -125,7 +126,7 @@ const HomeworkQuizPageInner: React.FC<IPageProps> = ({ homeworkId: propHomeworkI
             return;
         }
 
-        window.location.href = `/student-homework.html?student=${encodeURIComponent(student.id)}`;
+        window.location.href = `/static/student-homework.html?student=${encodeURIComponent(student.id)}`;
     };
 
     const handleSubmit = async (answers: Record<string, any>) => {
@@ -134,6 +135,14 @@ const HomeworkQuizPageInner: React.FC<IPageProps> = ({ homeworkId: propHomeworkI
         }
 
         setSubmitting(true);
+
+        if (!window.firebaseDb) {
+            alert('Firebase not initialized');
+            setSubmitting(false);
+            return;
+        }
+
+        const db = window.firebaseDb;
 
         try {
             console.log('Submitting answers:', answers);
@@ -161,16 +170,16 @@ const HomeworkQuizPageInner: React.FC<IPageProps> = ({ homeworkId: propHomeworkI
                 correctAnswers,
                 totalQuestions,
                 score,
-                completedAt: serverTimestamp(),
+                completedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
                 teacherId: homework.teacherId || student.teacherUid
             };
 
             console.log('Saving report:', reportData);
 
-            await addDoc(collection(db, 'telegramHomeworkReports'), reportData);
+            await db.collection('telegramHomeworkReports').add(reportData);
 
             // Navigate to results
-            window.location.href = `/homework-results.html?homework=${encodeURIComponent(homework.id)}&student=${encodeURIComponent(student.id)}&score=${score}`;
+            window.location.href = `/static/homework-results.html?homework=${encodeURIComponent(homework.id)}&student=${encodeURIComponent(student.id)}&score=${score}`;
 
         } catch (err) {
             console.error('Error submitting homework:', err);

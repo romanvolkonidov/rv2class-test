@@ -219,7 +219,7 @@ const useStyles = makeStyles()(theme => {
 
             '&:hover': {
                 backgroundColor: theme.palette.action01Hover,
-                transform: 'translateY(-2px)'
+                boxShadow: '0 4px 12px rgba(61, 124, 201, 0.3)'
             }
         },
 
@@ -289,6 +289,21 @@ const HomeworkResults: React.FC<IProps> = ({
 
     return (
         <div className = { classes.container }>
+            {/* Logo Header */}
+            <div style = {{
+                display: 'flex',
+                justifyContent: 'center',
+                marginBottom: '12px'
+            }}>
+                <img
+                    alt = "RV2Class"
+                    src = "/images/logo-white.png"
+                    style = {{
+                        width: '150px',
+                        height: 'auto'
+                    }} />
+            </div>
+
             <div className = { classes.header }>
                 <div style = {{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
                     <button

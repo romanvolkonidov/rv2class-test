@@ -1,48 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { makeStyles } from 'tss-react/mui';
-import {
-    collection,
-    getDocs,
-    query,
-    where
-} from 'firebase/firestore';
-import { db } from '../../../base/firebase/firebase';
+
+// Firebase compat global (loaded from firebase_config.js in HTML)
+declare global {
+    interface Window {
+        firebaseApp: any;
+        firebaseAuth: any;
+        firebase: any;
+    }
+}
 
 const useStyles = makeStyles()((theme) => ({
     container: {
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+        background: '#1E1E1E',
         position: 'relative',
-        overflow: 'hidden',
-        padding: '20px',
-        '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: '-50%',
-            left: '-50%',
-            width: '200%',
-            height: '200%',
-            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, transparent 50%)',
-            animation: '$pulseOrb 15s ease-in-out infinite'
-        },
-        '&::after': {
-            content: '""',
-            position: 'absolute',
-            bottom: '-50%',
-            right: '-50%',
-            width: '200%',
-            height: '200%',
-            background: 'radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 50%)',
-            animation: '$pulseOrb 20s ease-in-out infinite reverse'
-        }
-    },
-    '@keyframes pulseOrb': {
-        '0%, 100%': {
-            transform: 'scale(1) translate(0, 0)'
-        },
-        '50%': {
-            transform: 'scale(1.1) translate(5%, 5%)'
-        }
+        overflow: 'auto',
+        padding: '20px'
     },
     content: {
         maxWidth: '900px',
@@ -73,27 +47,25 @@ const useStyles = makeStyles()((theme) => ({
         alignItems: 'center',
         gap: '8px',
         padding: '12px 20px',
-        background: 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '12px',
-        color: '#fff',
+        background: '#292929',
+        border: '1px solid #3A3A3A',
+        borderRadius: '8px',
+        color: '#E7E7E7',
         fontSize: '16px',
         cursor: 'pointer',
-        transition: 'all 0.3s ease',
+        transition: 'background 0.2s',
         marginBottom: '24px',
         '&:hover': {
-            background: 'rgba(255, 255, 255, 0.15)',
-            transform: 'translateY(-2px)'
+            background: '#333333'
         }
     },
     headerCard: {
-        background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.9) 0%, rgba(99, 102, 241, 0.9) 100%)',
-        backdropFilter: 'blur(20px)',
-        borderRadius: '20px',
+        background: '#292929',
+        borderRadius: '16px',
         padding: '32px',
         marginBottom: '32px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+        border: '1px solid #3A3A3A',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
     },
     headerContent: {
         display: 'flex',
@@ -106,14 +78,14 @@ const useStyles = makeStyles()((theme) => ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(255, 255, 255, 0.2)',
-        borderRadius: '16px',
+        background: '#3D7CC9',
+        borderRadius: '12px',
         fontSize: '32px'
     },
     title: {
         fontSize: '32px',
         fontWeight: 'bold',
-        color: '#fff',
+        color: '#E7E7E7',
         margin: 0
     },
     statsRow: {
@@ -123,10 +95,9 @@ const useStyles = makeStyles()((theme) => ({
         marginBottom: '32px'
     },
     statCard: {
-        background: 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '16px',
+        background: '#292929',
+        border: '1px solid #3A3A3A',
+        borderRadius: '12px',
         padding: '20px',
         textAlign: 'center'
     },
@@ -137,7 +108,7 @@ const useStyles = makeStyles()((theme) => ({
     },
     statLabel: {
         fontSize: '14px',
-        color: 'rgba(255, 255, 255, 0.8)',
+        color: '#A4B5B8',
         textTransform: 'uppercase',
         letterSpacing: '0.5px'
     },
@@ -147,16 +118,13 @@ const useStyles = makeStyles()((theme) => ({
         gap: '16px'
     },
     homeworkCard: {
-        background: 'rgba(255, 255, 255, 0.08)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.15)',
-        borderRadius: '16px',
+        background: '#292929',
+        border: '1px solid #3A3A3A',
+        borderRadius: '12px',
         padding: '24px',
-        transition: 'all 0.3s ease',
+        transition: 'background 0.2s',
         '&:hover': {
-            background: 'rgba(255, 255, 255, 0.12)',
-            transform: 'translateY(-2px)',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)'
+            background: '#333333'
         }
     },
     homeworkHeader: {
@@ -168,7 +136,7 @@ const useStyles = makeStyles()((theme) => ({
     homeworkTitle: {
         fontSize: '20px',
         fontWeight: '600',
-        color: '#fff',
+        color: '#E7E7E7',
         margin: 0
     },
     statusBadge: {
@@ -189,7 +157,7 @@ const useStyles = makeStyles()((theme) => ({
     },
     homeworkDate: {
         fontSize: '14px',
-        color: 'rgba(255, 255, 255, 0.6)',
+        color: '#A4B5B8',
         marginBottom: '16px'
     },
     actionButton: {
@@ -197,30 +165,35 @@ const useStyles = makeStyles()((theme) => ({
         alignItems: 'center',
         gap: '8px',
         padding: '12px 24px',
-        borderRadius: '10px',
+        borderRadius: '8px',
         fontSize: '16px',
         fontWeight: '600',
         cursor: 'pointer',
-        transition: 'all 0.3s ease',
+        transition: 'background 0.2s',
         border: 'none',
         '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.3)'
+            opacity: 0.9
         }
     },
     startButton: {
-        background: 'linear-gradient(135deg, rgba(168, 85, 247, 1) 0%, rgba(99, 102, 241, 1) 100%)',
-        color: '#fff'
+        background: '#3D7CC9',
+        color: '#fff',
+        '&:hover': {
+            background: '#4A8BD6'
+        }
     },
     viewButton: {
-        background: 'rgba(255, 255, 255, 0.1)',
-        border: '1px solid rgba(255, 255, 255, 0.3)',
-        color: '#fff'
+        background: '#292929',
+        border: '1px solid #525A5E',
+        color: '#E7E7E7',
+        '&:hover': {
+            background: '#333333'
+        }
     },
     emptyState: {
         textAlign: 'center',
         padding: '60px 20px',
-        color: 'rgba(255, 255, 255, 0.6)'
+        color: '#A4B5B8'
     },
     emptyIcon: {
         fontSize: '64px',
@@ -267,6 +240,15 @@ const StudentHomeworkListPage: React.FC = () => {
     const loadHomeworkList = async () => {
         setLoading(true);
         try {
+            // Check if Firebase is initialized
+            if (!window.firebaseApp || !window.firebase) {
+                console.error('Firebase not initialized');
+                alert('Firebase not initialized');
+                return;
+            }
+
+            const db = window.firebaseApp.firestore();
+
             // Get studentId from URL
             const params = new URLSearchParams(window.location.search);
             const sid = params.get('studentId');
@@ -278,22 +260,22 @@ const StudentHomeworkListPage: React.FC = () => {
 
             setStudentId(sid);
 
-            // Fetch assignments
-            const assignmentsRef = collection(db, 'telegramAssignments');
-            const q = query(assignmentsRef, where('studentId', '==', sid));
-            const querySnapshot = await getDocs(q);
+            // Fetch assignments using compat API
+            const assignmentsSnapshot = await db.collection('telegramAssignments')
+                .where('studentId', '==', sid)
+                .get();
 
-            const assignmentsData = querySnapshot.docs.map(doc => ({
+            const assignmentsData = assignmentsSnapshot.docs.map((doc: any) => ({
                 id: doc.id,
                 ...doc.data()
             })) as HomeworkAssignment[];
 
-            // Fetch reports
-            const reportsRef = collection(db, 'telegramHomeworkReports');
-            const reportsQuery = query(reportsRef, where('studentId', '==', sid));
-            const reportsSnapshot = await getDocs(reportsQuery);
+            // Fetch reports using compat API
+            const reportsSnapshot = await db.collection('telegramHomeworkReports')
+                .where('studentId', '==', sid)
+                .get();
 
-            const reportsData = reportsSnapshot.docs.map(doc => ({
+            const reportsData = reportsSnapshot.docs.map((doc: any) => ({
                 id: doc.id,
                 ...doc.data()
             })) as HomeworkReport[];
@@ -313,11 +295,11 @@ const StudentHomeworkListPage: React.FC = () => {
     };
 
     const handleStartHomework = (homeworkId: string) => {
-        window.location.href = `/static/homework-quiz.html?studentId=${encodeURIComponent(studentId)}&homeworkId=${encodeURIComponent(homeworkId)}`;
+        window.location.href = `/static/homework-quiz.html?student=${encodeURIComponent(studentId)}&homework=${encodeURIComponent(homeworkId)}`;
     };
 
     const handleViewResults = (homeworkId: string) => {
-        window.location.href = `/static/homework-results.html?studentId=${encodeURIComponent(studentId)}&homeworkId=${encodeURIComponent(homeworkId)}`;
+        window.location.href = `/static/homework-results.html?student=${encodeURIComponent(studentId)}&homework=${encodeURIComponent(homeworkId)}`;
     };
 
     const handleBack = () => {
@@ -360,7 +342,11 @@ const StudentHomeworkListPage: React.FC = () => {
 
                 <div className={classes.headerCard}>
                     <div className={classes.headerContent}>
-                        <div className={classes.headerIcon}>📚</div>
+                        <img 
+                            src="/images/logo-white.png" 
+                            alt="RV2Class" 
+                            style={{ width: '150px' }}
+                        />
                         <h1 className={classes.title}>My Homework</h1>
                     </div>
                 </div>

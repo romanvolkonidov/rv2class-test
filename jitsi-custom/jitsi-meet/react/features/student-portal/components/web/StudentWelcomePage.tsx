@@ -1,25 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 import { ThemeProvider, useTheme } from '../../../base/ui/components/web/ThemeProvider';
 
 import StudentWelcome from './StudentWelcome';
 
-// Firebase configuration
-const firebaseConfig = {
-    apiKey: 'AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004',
-    authDomain: 'tracking-budget-app.firebaseapp.com',
-    databaseURL: 'https://tracking-budget-app-default-rtdb.firebaseio.com',
-    projectId: 'tracking-budget-app',
-    storageBucket: 'tracking-budget-app.appspot.com',
-    messagingSenderId: '912992088190',
-    appId: '1:912992088190:web:926c8826b3bc39e2eb282f'
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig, 'student-portal');
-const db = getFirestore(app);
+// Firebase compat global (loaded from firebase_config.js in HTML)
+declare global {
+    interface Window {
+        firebaseApp: any;
+        firebaseAuth: any;
+        firebase: any;
+    }
+}
 
 interface IStudentData {
     id: string;
@@ -27,7 +19,7 @@ interface IStudentData {
     teacher?: string;
     teacherName?: string;
     teacherUid?: string;
-    teacherEmail?: string;  // NEW: Store teacher's email
+    teacherEmail?: string;
 }
 
 interface IPageProps {
@@ -68,6 +60,15 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
         }
 
         try {
+            // Check if Firebase is initialized
+            if (!window.firebaseApp || !window.firebase) {
+                console.error('Firebase not initialized');
+                setError('Firebase not initialized');
+                setLoading(false);
+                return;
+            }
+
+            const db = window.firebaseApp.firestore();
             let studentData: IStudentData | null = null;
 
             // Determine which collection to check based on teacherEmail
@@ -76,9 +77,9 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
 
             if (isSharedCollection) {
                 // Try shared 'students' collection
-                const sharedDoc = await getDoc(doc(db, 'students', studentId));
+                const sharedDoc = await db.collection('students').doc(studentId).get();
 
-                if (sharedDoc.exists()) {
+                if (sharedDoc.exists) {
                     const data = sharedDoc.data();
 
                     studentData = {
@@ -93,9 +94,9 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
             } else {
                 // Try teacher-specific collection
                 const collectionName = `students_${teacherEmail}`;
-                const teacherDoc = await getDoc(doc(db, collectionName, studentId));
+                const teacherDoc = await db.collection(collectionName).doc(studentId).get();
 
-                if (teacherDoc.exists()) {
+                if (teacherDoc.exists) {
                     const data = teacherDoc.data();
 
                     studentData = {
@@ -111,9 +112,9 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
 
             // Fallback: try 'teacherStudents' collection (legacy)
             if (!studentData) {
-                const teacherDoc = await getDoc(doc(db, 'teacherStudents', studentId));
+                const teacherDoc = await db.collection('teacherStudents').doc(studentId).get();
 
-                if (teacherDoc.exists()) {
+                if (teacherDoc.exists) {
                     const data = teacherDoc.data();
 
                     studentData = {
@@ -136,13 +137,11 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
 
             setStudent(studentData);
 
-            // Count uncompleted homework
-            const homeworkQuery = query(
-                collection(db, 'telegramAssignments'),
-                where('studentId', '==', studentId),
-                where('completed', '==', false)
-            );
-            const homeworkSnapshot = await getDocs(homeworkQuery);
+            // Count uncompleted homework using compat API
+            const homeworkSnapshot = await db.collection('telegramAssignments')
+                .where('studentId', '==', studentId)
+                .where('completed', '==', false)
+                .get();
 
             setUncompletedCount(homeworkSnapshot.docs.length);
             setLoading(false);

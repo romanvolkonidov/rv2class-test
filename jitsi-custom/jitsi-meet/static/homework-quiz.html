@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RV2Class - Homework Quiz</title>
+    <link rel="icon" type="image/png" href="/images/watermark.png">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #1E1E1E;
+            color: #E7E7E7;
+        }
+        #react {
+            width: 100%;
+            height: 100vh;
+        }
+        .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-size: 18px;
+            color: #A4B5B8;
+        }
+    </style>
+</head>
+<body>
+    <div id="react">
+        <div class="loading-container">Loading homework...</div>
+    </div>
+
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <!-- Firebase Configuration -->
+    <script>
+        // Initialize Firebase Compat
+        const firebaseConfig = {
+            apiKey: 'AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004',
+            authDomain: 'tracking-budget-app.firebaseapp.com',
+            databaseURL: 'https://tracking-budget-app-default-rtdb.firebaseio.com',
+            projectId: 'tracking-budget-app',
+            storageBucket: 'tracking-budget-app.appspot.com',
+            messagingSenderId: '912992088190',
+            appId: '1:912992088190:web:926c8826b3bc39e2eb282f'
+        };
+        
+        window.firebaseApp = firebase.initializeApp(firebaseConfig);
+        window.firebaseDb = firebase.firestore();
+        window.firebaseAuth = firebase.auth();
+        
+        console.log('Firebase initialized (compat mode)');
+    </script>
+
+    <!-- Jitsi Meet External API -->
+    <script src="../libs/lib-jitsi-meet.min.js"></script>
+
+    <!-- Jitsi Meet App Bundle -->
+    <script src="../libs/app.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Render the HOMEWORK_QUIZ entry point
+            if (window.JitsiMeetJS && window.JitsiMeetJS.app) {
+                window.JitsiMeetJS.app.renderEntryPoint({
+                    Component: window.JitsiMeetJS.app.entryPoints.HOMEWORK_QUIZ,
+                    props: {},
+                    elementId: 'react'
+                });
+            } else {
+                console.error('JitsiMeetJS not loaded');
+                document.getElementById('react').innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; font-size: 18px; color: #E15350;">
+                        Error loading homework quiz
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

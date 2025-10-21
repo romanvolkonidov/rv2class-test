@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Homework - RV2Class</title>
+    
+    <link rel="stylesheet" href="../css/all.css" />
+    
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            height: auto !important;
+            min-height: 100vh;
+        }
+        #react {
+            width: 100%;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="react"></div>
+    
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004",
+            authDomain: "tracking-budget-app.firebaseapp.com",
+            databaseURL: "https://tracking-budget-app-default-rtdb.firebaseio.com",
+            projectId: "tracking-budget-app",
+            storageBucket: "tracking-budget-app.appspot.com",
+            messagingSenderId: "912992088190",
+            appId: "1:912992088190:web:926c8826b3bc39e2eb282f"
+        };
+        
+        // Initialize Firebase and make it globally available
+        window.firebaseApp = firebase.initializeApp(firebaseConfig);
+        window.firebaseAuth = firebase.auth;
+        console.log('Firebase initialized for Student Homework page');
+    </script>
+    
+    <!-- Jitsi Configuration -->
+    <script src="../config.js"></script>
+    <script src="../interface_config.js"></script>
+    
+    <!-- Jitsi Meet External API -->
+    <script src="../libs/lib-jitsi-meet.min.js"></script>
+    
+    <!-- Main App Bundle -->
+    <script src="../libs/app.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Render the student homework list entry point
+            if (window.JitsiMeetJS && window.JitsiMeetJS.app) {
+                window.JitsiMeetJS.app.renderEntryPoint({
+                    Component: window.JitsiMeetJS.app.entryPoints.STUDENT_HOMEWORK_LIST,
+                    props: {},
+                    elementId: 'react'
+                });
+            } else {
+                console.error('JitsiMeetJS not loaded');
+                document.getElementById('react').innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; font-size: 18px; color: #E15350;">
+                        Error loading application
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

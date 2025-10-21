@@ -508,7 +508,8 @@ interface Student {
     name: string;
     teacher?: string;
     teacherName?: string;
-    teacherEmail?: string;  // NEW: Store teacher's email
+    teacherEmail?: string;
+    teacherUid?: string;  // NEW: Store teacher's UID for room routing
     subjects?: { English?: boolean; IT?: boolean };
     tag?: string;
 }
@@ -524,6 +525,7 @@ const TeacherStudentsPage: React.FC = () => {
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
     const [isDark] = useState(true); // Always dark for Jitsi app
     const [teacherEmail, setTeacherEmail] = useState<string>('');
+    const [teacherUid, setTeacherUid] = useState<string>(''); // Store teacher UID
     const [showAddForm, setShowAddForm] = useState(false);
     const [newStudentName, setNewStudentName] = useState('');
     const [newStudentSubjects, setNewStudentSubjects] = useState({ English: false, IT: false });
@@ -534,7 +536,7 @@ const TeacherStudentsPage: React.FC = () => {
     const collectionName = isSharedCollection ? 'students' : `students_${teacherEmail}`;
 
     useEffect(() => {
-        // Get current teacher's email from Firebase Auth
+        // Get current teacher's email and UID from Firebase Auth
         const initAuth = async () => {
             try {
                 if (!window.firebaseApp || !window.firebaseAuth) {
@@ -548,16 +550,20 @@ const TeacherStudentsPage: React.FC = () => {
                 auth.onAuthStateChanged((user: any) => {
                     if (user && user.email) {
                         setTeacherEmail(user.email);
+                        setTeacherUid(user.uid); // Store UID
+                        console.log('Teacher authenticated:', { email: user.email, uid: user.uid });
                     } else {
-                        // No user logged in, set a default for testing
-                        console.warn('No user logged in, using default email');
+                        // No user logged in, set defaults for testing
+                        console.warn('No user logged in, using default values');
                         setTeacherEmail('teacher@rv2class.com');
+                        setTeacherUid('romanvolkonidov'); // Default UID for testing
                     }
                 });
             } catch (error) {
                 console.error('Auth initialization error:', error);
                 // Fallback for development
                 setTeacherEmail('teacher@rv2class.com');
+                setTeacherUid('romanvolkonidov');
             }
         };
 
@@ -649,6 +655,8 @@ const TeacherStudentsPage: React.FC = () => {
             await addDoc(studentsRef, {
                 name: newStudentName.trim(),
                 teacherEmail: teacherEmail,
+                teacherUid: teacherUid, // Include teacher UID for room routing
+                teacherName: teacherEmail.split('@')[0], // Simple name extraction
                 subjects: newStudentSubjects,
                 createdAt: serverTimestamp(),
                 tag: null

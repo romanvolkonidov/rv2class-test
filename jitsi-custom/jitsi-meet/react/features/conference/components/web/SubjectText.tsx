@@ -8,6 +8,16 @@ import Tooltip from '../../../base/tooltip/components/Tooltip';
 
 const useStyles = makeStyles()(theme => {
     return {
+        wrapper: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+        },
+        logo: {
+            height: '24px',
+            width: 'auto',
+            marginLeft: '8px'
+        },
         container: {
             ...theme.typography.bodyLongRegular,
             color: theme.palette.text01,
@@ -16,7 +26,7 @@ const useStyles = makeStyles()(theme => {
             maxWidth: '324px',
             boxSizing: 'border-box',
             height: '28px',
-            borderRadius: `${theme.shape.borderRadius}px 0 0 ${theme.shape.borderRadius}px`,
+            borderRadius: `${theme.shape.borderRadius}px`,
             marginLeft: '2px',
 
             '@media (max-width: 300px)': {
@@ -40,19 +50,32 @@ const SubjectText = () => {
     const subject = useSelector(getConferenceName);
     const { classes } = useStyles();
 
-    // Hide room name for teacher rooms
+    // Hide room name for teacher rooms but show logo
     if (subject && subject.toLowerCase().startsWith('teacher')) {
-        return null;
+        return (
+            <div className = { classes.wrapper }>
+                <img
+                    alt = "RV2Class"
+                    className = { classes.logo }
+                    src = "/images/logo-white.png" />
+            </div>
+        );
     }
 
     return (
-        <Tooltip
-            content = { subject }
-            position = 'bottom'>
-            <div className = { classes.container }>
-                <div className = { clsx('subject-text--content', classes.content) }>{subject}</div>
-            </div>
-        </Tooltip>
+        <div className = { classes.wrapper }>
+            <img
+                alt = "RV2Class"
+                className = { classes.logo }
+                src = "/images/logo-white.png" />
+            <Tooltip
+                content = { subject }
+                position = 'bottom'>
+                <div className = { classes.container }>
+                    <div className = { clsx('subject-text--content', classes.content) }>{subject}</div>
+                </div>
+            </Tooltip>
+        </div>
     );
 };
 

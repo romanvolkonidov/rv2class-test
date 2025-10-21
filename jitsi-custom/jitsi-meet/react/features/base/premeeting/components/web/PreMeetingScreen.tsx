@@ -258,6 +258,21 @@ const PreMeetingScreen = ({
         <div className = { clsx('premeeting-screen', classes.container, className) }>
             <div style = { style }>
                 <div className = { classes.content }>
+                    {/* Logo */}
+                    <div style = {{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        padding: '16px 0 8px 0'
+                    }}>
+                        <img
+                            alt = "RV2Class"
+                            src = "/images/logo-white.png"
+                            style = {{
+                                width: '120px',
+                                height: 'auto'
+                            }} />
+                    </div>
+
                     {_isPreCallTestEnabled && <ConnectionStatus />}
 
                     <div className = { classes.contentControls }>

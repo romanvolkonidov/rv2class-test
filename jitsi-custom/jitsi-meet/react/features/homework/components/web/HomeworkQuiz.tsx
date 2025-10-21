@@ -166,6 +166,21 @@ function HomeworkQuiz({
     return (
         <div className = 'homework-quiz'>
             <div className = 'quiz-header'>
+                {/* Logo Header */}
+                <div style = {{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    marginBottom: '12px'
+                }}>
+                    <img
+                        alt = "RV2Class"
+                        src = "/images/logo-white.png"
+                        style = {{
+                            width: '150px',
+                            height: 'auto'
+                        }} />
+                </div>
+
                 <div style = {{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px' }}>
                     <button
                         className = 'homework-back-button'

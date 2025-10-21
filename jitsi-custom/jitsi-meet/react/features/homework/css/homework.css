@@ -62,12 +62,11 @@
 }
 
 .homework-button.primary:hover {
-    transform: translateY(-2px);
     box-shadow: var(--shadow-md), 0 0 0 4px rgba(3, 118, 218, 0.12);
+    background: linear-gradient(135deg, #0488f5 0%, #0373cc 100%);
 }
 
 .homework-button.primary:active {
-    transform: translateY(0);
     box-shadow: var(--shadow-sm);
 }
 
@@ -241,12 +240,8 @@
 }
 
 .homework-leaderboard-button:hover {
-    transform: translateY(-2px);
+    /* removed hover jump */
     box-shadow: 0 6px 16px rgba(234, 179, 8, 0.4);
-}
-
-.homework-leaderboard-button:active {
-    transform: translateY(0);
 }
 
 .homework-leaderboard-button svg {
@@ -295,7 +290,7 @@
 
 .homework-stat-item:hover {
     border-color: var(--color-primary);
-    transform: translateY(-2px);
+    /* removed hover jump */
 }
 
 .homework-stat-item.stat-total {
@@ -360,7 +355,7 @@
 .homework-assignment-card:hover {
     border-color: var(--color-primary);
     box-shadow: var(--shadow-md), 0 0 0 1px var(--color-primary);
-    transform: translateY(-3px);
+    /* removed hover jump */
 }
 
 .homework-assignment-card:hover::before {
@@ -547,7 +542,7 @@
 }
 
 .action-button.primary:hover {
-    transform: translateY(-2px);
+    /* removed hover jump */
     box-shadow: 0 8px 24px rgba(0, 122, 255, 0.4);
 }
 
@@ -560,7 +555,7 @@
 .action-button.secondary:hover {
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.35);
-    transform: translateY(-1px);
+    /* removed hover jump */
 }
 
 .action-button:disabled {
@@ -822,11 +817,9 @@
 .nav-button:hover {
     background: var(--color-surface-hover);
     border-color: var(--color-surface-hover);
-    transform: translateY(-2px);
-}
-
-.nav-button:active {
-    transform: translateY(0);
+.nav-button:hover:not(:disabled) {
+    background: var(--color-bg-tertiary);
+    /* removed hover jump */
 }
 
 .nav-button:disabled {
@@ -1278,11 +1271,11 @@
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(8px);
+        /* removed hover jump */
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        /* removed hover jump */
     }
 }
 
