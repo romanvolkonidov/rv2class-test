@@ -12,6 +12,11 @@ import StudentPortalApp from './features/student-portal/components/web/StudentPo
 import StudentHomeworkApp from './features/homework/components/web/StudentHomeworkApp';
 import HomeworkQuizApp from './features/homework/components/web/HomeworkQuizApp';
 import HomeworkResultsApp from './features/homework/components/web/HomeworkResultsApp';
+import TeacherHomeworkPage from './features/teacher-homework/components/web/TeacherHomeworkPage';
+import HomeworkQuizPage from './features/student-homework/components/web/HomeworkQuizPage';
+import StudentHomeworkListPage from './features/student-homework/components/web/StudentHomeworkListPage';
+import StudentLeaderboardPage from './features/student-leaderboard/components/web/StudentLeaderboardPage';
+import TeacherStudentsPage from './features/teacher-students/components/web/TeacherStudentsPage';
 
 const logger = getLogger('app:index.web');
 
@@ -77,7 +82,12 @@ globalNS.entryPoints = {
     STUDENT_PORTAL: StudentPortalApp,
     STUDENT_HOMEWORK: StudentHomeworkApp,
     HOMEWORK_QUIZ: HomeworkQuizApp,
-    HOMEWORK_RESULTS: HomeworkResultsApp
+    HOMEWORK_RESULTS: HomeworkResultsApp,
+    TEACHER_HOMEWORK: TeacherHomeworkPage,
+    STUDENT_HOMEWORK_QUIZ: HomeworkQuizPage,
+    STUDENT_HOMEWORK_LIST: StudentHomeworkListPage,
+    STUDENT_LEADERBOARD: StudentLeaderboardPage,
+    TEACHER_STUDENTS: TeacherStudentsPage
 };
 
 globalNS.renderEntryPoint = ({

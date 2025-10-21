@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { makeStyles } from 'tss-react/mui';
 
 import { IconUsers, IconVideo, IconMessage } from '../../../base/icons/svg';
@@ -15,6 +15,7 @@ interface IProps {
         teacher?: string;
         teacherName?: string;
         teacherUid?: string;
+        subjects?: { English?: boolean; IT?: boolean };
     };
 
     /**
@@ -26,6 +27,11 @@ interface IProps {
      * Callback when user clicks Homework button.
      */
     onViewHomework: () => void;
+
+    /**
+     * Callback when user clicks Leaderboard button.
+     */
+    onViewLeaderboard?: () => void;
 
     /**
      * Number of uncompleted homework assignments.
@@ -41,6 +47,26 @@ interface IProps {
      * Callback when theme changes.
      */
     onThemeChange?: (newTheme: 'dark' | 'light') => void;
+
+    /**
+     * Microphone permission state.
+     */
+    micPermission?: 'granted' | 'denied' | 'prompt' | 'checking';
+
+    /**
+     * Video permission state.
+     */
+    videoPermission?: 'granted' | 'denied' | 'prompt' | 'checking';
+
+    /**
+     * Callback to request mic permission.
+     */
+    onRequestMic?: () => void;
+
+    /**
+     * Callback to request video permission.
+     */
+    onRequestVideo?: () => void;
 }
 
 const useStyles = makeStyles()(theme => {
@@ -52,7 +78,7 @@ const useStyles = makeStyles()(theme => {
             justifyContent: 'center',
             minHeight: '100vh',
             background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
-            padding: theme.spacing(4),
+            padding: theme.spacing(2),
             position: 'relative',
             overflow: 'auto',
             '&::before': {
@@ -62,7 +88,7 @@ const useStyles = makeStyles()(theme => {
                 left: '25%',
                 width: '500px',
                 height: '500px',
-                background: 'rgba(6, 182, 212, 0.1)',
+                background: 'rgba(59, 130, 246, 0.15)',
                 borderRadius: '50%',
                 filter: 'blur(80px)',
                 animation: 'pulseOrb 4s ease-in-out infinite',
@@ -75,10 +101,10 @@ const useStyles = makeStyles()(theme => {
                 right: '25%',
                 width: '500px',
                 height: '500px',
-                background: 'rgba(14, 165, 233, 0.1)',
+                background: 'rgba(14, 165, 233, 0.15)',
                 borderRadius: '50%',
                 filter: 'blur(80px)',
-                animation: 'pulseOrb 4s ease-in-out infinite 1s',
+                animation: 'pulseOrb 4s ease-in-out infinite 1.5s',
                 zIndex: 0
             },
             '@keyframes pulseOrb': {
@@ -126,7 +152,7 @@ const useStyles = makeStyles()(theme => {
         },
 
         header: {
-            background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.9) 0%, rgba(14, 165, 233, 0.9) 50%, rgba(59, 130, 246, 0.9) 100%)',
+            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 50%, rgba(29, 78, 216, 0.9) 100%)',
             padding: theme.spacing(4),
             position: 'relative',
             '&::before': {
@@ -177,18 +203,6 @@ const useStyles = makeStyles()(theme => {
             fontWeight: 400
         },
 
-        studentName: {
-            display: 'inline',
-            fontWeight: 600
-        },
-
-        message: {
-            fontSize: '15px',
-            color: '#8891a1',
-            marginBottom: theme.spacing(1),
-            lineHeight: 1.5
-        },
-
         content: {
             padding: theme.spacing(4),
             background: 'transparent'
@@ -207,20 +221,20 @@ const useStyles = makeStyles()(theme => {
             display: 'flex',
             alignItems: 'center',
             gap: theme.spacing(1.5),
-            padding: theme.spacing(1.5, 0)
+            marginBottom: theme.spacing(2)
         },
 
         teacherIconWrapper: {
-            background: 'rgba(6, 182, 212, 0.15)',
+            background: 'rgba(59, 130, 246, 0.2)',
             backdropFilter: 'blur(8px)',
             padding: theme.spacing(1),
             borderRadius: '12px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: '1px solid rgba(6, 182, 212, 0.3)',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
             '& svg': {
-                fill: '#06b6d4',
+                fill: '#60a5fa',
                 width: '20px',
                 height: '20px'
             }
@@ -229,7 +243,6 @@ const useStyles = makeStyles()(theme => {
         teacherText: {
             fontSize: '14px',
             color: '#94a3b8',
-            marginBottom: '0px',
             fontWeight: 500
         },
 
@@ -241,87 +254,67 @@ const useStyles = makeStyles()(theme => {
             letterSpacing: '-0.01em'
         },
 
-        buttonContainer: {
+        subjectsWrapper: {
             display: 'flex',
-            flexDirection: 'column',
-            gap: theme.spacing(2),
-            marginTop: theme.spacing(1.5)
+            alignItems: 'center',
+            gap: theme.spacing(1.5),
+            flexWrap: 'wrap'
         },
 
-        joinButton: {
-            width: '100%',
-            padding: '20px 24px',
-            background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.9) 0%, rgba(14, 165, 233, 0.9) 50%, rgba(59, 130, 246, 0.9) 100%)',
-            color: '#ffffff',
-            borderRadius: '16px',
+        subjectIcon: {
+            background: 'rgba(59, 130, 246, 0.2)',
+            backdropFilter: 'blur(8px)',
+            padding: theme.spacing(1),
+            borderRadius: '12px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: theme.spacing(1.5),
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            fontSize: '16px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: '0 8px 24px rgba(6, 182, 212, 0.3)',
-            letterSpacing: '-0.01em',
-            position: 'relative',
-            overflow: 'hidden',
-
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(255, 255, 255, 0.05)',
-                opacity: 0,
-                transition: 'opacity 0.2s'
-            },
-
-            '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 12px 32px rgba(6, 182, 212, 0.4)',
-                
-                '&::before': {
-                    opacity: 1
-                }
-            },
-
-            '&:active': {
-                transform: 'translateY(0)',
-                transition: 'all 0.1s'
-            },
-
+            border: '1px solid rgba(59, 130, 246, 0.3)',
             '& svg': {
-                fill: '#ffffff',
+                fill: '#60a5fa',
                 width: '20px',
                 height: '20px'
             }
         },
 
+        subjectsLabel: {
+            fontSize: '14px',
+            color: '#94a3b8',
+            fontWeight: 500
+        },
+
+        subjectBadge: {
+            padding: '6px 16px',
+            borderRadius: '20px',
+            background: 'rgba(59, 130, 246, 0.15)',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            color: '#60a5fa',
+            fontSize: '13px',
+            fontWeight: 600
+        },
+
         homeworkButtonWrapper: {
             position: 'relative',
-            width: '100%'
+            paddingTop: theme.spacing(2),
+            marginBottom: theme.spacing(1)
         },
 
         homeworkButton: {
             width: '100%',
             padding: '16px 24px',
-            background: 'linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%)',
+            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
             color: '#ffffff',
             borderRadius: '12px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: theme.spacing(1),
+            gap: theme.spacing(1.5),
             border: 'none',
             fontSize: '16px',
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: '0 4px 16px rgba(14, 165, 233, 0.3)',
+            boxShadow: '0 4px 16px rgba(59, 130, 246, 0.3)',
             letterSpacing: '-0.01em',
             position: 'relative',
             overflow: 'hidden',
@@ -340,7 +333,7 @@ const useStyles = makeStyles()(theme => {
 
             '&:hover': {
                 transform: 'translateY(-2px)',
-                boxShadow: '0 8px 24px rgba(14, 165, 233, 0.4)',
+                boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
                 
                 '&::before': {
                     opacity: 1
@@ -348,7 +341,7 @@ const useStyles = makeStyles()(theme => {
             },
 
             '&:active': {
-                transform: 'translateY(0)',
+                transform: 'scale(0.98)',
                 transition: 'all 0.1s'
             },
 
@@ -356,6 +349,35 @@ const useStyles = makeStyles()(theme => {
                 fill: '#ffffff',
                 width: '20px',
                 height: '20px'
+            }
+        },
+
+        leaderboardButton: {
+            width: '100%',
+            padding: '16px 24px',
+            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+            color: '#ffffff',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: theme.spacing(1.5),
+            border: 'none',
+            fontSize: '16px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: '0 4px 16px rgba(251, 191, 36, 0.3)',
+            letterSpacing: '-0.01em',
+
+            '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 24px rgba(251, 191, 36, 0.4)'
+            },
+
+            '&:active': {
+                transform: 'translateY(0)',
+                boxShadow: '0 4px 12px rgba(251, 191, 36, 0.3)'
             }
         },
 
@@ -373,7 +395,7 @@ const useStyles = makeStyles()(theme => {
             justifyContent: 'center',
             fontSize: '13px',
             fontWeight: 700,
-            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4), 0 0 0 3px #1C1E22',
+            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4), 0 0 0 3px rgba(30, 41, 59, 0.8)',
             animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             
             '@keyframes pulse': {
@@ -388,51 +410,172 @@ const useStyles = makeStyles()(theme => {
             }
         },
 
+        joinSection: {
+            marginTop: theme.spacing(3),
+            paddingTop: theme.spacing(2)
+        },
+
+        joinButtonWrapper: {
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '16px',
+            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 50%, rgba(29, 78, 216, 0.9) 100%)',
+            boxShadow: '0 8px 24px rgba(59, 130, 246, 0.3)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+
+            '&:hover': {
+                boxShadow: '0 12px 32px rgba(59, 130, 246, 0.4)',
+                transform: 'translateY(-2px)'
+            }
+        },
+
+        joinButton: {
+            width: '100%',
+            padding: '20px 24px',
+            background: 'transparent',
+            color: '#ffffff',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '16px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.3s',
+            letterSpacing: '-0.01em',
+
+            '&:hover': {
+                background: 'rgba(255, 255, 255, 0.05)'
+            },
+
+            '&:active': {
+                background: 'rgba(255, 255, 255, 0.1)',
+                transform: 'scale(0.98)'
+            }
+        },
+
+        joinButtonLeft: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: theme.spacing(1.5)
+        },
+
+        joinButtonIcon: {
+            background: 'rgba(255, 255, 255, 0.2)',
+            backdropFilter: 'blur(10px)',
+            padding: theme.spacing(1),
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s',
+
+            '&:hover': {
+                background: 'rgba(255, 255, 255, 0.3)',
+                transform: 'scale(1.05)'
+            },
+
+            '& svg': {
+                fill: '#ffffff',
+                width: '20px',
+                height: '20px'
+            }
+        },
+
+        joinButtonText: {
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start'
+        },
+
+        joinButtonTitle: {
+            fontSize: '16px',
+            fontWeight: 600,
+            color: '#ffffff'
+        },
+
+        joinButtonSubtitle: {
+            fontSize: '12px',
+            color: 'rgba(255, 255, 255, 0.8)',
+            fontWeight: 400,
+            marginTop: '2px'
+        },
+
+        permissionToggles: {
+            display: 'flex',
+            gap: theme.spacing(1)
+        },
+
+        permissionButton: {
+            width: '40px',
+            height: '40px',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(10px)',
+            color: '#ffffff',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+
+            '&:hover': {
+                background: 'rgba(255, 255, 255, 0.25)',
+                transform: 'scale(1.05)'
+            },
+
+            '&:active': {
+                transform: 'scale(0.95)'
+            },
+
+            '& svg': {
+                fill: '#ffffff',
+                width: '16px',
+                height: '16px'
+            }
+        },
+
+        permissionGranted: {
+            background: 'rgba(255, 255, 255, 0.25)',
+            border: '1px solid rgba(255, 255, 255, 0.4)',
+            cursor: 'default',
+
+            '&:hover': {
+                background: 'rgba(255, 255, 255, 0.3)',
+                transform: 'none'
+            }
+        },
+
+        permissionDenied: {
+            background: 'rgba(239, 68, 68, 0.6)',
+            border: '1px solid rgba(239, 68, 68, 0.6)',
+            boxShadow: '0 0 20px rgba(239, 68, 68, 0.2)',
+
+            '&:hover': {
+                background: 'rgba(239, 68, 68, 0.8)'
+            }
+        },
+
+        permissionPulse: {
+            animation: 'permissionPulse 1s ease-in-out 3',
+
+            '@keyframes permissionPulse': {
+                '0%, 100%': {
+                    boxShadow: '0 0 0 0 rgba(255, 255, 255, 0.7)'
+                },
+                '50%': {
+                    boxShadow: '0 0 0 8px rgba(255, 255, 255, 0)'
+                }
+            }
+        },
+
         icon: {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0
-        },
-        
-        // Responsive styles are applied directly to each element above using theme.breakpoints
-        // instead of a separate @media query to avoid TypeScript issues with tss-react
-        mobileCard: {
-            [theme.breakpoints.down('sm')]: {
-                borderRadius: '20px'
-            }
-        },
-
-        mobileHeader: {
-            [theme.breakpoints.down('sm')]: {
-                padding: theme.spacing(4, 3)
-            }
-        },
-
-        mobileContent: {
-            [theme.breakpoints.down('sm')]: {
-                padding: theme.spacing(3)
-            }
-        },
-        
-        mobileTitle: {
-            [theme.breakpoints.down('sm')]: {
-                fontSize: '24px'
-            }
-        },
-        
-        mobileJoinButton: {
-            [theme.breakpoints.down('sm')]: {
-                padding: '18px 20px',
-                fontSize: '15px'
-            }
-        },
-        
-        mobileHomeworkButton: {
-            [theme.breakpoints.down('sm')]: {
-                padding: '18px 20px',
-                fontSize: '15px'
-            }
         }
     };
 });
@@ -447,12 +590,64 @@ const StudentWelcome: React.FC<IProps> = ({
     student,
     onJoinLesson,
     onViewHomework,
+    onViewLeaderboard,
     uncompletedCount = 0,
     theme = 'dark',
-    onThemeChange
+    onThemeChange,
+    micPermission = 'prompt',
+    videoPermission = 'prompt',
+    onRequestMic,
+    onRequestVideo
 }) => {
     const { classes } = useStyles();
+    const [shouldPulseMic, setShouldPulseMic] = useState(false);
+    const [shouldPulseCamera, setShouldPulseCamera] = useState(false);
+
     const teacherName = student.teacher || student.teacherName || 'Роман';
+    
+    const activeSubjects = student.subjects 
+        ? Object.entries(student.subjects)
+            .filter(([_, isActive]) => isActive)
+            .map(([subject]) => subject)
+        : [];
+
+    const handleJoinClick = () => {
+        // Check if permissions are granted
+        if (micPermission !== 'granted' || videoPermission !== 'granted') {
+            // Pulse the buttons that need attention
+            if (micPermission !== 'granted') {
+                setShouldPulseMic(true);
+                setTimeout(() => setShouldPulseMic(false), 3000);
+            }
+            if (videoPermission !== 'granted') {
+                setShouldPulseCamera(true);
+                setTimeout(() => setShouldPulseCamera(false), 3000);
+            }
+            return;
+        }
+
+        onJoinLesson();
+    };
+
+    const getMicIcon = () => {
+        if (micPermission === 'granted') {
+            return IconVideo; // Using available icons
+        } else if (micPermission === 'denied') {
+            return IconVideo; // Would ideally be MicOff icon
+        } else {
+            return IconVideo;
+        }
+    };
+
+    const getCameraIcon = () => {
+        if (videoPermission === 'granted') {
+            return IconVideo;
+        } else if (videoPermission === 'denied') {
+            return IconVideo;
+        } else {
+            return IconVideo;
+        }
+    };
 
     return (
         <div className = { classes.container }>
@@ -487,7 +682,7 @@ const StudentWelcome: React.FC<IProps> = ({
 
                 {/* Content section */}
                 <div className = { classes.content }>
-                    {/* Teacher Info Card */}
+                    {/* Student Info Card */}
                     <div className = { classes.infoCard }>
                         <div className = { classes.teacherInfo }>
                             <div className = { classes.teacherIconWrapper }>
@@ -495,21 +690,31 @@ const StudentWelcome: React.FC<IProps> = ({
                                     size = { 20 }
                                     src = { IconUsers } />
                             </div>
-                            <span className = { classes.teacherText }>Твой преподаватель:</span>
+                            <span className = { classes.teacherText }>Твой учитель:</span>
                             <span className = { classes.teacherName }>{teacherName}</span>
                         </div>
-                    </div>
 
-                    {/* Action Buttons */}
-                    <div className = { classes.buttonContainer }>
-                        {/* Homework Button with Badge */}
+                        {activeSubjects.length > 0 && (
+                            <div className = { classes.subjectsWrapper }>
+                                <div className = { classes.subjectIcon }>
+                                    <Icon
+                                        size = { 20 }
+                                        src = { IconMessage } />
+                                </div>
+                                <span className = { classes.subjectsLabel }>Твои предметы:</span>
+                                {activeSubjects.map((subject) => (
+                                    <span key = { subject } className = { classes.subjectBadge }>
+                                        {subject}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Homework Button */}
                         <div className = { classes.homeworkButtonWrapper }>
                             <button
                                 className = { classes.homeworkButton }
-                                onClick = { () => {
-                                    console.log('Homework clicked!');
-                                    onViewHomework();
-                                } }
+                                onClick = { onViewHomework }
                                 type = 'button'>
                                 <div className = { classes.icon }>
                                     <Icon
@@ -523,21 +728,85 @@ const StudentWelcome: React.FC<IProps> = ({
                             )}
                         </div>
 
-                        {/* Join Lesson Button - Primary */}
-                        <button
-                            className = { classes.joinButton }
-                            onClick = { () => {
-                                console.log('Join lesson clicked!');
-                                onJoinLesson();
-                            } }
-                            type = 'button'>
-                            <div className = { classes.icon }>
-                                <Icon
-                                    size = { 20 }
-                                    src = { IconVideo } />
+                        {/* Leaderboard Button */}
+                        {onViewLeaderboard && (
+                            <div className = { classes.homeworkButtonWrapper }>
+                                <button
+                                    className = { classes.leaderboardButton }
+                                    onClick = { onViewLeaderboard }
+                                    type = 'button'>
+                                    <span>🏆</span>
+                                    <span>Рейтинг студентов</span>
+                                </button>
                             </div>
-                            <span>Присоединиться к уроку</span>
-                        </button>
+                        )}
+                    </div>
+
+                    {/* Join Button with Permission Toggles */}
+                    <div className = { classes.joinSection }>
+                        <div className = { classes.joinButtonWrapper }>
+                            <button
+                                className = { classes.joinButton }
+                                onClick = { handleJoinClick }
+                                type = 'button'>
+                                <div className = { classes.joinButtonLeft }>
+                                    <div className = { classes.joinButtonIcon }>
+                                        <Icon
+                                            size = { 20 }
+                                            src = { IconVideo } />
+                                    </div>
+                                    <div className = { classes.joinButtonText }>
+                                        <span className = { classes.joinButtonTitle }>Войти на урок</span>
+                                        <span className = { classes.joinButtonSubtitle }>
+                                            Подключиться к {teacherName}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Permission Toggles */}
+                                <div className = { classes.permissionToggles } onClick = { (e) => e.stopPropagation() }>
+                                    {/* Microphone */}
+                                    <button
+                                        className = { `${classes.permissionButton} ${
+                                            micPermission === 'granted' ? classes.permissionGranted :
+                                            micPermission === 'denied' ? classes.permissionDenied :
+                                            ''
+                                        } ${shouldPulseMic ? classes.permissionPulse : ''}` }
+                                        onClick = { onRequestMic }
+                                        disabled = { micPermission === 'granted' || micPermission === 'checking' }
+                                        type = 'button'
+                                        title = {
+                                            micPermission === 'granted' ? 'Микрофон разрешён ✓' :
+                                            micPermission === 'denied' ? 'Включить микрофон' :
+                                            'Разрешить микрофон'
+                                        }>
+                                        <Icon
+                                            size = { 16 }
+                                            src = { getMicIcon() } />
+                                    </button>
+
+                                    {/* Camera */}
+                                    <button
+                                        className = { `${classes.permissionButton} ${
+                                            videoPermission === 'granted' ? classes.permissionGranted :
+                                            videoPermission === 'denied' ? classes.permissionDenied :
+                                            ''
+                                        } ${shouldPulseCamera ? classes.permissionPulse : ''}` }
+                                        onClick = { onRequestVideo }
+                                        disabled = { videoPermission === 'granted' || videoPermission === 'checking' }
+                                        type = 'button'
+                                        title = {
+                                            videoPermission === 'granted' ? 'Камера разрешена ✓' :
+                                            videoPermission === 'denied' ? 'Включить камеру' :
+                                            'Разрешить камеру'
+                                        }>
+                                        <Icon
+                                            size = { 16 }
+                                            src = { getCameraIcon() } />
+                                    </button>
+                                </div>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

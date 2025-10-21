@@ -27,6 +27,7 @@ interface IStudentData {
     teacher?: string;
     teacherName?: string;
     teacherUid?: string;
+    teacherEmail?: string;  // NEW: Store teacher's email
 }
 
 interface IPageProps {
@@ -54,9 +55,10 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
     }, [propStudentId]);
 
     const loadStudentData = async () => {
-        // Get student ID from props or URL query parameter
+        // Get student ID and teacherEmail from props or URL query parameter
         const params = new URLSearchParams(window.location.search);
-        const studentId = propStudentId || params.get('student');
+        const studentId = propStudentId || params.get('student') || params.get('studentId');
+        const teacherEmail = params.get('teacherEmail') || '';
 
         if (!studentId) {
             setError('Student not found');
@@ -66,22 +68,49 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
         }
 
         try {
-            // Try shared 'students' collection first
-            const sharedDoc = await getDoc(doc(db, 'students', studentId));
             let studentData: IStudentData | null = null;
 
-            if (sharedDoc.exists()) {
-                const data = sharedDoc.data();
+            // Determine which collection to check based on teacherEmail
+            const SHARED_TEACHERS = ['romanvolkonidov@gmail.com', 'violetta6520@gmail.com'];
+            const isSharedCollection = !teacherEmail || SHARED_TEACHERS.includes(teacherEmail);
 
-                studentData = {
-                    id: sharedDoc.id,
-                    name: data.name || 'Student',
-                    teacher: data.teacher || data.teacherName,
-                    teacherName: data.teacherName || data.teacher,
-                    teacherUid: data.teacherUid
-                };
+            if (isSharedCollection) {
+                // Try shared 'students' collection
+                const sharedDoc = await getDoc(doc(db, 'students', studentId));
+
+                if (sharedDoc.exists()) {
+                    const data = sharedDoc.data();
+
+                    studentData = {
+                        id: sharedDoc.id,
+                        name: data.name || 'Student',
+                        teacher: data.teacher || data.teacherName,
+                        teacherName: data.teacherName || data.teacher,
+                        teacherUid: data.teacherUid,
+                        teacherEmail: data.teacherEmail || teacherEmail
+                    };
+                }
             } else {
-                // Try 'teacherStudents' collection
+                // Try teacher-specific collection
+                const collectionName = `students_${teacherEmail}`;
+                const teacherDoc = await getDoc(doc(db, collectionName, studentId));
+
+                if (teacherDoc.exists()) {
+                    const data = teacherDoc.data();
+
+                    studentData = {
+                        id: teacherDoc.id,
+                        name: data.name || 'Student',
+                        teacher: data.teacher || data.teacherName,
+                        teacherName: data.teacherName || data.teacher,
+                        teacherUid: data.teacherUid,
+                        teacherEmail: data.teacherEmail || teacherEmail
+                    };
+                }
+            }
+
+            // Fallback: try 'teacherStudents' collection (legacy)
+            if (!studentData) {
                 const teacherDoc = await getDoc(doc(db, 'teacherStudents', studentId));
 
                 if (teacherDoc.exists()) {
@@ -92,7 +121,8 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
                         name: data.name || 'Student',
                         teacher: data.teacher || data.teacherName,
                         teacherName: data.teacherName || data.teacher,
-                        teacherUid: data.teacherUid
+                        teacherUid: data.teacherUid,
+                        teacherEmail: data.teacherEmail || teacherEmail
                     };
                 }
             }
@@ -144,9 +174,16 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
         localStorage.setItem('teacherFirstName', teacherFirstName);
         localStorage.setItem('teacherRoomId', teacherRoom);
 
-        // Redirect to Jitsi room (native lobby will handle entry)
-        console.log('Redirecting to:', `/${teacherRoom}`);
-        window.location.href = `/${teacherRoom}`;
+        // Store student name for prejoin page (Jitsi will use this as display name)
+        localStorage.setItem('studentName', student.name);
+        localStorage.setItem('studentId', student.id);
+
+        // Redirect to Jitsi room with student name in URL config
+        // Jitsi prejoin page will show camera/mic preview before joining
+        const roomUrl = `/${teacherRoom}#config.prejoinPageEnabled=true&userInfo.displayName=${encodeURIComponent(student.name)}`;
+
+        console.log('Redirecting to prejoin:', roomUrl);
+        window.location.href = roomUrl;
     };
 
     const handleViewHomework = () => {
@@ -159,10 +196,27 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
         }
 
         // Navigate to homework page
-        const homeworkUrl = `/student-homework.html?studentId=${encodeURIComponent(student.id)}`;
+        const homeworkUrl = `/static/student-homework.html?studentId=${encodeURIComponent(student.id)}`;
 
         console.log('Redirecting to:', homeworkUrl);
         window.location.href = homeworkUrl;
+    };
+
+    const handleViewLeaderboard = () => {
+        console.log('handleViewLeaderboard called, student:', student);
+
+        if (!student) {
+            console.error('No student data available');
+
+            return;
+        }
+
+        // Navigate to leaderboard page with teacherEmail
+        const teacherEmail = student.teacherEmail || '';
+        const leaderboardUrl = `/static/student-leaderboard.html?studentId=${encodeURIComponent(student.id)}&teacherEmail=${encodeURIComponent(teacherEmail)}`;
+
+        console.log('Redirecting to:', leaderboardUrl);
+        window.location.href = leaderboardUrl;
     };
 
     const handleThemeChange = (newTheme: 'dark' | 'light') => {
@@ -204,6 +258,7 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
             onJoinLesson = { handleJoinLesson }
             onThemeChange = { handleThemeChange }
             onViewHomework = { handleViewHomework }
+            onViewLeaderboard = { handleViewLeaderboard }
             student = { student }
             theme = { theme }
             uncompletedCount = { uncompletedCount } />

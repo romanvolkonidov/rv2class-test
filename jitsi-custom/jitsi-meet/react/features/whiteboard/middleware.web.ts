@@ -1,4 +1,19 @@
-import { generateCollaborationLinkData } from '@jitsi/excalidraw';
+// Lazy load Excalidraw utils
+let generateCollaborationLinkData: any;
+
+const loadExcalidrawUtils = async () => {
+    if (!generateCollaborationLinkData) {
+        try {
+            const module = await import('@jitsi/excalidraw');
+            generateCollaborationLinkData = module.generateCollaborationLinkData;
+        } catch (error) {
+            console.error('Failed to load Excalidraw utils:', error);
+            generateCollaborationLinkData = () => ({ roomId: '', roomKey: '' });
+        }
+    }
+    return generateCollaborationLinkData;
+};
+
 import { AnyAction } from 'redux';
 
 import { IStore } from '../app/types';
@@ -142,7 +157,8 @@ function raiseWhiteboardNotification(status: WhiteboardStatus) {
  */
 async function setNewWhiteboardOpen(store: IStore) {
     const { dispatch, getState } = store;
-    const collabLinkData = await generateCollaborationLinkData();
+    const generateFn = await loadExcalidrawUtils();
+    const collabLinkData = await generateFn();
     const state = getState();
     const conference = getCurrentConference(state);
     const collabServerUrl = generateCollabServerUrl(state);

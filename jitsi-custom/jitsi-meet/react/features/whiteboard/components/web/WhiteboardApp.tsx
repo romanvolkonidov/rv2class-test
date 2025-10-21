@@ -1,4 +1,20 @@
-import { generateCollaborationLinkData } from '@jitsi/excalidraw';
+// Lazy load Excalidraw to prevent blocking on initial load
+let generateCollaborationLinkData: any;
+
+const loadExcalidrawUtils = async () => {
+    if (!generateCollaborationLinkData) {
+        try {
+            const module = await import('@jitsi/excalidraw');
+            generateCollaborationLinkData = module.generateCollaborationLinkData;
+        } catch (error) {
+            console.error('Failed to load Excalidraw utils:', error);
+            // Provide fallback function
+            generateCollaborationLinkData = () => ({ roomId: '', roomKey: '' });
+        }
+    }
+    return generateCollaborationLinkData;
+};
+
 import React, { ComponentType } from 'react';
 
 import BaseApp from '../../../base/app/components/BaseApp';
@@ -33,7 +49,8 @@ export default class WhiteboardApp extends BaseApp<any> {
 
         if (!roomId && !roomKey) {
             try {
-                const collabDetails = await generateCollaborationLinkData();
+                const generateFn = await loadExcalidrawUtils();
+                const collabDetails = await generateFn();
 
                 roomId = collabDetails.roomId;
                 roomKey = collabDetails.roomKey;

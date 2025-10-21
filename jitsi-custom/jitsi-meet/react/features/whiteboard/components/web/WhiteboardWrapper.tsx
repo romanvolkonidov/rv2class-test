@@ -1,6 +1,16 @@
-import { ExcalidrawApp } from '@jitsi/excalidraw';
+// Lazy load Excalidraw to prevent blocking
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import i18next from 'i18next';
-import React, { useCallback, useRef } from 'react';
+
+const loadExcalidrawApp = async () => {
+    try {
+        const module = await import('@jitsi/excalidraw');
+        return module.ExcalidrawApp;
+    } catch (error) {
+        console.error('Failed to load Excalidraw:', error);
+        return null;
+    }
+};
 
 import { WHITEBOARD_UI_OPTIONS } from '../../constants';
 
@@ -26,6 +36,16 @@ const WhiteboardWrapper = ({
     const excalidrawRef = useRef<any>(null);
     const excalidrawAPIRef = useRef<any>(null);
     const collabAPIRef = useRef<any>(null);
+    const [ ExcalidrawApp, setExcalidrawApp ] = useState<any>(null);
+
+    // Lazy load Excalidraw when component mounts
+    useEffect(() => {
+        loadExcalidrawApp().then(app => {
+            if (app) {
+                setExcalidrawApp(() => app);
+            }
+        });
+    }, []);
 
     const getExcalidrawAPI = useCallback(excalidrawAPI => {
         if (excalidrawAPIRef.current) {
@@ -45,21 +65,34 @@ const WhiteboardWrapper = ({
     return (
         <div className = { className }>
             <div className = 'excalidraw-wrapper'>
-                <ExcalidrawApp
-                    collabDetails = { collabDetails }
-                    collabServerUrl = { collabServerUrl }
-                    detectScroll = { true }
-                    excalidraw = {{
-                        isCollaborating: true,
-                        langCode: i18next.language,
+                {ExcalidrawApp ? (
+                    <ExcalidrawApp
+                        collabDetails = { collabDetails }
+                        collabServerUrl = { collabServerUrl }
+                        detectScroll = { true }
+                        excalidraw = {{
+                            isCollaborating: true,
+                            langCode: i18next.language,
 
-                        // @ts-ignore
-                        ref: excalidrawRef,
-                        theme: 'light',
-                        UIOptions: WHITEBOARD_UI_OPTIONS
-                    }}
-                    getCollabAPI = { getCollabAPI }
-                    getExcalidrawAPI = { getExcalidrawAPI } />
+                            // @ts-ignore
+                            ref: excalidrawRef,
+                            theme: 'light',
+                            UIOptions: WHITEBOARD_UI_OPTIONS
+                        }}
+                        getCollabAPI = { getCollabAPI }
+                        getExcalidrawAPI = { getExcalidrawAPI } />
+                ) : (
+                    <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        height: '100%',
+                        color: '#fff',
+                        fontSize: '18px'
+                    }}>
+                        Loading whiteboard...
+                    </div>
+                )}
             </div>
 
 

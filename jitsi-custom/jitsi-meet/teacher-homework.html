@@ -1,11 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#1E1E1E" />
-    
-    <title>Мои задания - RV2Class</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Homework - RV2Class</title>
     
     <link rel="stylesheet" href="css/all.css" />
     
@@ -17,7 +15,7 @@
         }
         #react {
             width: 100%;
-            height: 100vh;
+            min-height: 100vh;
         }
     </style>
 </head>
@@ -36,10 +34,10 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Render the student homework entry point
+            // Render the teacher homework review entry point
             if (window.JitsiMeetJS && window.JitsiMeetJS.app) {
                 window.JitsiMeetJS.app.renderEntryPoint({
-                    Component: window.JitsiMeetJS.app.entryPoints.STUDENT_HOMEWORK,
+                    Component: window.JitsiMeetJS.app.entryPoints.TEACHER_HOMEWORK,
                     props: {},
                     elementId: 'react'
                 });
@@ -47,7 +45,7 @@
                 console.error('JitsiMeetJS not loaded');
                 document.getElementById('react').innerHTML = `
                     <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; font-size: 18px; color: #E15350;">
-                        Ошибка загрузки приложения
+                        Error loading application
                     </div>
                 `;
             }

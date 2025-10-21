@@ -145,6 +145,44 @@ const useStyles = makeStyles()(theme => ({
             transform: 'translateY(-2px)',
             boxShadow: '0 8px 20px rgba(16, 185, 129, 0.4)'
         }
+    },
+    homeworkButton: {
+        flex: 1,
+        padding: '16px',
+        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+        color: 'white',
+        border: 'none',
+        borderRadius: '8px',
+        fontSize: '15px',
+        fontWeight: 600,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+        position: 'relative',
+        '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 8px 20px rgba(245, 158, 11, 0.4)'
+        }
+    },
+    homeworkBadge: {
+        position: 'absolute',
+        top: '-8px',
+        right: '-8px',
+        background: '#ef4444',
+        color: 'white',
+        borderRadius: '50%',
+        width: '24px',
+        height: '24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '12px',
+        fontWeight: 700,
+        boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
+        border: '2px solid #292929'
     }
 }));
 
@@ -162,6 +200,7 @@ const TeacherAuthPage = () => {
     const [signingIn, setSigningIn] = useState(false);
     const [error, setError] = useState('');
     const [firebaseReady, setFirebaseReady] = useState(false);
+    const [unseenHomeworkCount, setUnseenHomeworkCount] = useState(0);
 
     useEffect(() => {
         // Load Firebase scripts
@@ -279,8 +318,62 @@ const TeacherAuthPage = () => {
     };
 
     const handleViewStudents = () => {
-        window.location.href = '/static/students.html';
+        window.location.href = '/students.html';
     };
+
+    const handleViewHomework = () => {
+        window.location.href = '/teacher-homework.html';
+    };
+
+    const loadUnseenHomeworkCount = async () => {
+        if (!firebaseReady) return;
+        
+        try {
+            // Load Firestore dynamically
+            if (!(window as any).firebaseFirestore) {
+                const firestoreScript = document.createElement('script');
+                firestoreScript.type = 'module';
+                firestoreScript.textContent = `
+                    import * as firebaseFirestore from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+                    window.firebaseFirestore = firebaseFirestore;
+                    window.dispatchEvent(new Event('firestoreLoaded'));
+                `;
+                document.head.appendChild(firestoreScript);
+
+                await new Promise((resolve) => {
+                    window.addEventListener('firestoreLoaded', resolve, { once: true });
+                });
+            }
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004",
+                authDomain: "tracking-budget-app.firebaseapp.com",
+                databaseURL: "https://tracking-budget-app-default-rtdb.firebaseio.com",
+                projectId: "tracking-budget-app",
+                storageBucket: "tracking-budget-app.appspot.com",
+                messagingSenderId: "912992088190",
+                appId: "1:912992088190:web:926c8826b3bc39e2eb282f"
+            };
+
+            const app = window.firebaseApp(firebaseConfig);
+            const db = (window as any).firebaseFirestore.getFirestore(app);
+            const q = (window as any).firebaseFirestore.query(
+                (window as any).firebaseFirestore.collection(db, 'homeworkReports'),
+                (window as any).firebaseFirestore.where('seenByTeacher', '==', false)
+            );
+            const querySnapshot = await (window as any).firebaseFirestore.getDocs(q);
+            
+            setUnseenHomeworkCount(querySnapshot.size);
+        } catch (err) {
+            console.error('Error loading homework count:', err);
+        }
+    };
+
+    useEffect(() => {
+        if (user && firebaseReady) {
+            loadUnseenHomeworkCount();
+        }
+    }, [user, firebaseReady]);
 
     if (loading) {
         return (
@@ -357,6 +450,23 @@ const TeacherAuthPage = () => {
                             <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                         </svg>
                         Students
+                    </button>
+                </div>
+
+                <div className={classes.actionButtons} style={{ marginTop: '12px' }}>
+                    <button 
+                        className={classes.homeworkButton}
+                        onClick={handleViewHomework}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                        Homework
+                        {unseenHomeworkCount > 0 && (
+                            <span className={classes.homeworkBadge}>
+                                {unseenHomeworkCount}
+                            </span>
+                        )}
                     </button>
                 </div>
             </div>
