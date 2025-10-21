@@ -34,6 +34,11 @@ interface IProps {
     loading: boolean;
 
     /**
+     * Student's overall rating percentage (0-100).
+     */
+    rating?: number | null;
+
+    /**
      * Function to navigate back.
      */
     onBack: () => void;
@@ -71,6 +76,7 @@ function StudentHomeworkList({
     assignments,
     reports,
     loading,
+    rating,
     onBack,
     onStartHomework,
     onViewResults,
@@ -169,6 +175,29 @@ function StudentHomeworkList({
                             <p>Complete your assignments to improve your skills</p>
                         </div>
                     </div>
+
+                    {/* Rating Display */}
+                    {rating !== null && rating !== undefined && (
+                        <div className = 'homework-rating-section'>
+                            <div className = 'homework-rating-badge'>
+                                <Icon
+                                    size = { 24 }
+                                    src = { IconTrophy } />
+                                <div className = 'rating-content'>
+                                    <div className = 'rating-value'>{rating}%</div>
+                                    <div className = 'rating-label'>Overall Rating</div>
+                                </div>
+                            </div>
+                            <button
+                                className = 'homework-leaderboard-button'
+                                onClick = { () => window.location.href = `/student-leaderboard.html?student=${studentId}` }>
+                                <Icon
+                                    size = { 16 }
+                                    src = { IconTrophy } />
+                                <span>View Leaderboard</span>
+                            </button>
+                        </div>
+                    )}
 
                     {/* Stats */}
                     <div className = 'homework-stats'>
