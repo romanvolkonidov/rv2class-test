@@ -266,7 +266,7 @@ const PreMeetingScreen = ({
                     }}>
                         <img
                             alt = "RV2Class"
-                            src = "/images/logo-white.png"
+                            src = "/images/logo-white-tight.png"
                             style = {{
                                 width: '120px',
                                 height: 'auto'

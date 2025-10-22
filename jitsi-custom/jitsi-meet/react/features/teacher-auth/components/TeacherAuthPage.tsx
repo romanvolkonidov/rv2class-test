@@ -408,7 +408,7 @@ const TeacherAuthPage = () => {
             <div className={classes.container}>
                 <div className={classes.content}>
                     <img 
-                        src="/images/logo-white.png" 
+                        src="/images/logo-white-tight.png" 
                         alt="RV2Class" 
                         style={{ width: '150px', marginBottom: '12px' }}
                     />

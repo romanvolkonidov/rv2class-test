@@ -292,20 +292,22 @@ const useStyles = makeStyles()(theme => {
 
         badge: {
             position: 'absolute',
-            top: '-8px',
-            right: '-8px',
-            background: '#ef4444',
+            top: '-10px',
+            right: '-10px',
+            background: '#dc2626',
             color: '#ffffff',
             borderRadius: '50%',
-            width: '28px',
-            height: '28px',
+            minWidth: '32px',
+            height: '32px',
+            padding: '0 6px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '13px',
+            fontSize: '14px',
             fontWeight: 700,
-            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
-            border: '2px solid #292929'
+            boxShadow: '0 4px 12px rgba(220, 38, 38, 0.5)',
+            border: '3px solid #292929',
+            zIndex: 10
         },
 
         joinSection: {
@@ -467,6 +469,15 @@ const useStyles = makeStyles()(theme => {
             }
         },
 
+        '@keyframes pulse': {
+            '0%, 100%': {
+                opacity: 1
+            },
+            '50%': {
+                opacity: 0.7
+            }
+        },
+
         icon: {
             display: 'flex',
             alignItems: 'center',
@@ -549,13 +560,13 @@ const StudentWelcome: React.FC<IProps> = ({
                 <div className = { classes.header }>
                     <div className = { classes.headerContent }>
                         <img 
-                            src="/images/logo-white.png" 
+                            src="/images/logo-white-tight.png" 
                             alt="RV2Class" 
                             style={{ 
-                                width: '200px',
-                                height: '200px',
+                                width: '120px',
+                                height: 'auto',
                                 flexShrink: 0,
-                                margin: '-60px -40px'
+                                marginRight: '24px'
                             }}
                         />
                         <div style={{ flex: 1 }}>

@@ -57,7 +57,7 @@ const SubjectText = () => {
                 <img
                     alt = "RV2Class"
                     className = { classes.logo }
-                    src = "/images/logo-white.png" />
+                    src = "/images/logo-white-tight.png" />
             </div>
         );
     }
@@ -67,7 +67,7 @@ const SubjectText = () => {
             <img
                 alt = "RV2Class"
                 className = { classes.logo }
-                src = "/images/logo-white.png" />
+                src = "/images/logo-white-tight.png" />
             <Tooltip
                 content = { subject }
                 position = 'bottom'>

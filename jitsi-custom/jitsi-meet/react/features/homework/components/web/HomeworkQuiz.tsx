@@ -11,11 +11,17 @@ interface IQuestion {
     id: string;
     text: string;
     type: string;
-    correctAnswer?: string;
+    correctAnswer?: string | number;
     choices?: string[];
     options?: string[];
     mediaFiles?: any[];
     sentence?: string;
+    question?: string;
+    mediaUrl?: string;
+    mediaType?: string;
+    audioUrl?: string;
+    videoUrl?: string;
+    imageUrl?: string;
 }
 
 interface IProps {
@@ -175,7 +181,7 @@ function HomeworkQuiz({
                 }}>
                     <img
                         alt = "RV2Class"
-                        src = "/images/logo-white.png"
+                        src = "/images/logo-white-tight.png"
                         style = {{
                             width: '150px',
                             height: 'auto'
@@ -276,7 +282,7 @@ function HomeworkQuiz({
 
                         {/* Answer options */}
                         <div className = 'question-answers'>
-                            {(currentQuestion.type === 'multiple_choice' || currentQuestion.options) && (currentQuestion.choices || currentQuestion.options) && (
+                            {(currentQuestion.type === 'multiple_choice' || currentQuestion.type === 'multipleChoice' || currentQuestion.options) && (currentQuestion.choices || currentQuestion.options) && (
                                 <div className = 'answer-choices'>
                                     {(currentQuestion.options || currentQuestion.choices || []).map((choice, index) => (
                                         <button
@@ -296,7 +302,7 @@ function HomeworkQuiz({
                                 </div>
                             )}
 
-                            {currentQuestion.type === 'text' && (
+                            {(currentQuestion.type === 'text' || currentQuestion.type === 'textAnswer' || currentQuestion.type === 'fillInBlank' || (!currentQuestion.options && !currentQuestion.choices)) && (
                                 <div className = 'answer-text-input'>
                                     <textarea
                                         onChange = { (e) => handleAnswerChange(currentQuestion.id, e.target.value) }

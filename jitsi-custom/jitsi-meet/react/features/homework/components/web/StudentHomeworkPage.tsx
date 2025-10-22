@@ -130,21 +130,21 @@ const StudentHomeworkPageInner: React.FC<IPageProps> = ({ studentId: propStudent
         }
 
         // Go back to welcome page
-        window.location.href = `/student-welcome.html?student=${encodeURIComponent(student.id)}`;
+        window.location.href = `/static/student-welcome.html?studentId=${encodeURIComponent(student.id)}`;
     };
 
     const handleStartHomework = (homeworkId: string) => {
         console.log('Starting homework:', homeworkId);
 
         // Navigate to homework quiz page
-        window.location.href = `/homework-quiz.html?homework=${encodeURIComponent(homeworkId)}&student=${encodeURIComponent(student.id)}`;
+        window.location.href = `/static/homework-quiz.html?homework=${encodeURIComponent(homeworkId)}&student=${encodeURIComponent(student.id)}`;
     };
 
     const handleViewResults = (homeworkId: string) => {
         console.log('Viewing results for homework:', homeworkId);
 
         // Navigate to homework results page
-        window.location.href = `/homework-results.html?homework=${encodeURIComponent(homeworkId)}&student=${encodeURIComponent(student.id)}`;
+        window.location.href = `/static/homework-results.html?homework=${encodeURIComponent(homeworkId)}&student=${encodeURIComponent(student.id)}`;
     };
 
     const handleThemeChange = (newTheme: 'dark' | 'light') => {

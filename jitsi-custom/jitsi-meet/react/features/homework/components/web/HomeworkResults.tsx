@@ -297,7 +297,7 @@ const HomeworkResults: React.FC<IProps> = ({
             }}>
                 <img
                     alt = "RV2Class"
-                    src = "/images/logo-white.png"
+                    src = "/images/logo-white-tight.png"
                     style = {{
                         width: '150px',
                         height: 'auto'
@@ -357,33 +357,281 @@ const HomeworkResults: React.FC<IProps> = ({
                         <h3 className = { classes.detailsTitle }>Подробные результаты</h3>
                         <div className = { classes.questionsList }>
                             {questions.map((question, index) => {
-                                const userAnswer = answers[question.id];
-                                const isCorrect = userAnswer === question.correctAnswer;
+                                // Get student's answer from submittedAnswers array
+                                const submittedAnswerObj = report.submittedAnswers?.find(
+                                    (a: any) => a.questionId === question.id
+                                );
+                                const submittedAnswer = submittedAnswerObj?.answer;
+                                
+                                // Determine if answer is correct (matching rv2class logic)
+                                let isCorrect = false;
+                                
+                                // If correctAnswer is a number, it might be an index into the options array
+                                if (typeof question.correctAnswer === 'number' && question.options) {
+                                    const correctOption = question.options[question.correctAnswer];
+                                    if (typeof submittedAnswer === 'number') {
+                                        // Both are indices
+                                        isCorrect = submittedAnswer === question.correctAnswer;
+                                    } else {
+                                        // Compare submitted string with correct option text
+                                        const correctStr = String(correctOption || '').trim().toLowerCase();
+                                        const submittedStr = String(submittedAnswer || '').trim().toLowerCase();
+                                        isCorrect = correctStr === submittedStr;
+                                    }
+                                } else {
+                                    // Direct string comparison (for text answers or string-based correct answers)
+                                    const correctStr = String(question.correctAnswer || '').trim().toLowerCase();
+                                    const submittedStr = String(submittedAnswer || '').trim().toLowerCase();
+                                    isCorrect = correctStr === submittedStr;
+                                }
 
                                 return (
                                     <div
                                         className = { classes.questionItem }
-                                        key = { question.id }>
-                                        <div className = { isCorrect ? classes.questionIcon : classes.questionIconWrong }>
-                                            <Icon
-                                                size = { 20 }
-                                                src = { isCorrect ? IconCheck : IconCloseLarge } />
-                                        </div>
-                                        <div className = { classes.questionContent }>
-                                            <div className = { classes.questionText }>
-                                                <strong>{index + 1}.</strong> {question.text || question.sentence || 'Вопрос'}
+                                        key = { question.id }
+                                        style = {{ display: 'block' }}>
+                                        {/* Question Header */}
+                                        <div style = {{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
+                                            <div style = {{
+                                                backgroundColor: isCorrect ? '#10B981' : '#EF4444',
+                                                color: 'white',
+                                                padding: '4px 12px',
+                                                borderRadius: '8px',
+                                                fontWeight: 700,
+                                                fontSize: '14px',
+                                                minWidth: '32px',
+                                                textAlign: 'center'
+                                            }}>
+                                                {index + 1}
                                             </div>
-                                            <div className = { classes.questionAnswer }>
-                                                <span className = { isCorrect ? classes.correct : classes.incorrect }>
-                                                    Ваш ответ: {userAnswer || '(не выбран)'}
-                                                </span>
-                                                {!isCorrect && question.correctAnswer && (
-                                                    <span style = {{ marginLeft: '12px' }} className = { classes.correct }>
-                                                        Правильный ответ: {question.correctAnswer}
-                                                    </span>
+                                            <div style = {{ flex: 1 }}>
+                                                <div className = { classes.questionText }>
+                                                    {question.text || question.sentence || 'Вопрос'}
+                                                </div>
+                                            </div>
+                                            <div className = { isCorrect ? classes.questionIcon : classes.questionIconWrong }>
+                                                <Icon
+                                                    size = { 24 }
+                                                    src = { isCorrect ? IconCheck : IconCloseLarge } />
+                                            </div>
+                                        </div>
+
+                                        {/* Media Display */}
+                                        {(question.imageUrl || question.audioUrl || question.videoUrl || question.mediaUrl) && (
+                                            <div style = {{ marginBottom: '16px', marginLeft: '44px' }}>
+                                                {(question.imageUrl || (question.mediaUrl && question.mediaFiles?.some((f: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(f)))) && (
+                                                    <img
+                                                        alt = "Question media"
+                                                        src = { question.imageUrl || question.mediaUrl }
+                                                        style = {{
+                                                            maxWidth: '100%',
+                                                            maxHeight: '300px',
+                                                            borderRadius: '8px',
+                                                            objectFit: 'contain'
+                                                        }} />
+                                                )}
+                                                {(question.audioUrl || (question.mediaUrl && question.mediaFiles?.some((f: string) => /\.(mp3|wav|ogg)$/i.test(f)))) && (
+                                                    <audio
+                                                        controls = { true }
+                                                        src = { question.audioUrl || question.mediaUrl }
+                                                        style = {{ width: '100%', maxWidth: '400px' }} />
+                                                )}
+                                                {(question.videoUrl || (question.mediaUrl && question.mediaFiles?.some((f: string) => /\.(mp4|webm|ogg)$/i.test(f)))) && (
+                                                    <video
+                                                        controls = { true }
+                                                        src = { question.videoUrl || question.mediaUrl }
+                                                        style = {{
+                                                            maxWidth: '100%',
+                                                            maxHeight: '300px',
+                                                            borderRadius: '8px'
+                                                        }} />
                                                 )}
                                             </div>
-                                        </div>
+                                        )}
+
+                                        {/* Multiple Choice Options */}
+                                        {question.options && question.options.length > 0 && (
+                                            <div style = {{ display: 'flex', flexDirection: 'column', gap: '8px', marginLeft: '44px' }}>
+                                                {question.options.map((option: string, optionIndex: number) => {
+                                                    // Handle both index-based and string-based correct answers
+                                                    let isThisCorrect = false;
+                                                    if (typeof question.correctAnswer === 'number') {
+                                                        isThisCorrect = question.correctAnswer === optionIndex;
+                                                    } else {
+                                                        isThisCorrect = String(question.correctAnswer).trim().toLowerCase() === String(option).trim().toLowerCase();
+                                                    }
+                                                    
+                                                    // Handle both index-based and string-based submitted answers
+                                                    let isThisSelected = false;
+                                                    if (typeof submittedAnswer === 'number') {
+                                                        isThisSelected = submittedAnswer === optionIndex;
+                                                    } else if (submittedAnswer !== undefined && submittedAnswer !== null && submittedAnswer !== '') {
+                                                        isThisSelected = String(submittedAnswer).trim().toLowerCase() === String(option).trim().toLowerCase();
+                                                    }
+                                                    
+                                                    let backgroundColor = 'transparent';
+                                                    let borderColor = '#4B5563';
+                                                    
+                                                    if (isThisCorrect) {
+                                                        backgroundColor = 'rgba(16, 185, 129, 0.1)';
+                                                        borderColor = '#10B981';
+                                                    } else if (isThisSelected && !isThisCorrect) {
+                                                        backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                                                        borderColor = '#EF4444';
+                                                    }
+
+                                                    return (
+                                                        <div
+                                                            key = { optionIndex }
+                                                            style = {{
+                                                                padding: '12px 16px',
+                                                                borderRadius: '8px',
+                                                                border: `2px solid ${borderColor}`,
+                                                                backgroundColor,
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
+                                                                alignItems: 'center'
+                                                            }}>
+                                                            <span style = {{ color: '#E5E7EB' }}>{option}</span>
+                                                            <div style = {{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                                                                {isThisSelected && (
+                                                                    <span style = {{
+                                                                        fontSize: '13px',
+                                                                        fontWeight: 700,
+                                                                        padding: '6px 12px',
+                                                                        borderRadius: '6px',
+                                                                        backgroundColor: isThisCorrect ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                                                        color: isThisCorrect ? '#10B981' : '#EF4444',
+                                                                        border: `2px solid ${isThisCorrect ? '#10B981' : '#EF4444'}`,
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '6px'
+                                                                    }}>
+                                                                        <Icon
+                                                                            size = { 16 }
+                                                                            src = { isThisCorrect ? IconCheck : IconCloseLarge } />
+                                                                        <strong>Ваш ответ</strong>
+                                                                    </span>
+                                                                )}
+                                                                {isThisCorrect && !isThisSelected && (
+                                                                    <span style = {{
+                                                                        fontSize: '13px',
+                                                                        fontWeight: 700,
+                                                                        padding: '6px 12px',
+                                                                        borderRadius: '6px',
+                                                                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                                                                        color: '#10B981',
+                                                                        border: '2px solid #10B981',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '6px'
+                                                                    }}>
+                                                                        <Icon
+                                                                            size = { 16 }
+                                                                            src = { IconCheck } />
+                                                                        <strong>Правильный ответ</strong>
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {/* Text Answer (for fill-in-blank or text questions) */}
+                                        {(!question.options || question.options.length === 0) && (
+                                            <div style = {{ marginLeft: '44px' }}>
+                                                <div style = {{
+                                                    padding: '12px 16px',
+                                                    borderRadius: '8px',
+                                                    border: `2px solid ${isCorrect ? '#10B981' : '#EF4444'}`,
+                                                    backgroundColor: isCorrect ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                    marginBottom: '8px'
+                                                }}>
+                                                    <div style = {{
+                                                        fontSize: '12px',
+                                                        fontWeight: 700,
+                                                        color: isCorrect ? '#10B981' : '#EF4444',
+                                                        marginBottom: '4px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px'
+                                                    }}>
+                                                        <Icon
+                                                            size = { 14 }
+                                                            src = { isCorrect ? IconCheck : IconCloseLarge } />
+                                                        Ваш ответ:
+                                                    </div>
+                                                    <div style = {{
+                                                        fontSize: '16px',
+                                                        fontWeight: 700,
+                                                        color: isCorrect ? '#10B981' : '#EF4444'
+                                                    }}>
+                                                        {submittedAnswer || '(не указан)'}
+                                                    </div>
+                                                </div>
+                                                {!isCorrect && (
+                                                    <div style = {{
+                                                        padding: '12px 16px',
+                                                        borderRadius: '8px',
+                                                        border: '2px solid #10B981',
+                                                        backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                                                    }}>
+                                                        <div style = {{
+                                                            fontSize: '12px',
+                                                            fontWeight: 700,
+                                                            color: '#10B981',
+                                                            marginBottom: '4px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '4px'
+                                                        }}>
+                                                            <Icon
+                                                                size = { 14 }
+                                                                src = { IconCheck } />
+                                                            Правильный ответ:
+                                                        </div>
+                                                        <div style = {{
+                                                            fontSize: '16px',
+                                                            fontWeight: 700,
+                                                            color: '#10B981'
+                                                        }}>
+                                                            {typeof question.correctAnswer === 'number' && question.options 
+                                                                ? question.options[question.correctAnswer] 
+                                                                : question.correctAnswer}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Explanation */}
+                                        {question.explanation && (
+                                            <div style = {{
+                                                marginTop: '12px',
+                                                marginLeft: '44px',
+                                                padding: '12px',
+                                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                                borderRadius: '8px',
+                                                border: '1px solid #3B82F6'
+                                            }}>
+                                                <div style = {{
+                                                    fontSize: '12px',
+                                                    fontWeight: 700,
+                                                    color: '#3B82F6',
+                                                    marginBottom: '4px'
+                                                }}>
+                                                    💡 Объяснение:
+                                                </div>
+                                                <div style = {{
+                                                    fontSize: '14px',
+                                                    color: '#9CA3AF'
+                                                }}>
+                                                    {question.explanation}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
