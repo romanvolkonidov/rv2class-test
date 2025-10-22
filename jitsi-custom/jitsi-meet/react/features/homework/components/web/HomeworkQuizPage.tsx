@@ -42,7 +42,7 @@ const HomeworkQuizPageInner: React.FC<IPageProps> = ({ homeworkId: propHomeworkI
         const homeworkId = propHomeworkId || params.get('homework');
         const studentId = propStudentId || params.get('student') || params.get('studentId');
 
-        console.log('Loading quiz:', { homeworkId, studentId });
+        console.log('Loading quiz:', { homeworkId, studentId, allParams: Object.fromEntries(params) });
 
         if (!homeworkId || !studentId) {
             setError('Homework ID or Student ID not provided');
@@ -64,10 +64,14 @@ const HomeworkQuizPageInner: React.FC<IPageProps> = ({ homeworkId: propHomeworkI
             let studentData: any = null;
             const sharedDoc = await db.collection('students').doc(studentId).get();
 
+            console.log('Checking students collection:', { exists: sharedDoc.exists, id: studentId });
+
             if (sharedDoc.exists) {
                 studentData = { id: sharedDoc.id, ...sharedDoc.data() };
             } else {
                 const teacherDoc = await db.collection('teacherStudents').doc(studentId).get();
+
+                console.log('Checking teacherStudents collection:', { exists: teacherDoc.exists, id: studentId });
 
                 if (teacherDoc.exists) {
                     studentData = { id: teacherDoc.id, ...teacherDoc.data() };
@@ -81,6 +85,7 @@ const HomeworkQuizPageInner: React.FC<IPageProps> = ({ homeworkId: propHomeworkI
                 return;
             }
 
+            console.log('Student loaded:', studentData);
             setStudent(studentData);
 
             // Load homework
@@ -95,20 +100,45 @@ const HomeworkQuizPageInner: React.FC<IPageProps> = ({ homeworkId: propHomeworkI
 
             const homeworkData = { id: homeworkDoc.id, ...homeworkDoc.data() };
 
+            // Get topicIds from homework (rv2class structure)
+            let topicIds = homeworkData.topicIds || [];
+            if (topicIds.length === 0 && homeworkData.topicId) {
+                topicIds = [homeworkData.topicId];
+            }
+
+            console.log('Homework loaded:', { 
+                id: homeworkData.id, 
+                topicIds: topicIds
+            });
             setHomework(homeworkData);
 
-            // Load questions
-            const questionsSnapshot = await db.collection('telegramAssignmentQuestions')
-                .where('assignmentId', '==', homeworkId)
-                .get();
+            // Load questions from telegramQuestions collection by topicId (rv2class structure)
+            const allQuestions: any[] = [];
             
-            const questionsData = questionsSnapshot.docs.map((doc: any) => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            for (const topicId of topicIds) {
+                console.log('Querying questions for topicId:', topicId);
+                const questionsSnapshot = await db.collection('telegramQuestions')
+                    .where('topicId', '==', topicId)
+                    .get();
+                
+                const topicQuestions = questionsSnapshot.docs.map((doc: any) => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                console.log(`Found ${topicQuestions.length} questions for topic ${topicId}`);
+                allQuestions.push(...topicQuestions);
+            }
 
-            console.log('Questions loaded:', questionsData.length);
-            setQuestions(questionsData);
+            // Sort by order field to maintain correct sequence
+            allQuestions.sort((a, b) => {
+                const orderA = a.order ?? 999999;
+                const orderB = b.order ?? 999999;
+                return orderA - orderB;
+            });
+
+            console.log('Total questions loaded:', allQuestions.length);
+            setQuestions(allQuestions);
 
             setLoading(false);
 

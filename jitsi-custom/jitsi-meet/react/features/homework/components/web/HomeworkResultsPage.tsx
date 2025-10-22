@@ -95,6 +95,12 @@ const HomeworkResultsPageInner: React.FC<IPageProps> = ({ homeworkId: propHomewo
 
             const homeworkData = { id: homeworkDoc.id, ...homeworkDoc.data() };
 
+            // Get topicIds from homework (rv2class structure)
+            let topicIds = homeworkData.topicIds || [];
+            if (topicIds.length === 0 && homeworkData.topicId) {
+                topicIds = [homeworkData.topicId];
+            }
+
             setHomework(homeworkData);
 
             // Load report
@@ -117,17 +123,30 @@ const HomeworkResultsPageInner: React.FC<IPageProps> = ({ homeworkId: propHomewo
 
             setReport(reportData);
 
-            // Load questions for detailed results
-            const questionsSnapshot = await db.collection('telegramAssignmentQuestions')
-                .where('assignmentId', '==', homeworkId)
-                .get();
+            // Load questions from telegramQuestions collection by topicId (rv2class structure)
+            const allQuestions: any[] = [];
             
-            const questionsData = questionsSnapshot.docs.map((doc: any) => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            for (const topicId of topicIds) {
+                const questionsSnapshot = await db.collection('telegramQuestions')
+                    .where('topicId', '==', topicId)
+                    .get();
+                
+                const topicQuestions = questionsSnapshot.docs.map((doc: any) => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                allQuestions.push(...topicQuestions);
+            }
 
-            setQuestions(questionsData);
+            // Sort by order field to maintain correct sequence
+            allQuestions.sort((a, b) => {
+                const orderA = a.order ?? 999999;
+                const orderB = b.order ?? 999999;
+                return orderA - orderB;
+            });
+
+            setQuestions(allQuestions);
 
             setLoading(false);
 

@@ -13,6 +13,7 @@ interface IQuestion {
     type: string;
     correctAnswer?: string;
     choices?: string[];
+    options?: string[];
     mediaFiles?: any[];
     sentence?: string;
 }
@@ -275,9 +276,9 @@ function HomeworkQuiz({
 
                         {/* Answer options */}
                         <div className = 'question-answers'>
-                            {currentQuestion.type === 'multiple_choice' && currentQuestion.choices && (
+                            {(currentQuestion.type === 'multiple_choice' || currentQuestion.options) && (currentQuestion.choices || currentQuestion.options) && (
                                 <div className = 'answer-choices'>
-                                    {currentQuestion.choices.map((choice, index) => (
+                                    {(currentQuestion.options || currentQuestion.choices || []).map((choice, index) => (
                                         <button
                                             className = { `answer-choice ${answers[currentQuestion.id] === choice ? 'selected' : ''}` }
                                             key = { index }

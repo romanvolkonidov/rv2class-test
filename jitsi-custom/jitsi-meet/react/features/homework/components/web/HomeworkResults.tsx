@@ -23,7 +23,7 @@ const useStyles = makeStyles()(theme => {
         },
 
         backButton: {
-            padding: theme.spacing(1.5),
+            padding: theme.spacing(2),
             backgroundColor: theme.palette.ui02,
             border: 'none',
             borderRadius: theme.shape.borderRadius,
@@ -120,7 +120,7 @@ const useStyles = makeStyles()(theme => {
             ...theme.typography.heading6,
             color: theme.palette.text01,
             fontWeight: 700,
-            marginBottom: theme.spacing(0.5)
+            marginBottom: theme.spacing(1)
         },
 
         statLabel: {
