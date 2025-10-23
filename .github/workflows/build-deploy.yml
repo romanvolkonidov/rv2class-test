@@ -41,25 +41,25 @@ jobs:
         name: rv2class-build
         path: rv2class-build.tar.gz
         retention-days: 7
+    
+    - name: Setup SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
         
-    - name: Deploy to server via SSH Action
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.SERVER_IP }}
-        username: root
-        password: ${{ secrets.SERVER_PASSWORD }}
-        source: "rv2class-build.tar.gz"
-        target: "/tmp/"
+    - name: Deploy to server via SCP
+      run: |
+        scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+          rv2class-build.tar.gz root@${{ secrets.SERVER_IP }}:/tmp/
         
     - name: Execute deployment commands
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SERVER_IP }}
-        username: root
-        password: ${{ secrets.SERVER_PASSWORD }}
-        script: |
+      run: |
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+          root@${{ secrets.SERVER_IP }} << 'DEPLOY'
           cd /usr/share/jitsi-meet
-          echo "� Backing up current version..."
+          echo "📦 Backing up current version..."
           tar -czf /tmp/backup-$(date +%Y%m%d-%H%M%S).tar.gz . 2>/dev/null || true
           
           echo "🚀 Extracting new build..."
@@ -73,3 +73,4 @@ jobs:
           
           echo "✅ Deployment complete!"
           ls -lh libs/app.bundle.min.js 2>/dev/null || echo "Bundle file check failed"
+        DEPLOY
