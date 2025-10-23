@@ -25,15 +25,15 @@
     <script>
         // Initialize the React app
         document.addEventListener('DOMContentLoaded', () => {
-            const globalNS = window.JitsiMeetJS || window;
-            if (globalNS.renderEntryPoint && globalNS.entryPoints) {
+            const globalNS = window.JitsiMeetJS && window.JitsiMeetJS.app;
+            if (globalNS && globalNS.renderEntryPoint && globalNS.entryPoints) {
                 globalNS.renderEntryPoint({
                     Component: globalNS.entryPoints.APP,
                     props: {},
                     elementId: 'react'
                 });
             } else {
-                console.error('JitsiMeetJS not properly loaded');
+                console.error('JitsiMeetJS.app not properly loaded', globalNS);
             }
         });
     </script>
