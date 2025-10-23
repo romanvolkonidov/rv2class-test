@@ -10,19 +10,14 @@ import './subscriber.any';
  * Helper function to send video dimensions to parent window
  */
 function sendVideoDimensionsToParent() {
+    // Skip if not in iframe
+    if (window.parent === window) {
+        return true;  // Return true to stop retries
+    }
+    
     const largeVideo = document.getElementById('largeVideo') as HTMLVideoElement;
     
-    console.log('🔍 Checking video dimensions:', {
-        elementExists: !!largeVideo,
-        videoWidth: largeVideo?.videoWidth,
-        videoHeight: largeVideo?.videoHeight,
-        clientWidth: largeVideo?.clientWidth,
-        clientHeight: largeVideo?.clientHeight,
-        isInIframe: window.parent !== window,
-        readyState: largeVideo?.readyState
-    });
-    
-    if (largeVideo && largeVideo.videoWidth > 0 && window.parent !== window) {
+    if (largeVideo && largeVideo.videoWidth > 0) {
         window.parent.postMessage({
             type: 'JITSI_VIDEO_DIMENSIONS',
             videoWidth: largeVideo.videoWidth,
@@ -30,12 +25,6 @@ function sendVideoDimensionsToParent() {
             displayWidth: largeVideo.clientWidth,
             displayHeight: largeVideo.clientHeight
         }, '*');
-        console.log('📤 Sent video dimensions to parent:', {
-            videoWidth: largeVideo.videoWidth,
-            videoHeight: largeVideo.videoHeight,
-            displayWidth: largeVideo.clientWidth,
-            displayHeight: largeVideo.clientHeight
-        });
         return true;
     }
     return false;

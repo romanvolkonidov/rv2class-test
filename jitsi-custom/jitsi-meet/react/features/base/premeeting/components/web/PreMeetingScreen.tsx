@@ -147,9 +147,13 @@ const useStyles = makeStyles()(theme => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'stretch',
-            justifyContent: 'center',
-            margin: 'auto',
-            width: '100%'
+            justifyContent: 'flex-start',
+            marginTop: '80px',
+            width: '100%',
+            
+            '@media (max-width: 720px)': {
+                marginTop: '40px'
+            }
         },
         paddedContent: {
             display: 'flex',
