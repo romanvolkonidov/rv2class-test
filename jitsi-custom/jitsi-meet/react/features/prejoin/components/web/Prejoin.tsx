@@ -159,7 +159,8 @@ const useStyles = makeStyles()(theme => {
             width: '100%',
             padding: `${theme.spacing(3)} 0`,
             boxSizing: 'border-box',
-            justifyContent: 'flex-start'
+            justifyContent: 'center',
+            minHeight: theme.spacing(25)
         },
 
         avatar: {

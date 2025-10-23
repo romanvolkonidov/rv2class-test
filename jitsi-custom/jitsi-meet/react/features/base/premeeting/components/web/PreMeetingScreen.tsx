@@ -147,12 +147,17 @@ const useStyles = makeStyles()(theme => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'stretch',
-            justifyContent: 'flex-start',
-            marginTop: '120px',
+            justifyContent: 'space-between',
             width: '100%',
-            
+            flexGrow: 1,
+            paddingTop: theme.spacing(8),
+            paddingBottom: theme.spacing(4),
+            gap: theme.spacing(4),
+
             '@media (max-width: 720px)': {
-                marginTop: '60px'
+                paddingTop: theme.spacing(5),
+                paddingBottom: theme.spacing(3),
+                gap: theme.spacing(3)
             }
         },
         paddedContent: {
