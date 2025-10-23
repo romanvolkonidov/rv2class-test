@@ -1,14 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html itemscope itemtype="http://schema.org/Product" prefix="og: http://ogp.me/ns#">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RV2Class - Redirecting...</title>
+    <base href="/" />
+    <meta charset="utf-8">
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#111111">
+    
+    <title>RV2Class</title>
+    
+    <link rel="icon" type="image/png" href="images/favicon.ico">
+    <link rel="stylesheet" href="css/all.css">
+    <link rel="manifest" id="manifest-placeholder">
+    
     <script>
-        window.location.href = '/auth-page.html';
+        window.EXCALIDRAW_ASSET_PATH = 'libs/';
     </script>
+    
+    <script src="config.js"></script>
+    <script src="interface_config.js"></script>
+    <script src="libs/lib-jitsi-meet.min.js"></script>
+    <script src="libs/app.bundle.min.js"></script>
 </head>
 <body>
-    <p>Redirecting to login...</p>
+    <div id="react"></div>
+    <div id="modal-dialog-root"></div>
 </body>
 </html>
