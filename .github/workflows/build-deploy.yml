@@ -47,6 +47,23 @@ jobs:
         sudo apt-get update -qq
         sudo apt-get install -y sshpass
         
+    - name: Configure SSH for password auth
+      run: |
+        # Remove any existing SSH keys
+        rm -rf ~/.ssh/id_* ~/.ssh/deploy_key* 2>/dev/null || true
+        
+        # Create SSH config to force password authentication
+        mkdir -p ~/.ssh
+        cat > ~/.ssh/config << 'EOF'
+        Host *
+          StrictHostKeyChecking no
+          UserKnownHostsFile /dev/null
+          PreferredAuthentications password
+          PubkeyAuthentication no
+          PasswordAuthentication yes
+        EOF
+        chmod 600 ~/.ssh/config
+        
     - name: Deploy to server
       env:
         SERVER_IP: ${{ secrets.SERVER_IP }}
