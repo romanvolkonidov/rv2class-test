@@ -158,11 +158,11 @@ const useStyles = makeStyles()(theme => {
             flexDirection: 'column',
             width: '100%',
             padding: `${theme.spacing(3)} 0`,
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            justifyContent: 'flex-start'
         },
 
         avatar: {
-            marginTop: theme.spacing(2),
             marginBottom: theme.spacing(3),
             flexShrink: 0
         },
