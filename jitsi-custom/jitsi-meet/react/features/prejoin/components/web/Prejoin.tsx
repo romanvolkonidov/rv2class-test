@@ -155,11 +155,16 @@ const useStyles = makeStyles()(theme => {
         avatarContainer: {
             display: 'flex',
             alignItems: 'center',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            width: '100%',
+            padding: `${theme.spacing(3)} 0`,
+            boxSizing: 'border-box'
         },
 
         avatar: {
-            margin: `${theme.spacing(2)} auto ${theme.spacing(3)}`
+            marginTop: theme.spacing(2),
+            marginBottom: theme.spacing(3),
+            flexShrink: 0
         },
 
         avatarName: {
