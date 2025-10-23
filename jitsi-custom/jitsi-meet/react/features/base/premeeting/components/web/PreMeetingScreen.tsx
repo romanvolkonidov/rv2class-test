@@ -148,11 +148,11 @@ const useStyles = makeStyles()(theme => {
             flexDirection: 'column',
             alignItems: 'stretch',
             justifyContent: 'flex-start',
-            marginTop: '80px',
+            marginTop: '120px',
             width: '100%',
             
             '@media (max-width: 720px)': {
-                marginTop: '40px'
+                marginTop: '60px'
             }
         },
         paddedContent: {
