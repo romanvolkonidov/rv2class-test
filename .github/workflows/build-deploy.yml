@@ -1,0 +1,76 @@
+name: Build and Deploy RV2Class
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: |
+        cd jitsi-custom/jitsi-meet
+        npm ci --legacy-peer-deps
+        
+    - name: Build production bundle
+      run: |
+        cd jitsi-custom/jitsi-meet
+        NODE_OPTIONS="--max-old-space-size=8192" make
+        
+    - name: Create deployment package
+      run: |
+        cd jitsi-custom/jitsi-meet
+        tar -czf ../../rv2class-build.tar.gz \
+          css/ images/ libs/ fonts/ sounds/ lang/ static/ \
+          *.html *.js *.css
+          
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: rv2class-build
+        path: rv2class-build.tar.gz
+        retention-days: 7
+        
+    - name: Deploy to server
+      env:
+        SERVER_IP: ${{ secrets.SERVER_IP }}
+        SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+      run: |
+        # Install sshpass
+        sudo apt-get update -qq
+        sudo apt-get install -y sshpass
+        
+        # Upload build to server
+        sshpass -p "$SERVER_PASSWORD" scp -o StrictHostKeyChecking=no \
+          rv2class-build.tar.gz root@$SERVER_IP:/tmp/
+        
+        # Deploy on server
+        sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no \
+          root@$SERVER_IP << 'DEPLOY'
+        cd /usr/share/jitsi-meet
+        echo "📦 Backing up current version..."
+        tar -czf /tmp/backup-$(date +%Y%m%d-%H%M%S).tar.gz .
+        
+        echo "🚀 Extracting new build..."
+        tar -xzf /tmp/rv2class-build.tar.gz
+        
+        echo "🔒 Setting permissions..."
+        chown -R www-data:www-data .
+        
+        echo "🔄 Restarting nginx..."
+        systemctl restart nginx
+        
+        echo "✅ Deployment complete!"
+        ls -lh libs/app.bundle.min.js
+        DEPLOY
