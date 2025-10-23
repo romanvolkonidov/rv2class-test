@@ -42,44 +42,37 @@ jobs:
         path: rv2class-build.tar.gz
         retention-days: 7
         
-    - name: Install sshpass
-      run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y sshpass
+    - name: Deploy to server via SSH Action
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: root
+        password: ${{ secrets.SERVER_PASSWORD }}
+        source: "rv2class-build.tar.gz"
+        target: "/tmp/"
         
-    - name: Configure SSH for password auth
-      run: |
-        # Remove any existing SSH keys
-        rm -rf ~/.ssh/id_* ~/.ssh/deploy_key* 2>/dev/null || true
-        
-        # Disable SSH agent
-        unset SSH_AUTH_SOCK
-        unset SSH_AGENT_PID
-        
-        # Create SSH wrapper script
-        cat > /tmp/ssh-no-keys.sh << 'EOF'
-#!/bin/bash
-exec /usr/bin/ssh -o IdentitiesOnly=yes -o IdentityFile=/dev/null "$@"
-EOF
-        chmod +x /tmp/ssh-no-keys.sh
-        
-    - name: Deploy to server
-      env:
-        SERVER_IP: ${{ secrets.SERVER_IP }}
-        SSHPASS: ${{ secrets.SERVER_PASSWORD }}
-        GIT_SSH_COMMAND: /tmp/ssh-no-keys.sh
-      run: |
-        echo "🚀 Deploying to production server..."
-        echo "✅ Secrets verified. Deploying to: $SERVER_IP"
-        
-        # Test connection first
-        echo "Testing SSH connection..."
-        sshpass -e ssh -o StrictHostKeyChecking=no \
-          -o IdentitiesOnly=yes \
-          -o IdentityFile=/dev/null \
-          -o PreferredAuthentications=password \
-          -o PubkeyAuthentication=no \
-          root@$SERVER_IP "echo '✅ SSH connection successful!'"
+    - name: Execute deployment commands
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: root
+        password: ${{ secrets.SERVER_PASSWORD }}
+        script: |
+          cd /usr/share/jitsi-meet
+          echo "� Backing up current version..."
+          tar -czf /tmp/backup-$(date +%Y%m%d-%H%M%S).tar.gz . 2>/dev/null || true
+          
+          echo "🚀 Extracting new build..."
+          tar -xzf /tmp/rv2class-build.tar.gz
+          
+          echo "🔒 Setting permissions..."
+          chown -R www-data:www-data .
+          
+          echo "🔄 Restarting nginx..."
+          systemctl restart nginx
+          
+          echo "✅ Deployment complete!"
+          ls -lh libs/app.bundle.min.js 2>/dev/null || echo "Bundle file check failed"
         
         # Upload build to server
         echo "Uploading build package..."
