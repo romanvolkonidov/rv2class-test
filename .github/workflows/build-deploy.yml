@@ -57,10 +57,14 @@ jobs:
         
         # Upload build to server
         sshpass -p "$SERVER_PASSWORD" scp -o StrictHostKeyChecking=no \
+          -o PreferredAuthentications=password \
+          -o PubkeyAuthentication=no \
           rv2class-build.tar.gz root@$SERVER_IP:/tmp/
         
         # Deploy on server
         sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no \
+          -o PreferredAuthentications=password \
+          -o PubkeyAuthentication=no \
           root@$SERVER_IP << 'DEPLOY'
         cd /usr/share/jitsi-meet
         echo "📦 Backing up current version..."
