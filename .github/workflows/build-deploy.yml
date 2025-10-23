@@ -52,39 +52,48 @@ jobs:
         # Remove any existing SSH keys
         rm -rf ~/.ssh/id_* ~/.ssh/deploy_key* 2>/dev/null || true
         
-        # Create SSH config to force password authentication
-        mkdir -p ~/.ssh
-        cat > ~/.ssh/config << 'EOF'
-        Host *
-          StrictHostKeyChecking no
-          UserKnownHostsFile /dev/null
-          PreferredAuthentications password
-          PubkeyAuthentication no
-          PasswordAuthentication yes
-        EOF
-        chmod 600 ~/.ssh/config
+        # Disable SSH agent
+        unset SSH_AUTH_SOCK
+        unset SSH_AGENT_PID
+        
+        # Create SSH wrapper script
+        cat > /tmp/ssh-no-keys.sh << 'EOF'
+#!/bin/bash
+exec /usr/bin/ssh -o IdentitiesOnly=yes -o IdentityFile=/dev/null "$@"
+EOF
+        chmod +x /tmp/ssh-no-keys.sh
         
     - name: Deploy to server
       env:
         SERVER_IP: ${{ secrets.SERVER_IP }}
-        SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
         SSHPASS: ${{ secrets.SERVER_PASSWORD }}
+        GIT_SSH_COMMAND: /tmp/ssh-no-keys.sh
       run: |
         echo "🚀 Deploying to production server..."
         echo "✅ Secrets verified. Deploying to: $SERVER_IP"
         
-        # Upload build to server using SSHPASS env var
-        sshpass -e scp -o StrictHostKeyChecking=no \
+        # Test connection first
+        echo "Testing SSH connection..."
+        sshpass -e ssh -o StrictHostKeyChecking=no \
+          -o IdentitiesOnly=yes \
+          -o IdentityFile=/dev/null \
           -o PreferredAuthentications=password \
           -o PubkeyAuthentication=no \
-          -o NumberOfPasswordPrompts=1 \
+          root@$SERVER_IP "echo '✅ SSH connection successful!'"
+        
+        # Upload build to server
+        echo "Uploading build package..."
+        sshpass -e rsync -avz --progress \
+          -e "ssh -o StrictHostKeyChecking=no -o IdentitiesOnly=yes -o IdentityFile=/dev/null -o PreferredAuthentications=password -o PubkeyAuthentication=no" \
           rv2class-build.tar.gz root@$SERVER_IP:/tmp/
         
         # Deploy on server
+        echo "Deploying on server..."
         sshpass -e ssh -o StrictHostKeyChecking=no \
+          -o IdentitiesOnly=yes \
+          -o IdentityFile=/dev/null \
           -o PreferredAuthentications=password \
           -o PubkeyAuthentication=no \
-          -o NumberOfPasswordPrompts=1 \
           root@$SERVER_IP << 'DEPLOY'
         cd /usr/share/jitsi-meet
         echo "📦 Backing up current version..."
