@@ -32,8 +32,33 @@
     <!-- Main App Bundle -->
     <script src="libs/app.bundle.min.js"></script>
     
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import * as firebaseAuth from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        
+        window.firebaseApp = initializeApp;
+        window.firebaseAuth = firebaseAuth;
+        window.dispatchEvent(new Event('firebaseLoaded'));
+        console.log('✅ Firebase modules loaded');
+    </script>
+    
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // Wait for Firebase to load before rendering
+        window.addEventListener('firebaseLoaded', () => {
+            console.log('Firebase ready, initializing app...');
+            initializeApp();
+        });
+        
+        function initializeApp() {
+            document.addEventListener('DOMContentLoaded', renderApp);
+            if (document.readyState === 'loading') {
+                return;
+            }
+            renderApp();
+        }
+        
+        function renderApp() {
             console.log('DOM loaded');
             console.log('JitsiMeetJS:', window.JitsiMeetJS);
             console.log('JitsiMeetJS.app:', window.JitsiMeetJS?.app);
@@ -56,7 +81,7 @@
                     </div>
                 `;
             }
-        });
+        }
     </script>
 </body>
 </html>

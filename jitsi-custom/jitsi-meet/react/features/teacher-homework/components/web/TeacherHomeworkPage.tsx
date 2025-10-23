@@ -552,27 +552,59 @@ const TeacherHomeworkPage: React.FC = () => {
                 console.log('📊 Simple query result:', simpleSnapshot.docs.length, 'docs');
             }
 
-            // Get current teacher ID from multiple sources
-            const params = new URLSearchParams(window.location.search);
-            let teacherId = params.get('teacherId') || 
-                           localStorage.getItem('teacherId') || 
-                           sessionStorage.getItem('teacherId');
+            // Initialize Firebase Auth if not already initialized
+            let auth: any = null;
+            let teacherId: string | null = null;
+            let teacherEmail: string | null = null;
             
-            // Try to get from Firebase Auth if available
-            if (!teacherId && (window as any).firebaseAuth) {
+            if ((window as any).firebaseAuth && (window as any).firebaseApp) {
                 try {
-                    const auth = (window as any).firebaseAuth.getAuth();
+                    const firebaseConfig = {
+                        apiKey: "AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004",
+                        authDomain: "tracking-budget-app.firebaseapp.com",
+                        databaseURL: "https://tracking-budget-app-default-rtdb.firebaseio.com",
+                        projectId: "tracking-budget-app",
+                        storageBucket: "tracking-budget-app.appspot.com",
+                        messagingSenderId: "912992088190",
+                        appId: "1:912992088190:web:926c8826b3bc39e2eb282f"
+                    };
+                    
+                    const app = (window as any).firebaseApp(firebaseConfig);
+                    auth = (window as any).firebaseAuth.getAuth(app);
+                    
+                    // Wait for auth state to be ready
+                    await new Promise((resolve) => {
+                        const unsubscribe = (window as any).firebaseAuth.onAuthStateChanged(auth, (user: any) => {
+                            unsubscribe();
+                            resolve(user);
+                        });
+                    });
+                    
                     const user = auth.currentUser;
                     if (user) {
                         teacherId = user.uid;
-                        console.log('✅ Got teacher ID from Firebase Auth:', teacherId);
+                        teacherEmail = user.email;
+                        console.log('✅ Got teacher from Firebase Auth:', { uid: teacherId, email: teacherEmail });
+                    } else {
+                        console.log('⚠️ No authenticated user found');
                     }
                 } catch (err) {
-                    console.log('⚠️ Could not get user from Firebase Auth:', err);
+                    console.error('❌ Error initializing Firebase Auth:', err);
                 }
+            } else {
+                console.log('⚠️ Firebase Auth not available');
             }
             
-            console.log('👨‍🏫 Current teacher ID:', teacherId);
+            // Fallback: try to get from URL params or localStorage
+            if (!teacherId) {
+                const params = new URLSearchParams(window.location.search);
+                teacherId = params.get('teacherId') || 
+                           localStorage.getItem('teacherId') || 
+                           sessionStorage.getItem('teacherId');
+                console.log('📍 Fallback teacher ID from URL/storage:', teacherId);
+            }
+            
+            console.log('👨‍🏫 Current teacher:', { id: teacherId, email: teacherEmail });
 
             if (!teacherId) {
                 console.warn('⚠️ No teacher ID found! Showing all homework (admin mode)');
@@ -585,7 +617,7 @@ const TeacherHomeworkPage: React.FC = () => {
             const teacherStudentIds = new Set<string>();
             
             if (teacherId) {
-                console.log('👥 Fetching teacher\'s students...');
+                console.log('👥 Fetching teacher\'s students from teacherStudents collection...');
                 const teacherStudentsSnapshot = await (window as any).firebaseFirestore.getDocs(
                     (window as any).firebaseFirestore.query(
                         (window as any).firebaseFirestore.collection(db, 'teacherStudents'),
@@ -601,10 +633,12 @@ const TeacherHomeworkPage: React.FC = () => {
                 console.log('✅ Loaded', teacherStudentIds.size, 'students from teacherStudents');
             }
 
-            // For Roman and Violet (admin teachers), also load shared students
-            const adminTeachers = ['ggWKiXIKlofbVfx7D6rq7REXRSJ3', 'violet-teacher-id']; // Replace with actual IDs
-            if (teacherId && adminTeachers.includes(teacherId)) {
-                console.log('👑 Admin teacher detected, loading shared students...');
+            // For Roman and Violet (special teachers), also load from shared 'students' collection
+            const specialTeacherEmails = ['romanvolkonidov@gmail.com', 'violet6520@gmail.com'];
+            const isSpecialTeacher = teacherEmail && specialTeacherEmails.includes(teacherEmail.toLowerCase());
+            
+            if (isSpecialTeacher) {
+                console.log('👑 Special teacher detected (' + teacherEmail + '), loading shared students from students collection...');
                 const sharedStudentsSnapshot = await (window as any).firebaseFirestore.getDocs(
                     (window as any).firebaseFirestore.collection(db, 'students')
                 );
