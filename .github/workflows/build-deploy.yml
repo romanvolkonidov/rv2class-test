@@ -68,20 +68,23 @@ jobs:
       env:
         SERVER_IP: ${{ secrets.SERVER_IP }}
         SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+        SSHPASS: ${{ secrets.SERVER_PASSWORD }}
       run: |
         echo "🚀 Deploying to production server..."
         echo "✅ Secrets verified. Deploying to: $SERVER_IP"
         
-        # Upload build to server
-        sshpass -p "$SERVER_PASSWORD" scp -o StrictHostKeyChecking=no \
+        # Upload build to server using SSHPASS env var
+        sshpass -e scp -o StrictHostKeyChecking=no \
           -o PreferredAuthentications=password \
           -o PubkeyAuthentication=no \
+          -o NumberOfPasswordPrompts=1 \
           rv2class-build.tar.gz root@$SERVER_IP:/tmp/
         
         # Deploy on server
-        sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no \
+        sshpass -e ssh -o StrictHostKeyChecking=no \
           -o PreferredAuthentications=password \
           -o PubkeyAuthentication=no \
+          -o NumberOfPasswordPrompts=1 \
           root@$SERVER_IP << 'DEPLOY'
         cd /usr/share/jitsi-meet
         echo "📦 Backing up current version..."
