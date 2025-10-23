@@ -46,14 +46,14 @@ jobs:
     - name: Setup SSH key
       run: |
         mkdir -p ~/.ssh
-        cat << 'EOF' > ~/.ssh/deploy_key
-        ${{ secrets.SSH_PRIVATE_KEY }}
-        EOF
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/deploy_key
         chmod 600 ~/.ssh/deploy_key
         chmod 700 ~/.ssh
         ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+        # Debug key format
+        head -1 ~/.ssh/deploy_key
         # Test the key
-        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@${{ secrets.SERVER_IP }} "echo 'SSH connection successful'"
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -vvv root@${{ secrets.SERVER_IP }} "echo 'SSH connection successful'" 2>&1 | grep -i "debug\|error\|permission" | head -20
         
     - name: Deploy to server via SCP
       run: |
