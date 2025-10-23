@@ -73,34 +73,3 @@ jobs:
           
           echo "✅ Deployment complete!"
           ls -lh libs/app.bundle.min.js 2>/dev/null || echo "Bundle file check failed"
-        
-        # Upload build to server
-        echo "Uploading build package..."
-        sshpass -e rsync -avz --progress \
-          -e "ssh -o StrictHostKeyChecking=no -o IdentitiesOnly=yes -o IdentityFile=/dev/null -o PreferredAuthentications=password -o PubkeyAuthentication=no" \
-          rv2class-build.tar.gz root@$SERVER_IP:/tmp/
-        
-        # Deploy on server
-        echo "Deploying on server..."
-        sshpass -e ssh -o StrictHostKeyChecking=no \
-          -o IdentitiesOnly=yes \
-          -o IdentityFile=/dev/null \
-          -o PreferredAuthentications=password \
-          -o PubkeyAuthentication=no \
-          root@$SERVER_IP << 'DEPLOY'
-        cd /usr/share/jitsi-meet
-        echo "📦 Backing up current version..."
-        tar -czf /tmp/backup-$(date +%Y%m%d-%H%M%S).tar.gz . 2>/dev/null || true
-        
-        echo "🚀 Extracting new build..."
-        tar -xzf /tmp/rv2class-build.tar.gz
-        
-        echo "🔒 Setting permissions..."
-        chown -R www-data:www-data .
-        
-        echo "🔄 Restarting nginx..."
-        systemctl restart nginx
-        
-        echo "✅ Deployment complete!"
-        ls -lh libs/app.bundle.min.js 2>/dev/null || echo "Bundle file check failed"
-        DEPLOY
