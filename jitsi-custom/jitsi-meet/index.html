@@ -21,6 +21,22 @@
     <script src="interface_config.js"></script>
     <script src="libs/lib-jitsi-meet.min.js"></script>
     <script src="libs/app.bundle.min.js"></script>
+    
+    <script>
+        // Initialize the React app
+        document.addEventListener('DOMContentLoaded', () => {
+            const globalNS = window.JitsiMeetJS || window;
+            if (globalNS.renderEntryPoint && globalNS.entryPoints) {
+                globalNS.renderEntryPoint({
+                    Component: globalNS.entryPoints.APP,
+                    props: {},
+                    elementId: 'react'
+                });
+            } else {
+                console.error('JitsiMeetJS not properly loaded');
+            }
+        });
+    </script>
 </head>
 <body>
     <div id="react"></div>
