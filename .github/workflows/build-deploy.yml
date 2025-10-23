@@ -33,7 +33,8 @@ jobs:
         cd jitsi-custom/jitsi-meet
         tar -czf ../../rv2class-build.tar.gz \
           css/ images/ libs/ fonts/ sounds/ lang/ static/ \
-          *.html *.js *.css
+          --exclude='*.map' \
+          $(find . -maxdepth 1 -name '*.html' -o -name '*.js' | grep -v node_modules)
           
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
