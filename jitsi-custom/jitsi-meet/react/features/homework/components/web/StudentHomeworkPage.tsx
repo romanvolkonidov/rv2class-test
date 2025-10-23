@@ -61,19 +61,70 @@ const StudentHomeworkPageInner: React.FC<IPageProps> = ({ studentId: propStudent
         }
 
         try {
-            // Load student info
-            let studentData: any = null;
-            const sharedDoc = await getDoc(doc(db, 'students', studentId));
-
-            if (sharedDoc.exists()) {
-                studentData = { id: sharedDoc.id, ...sharedDoc.data() };
-            } else {
-                const teacherDoc = await getDoc(doc(db, 'teacherStudents', studentId));
-
-                if (teacherDoc.exists()) {
-                    studentData = { id: teacherDoc.id, ...teacherDoc.data() };
+            // OPTIMIZED: Check cache first for student data
+            const cacheKey = `student_${studentId}`;
+            const cached = localStorage.getItem(cacheKey);
+            let cachedStudentData = null;
+            
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    // Cache valid for 5 minutes
+                    if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+                        cachedStudentData = parsed.data;
+                        console.log('Using cached student data');
+                    }
+                } catch (e) {
+                    console.log('Cache parse error, will fetch fresh data');
                 }
             }
+
+            // OPTIMIZED: Load all data in parallel
+            const [studentData, assignmentsSnapshot, reportsSnapshot] = await Promise.all([
+                // Load student info (use cache if available)
+                (async () => {
+                    if (cachedStudentData) {
+                        return cachedStudentData;
+                    }
+
+                    const sharedDoc = await getDoc(doc(db, 'students', studentId));
+
+                    if (sharedDoc.exists()) {
+                        const data = { id: sharedDoc.id, ...sharedDoc.data() };
+                        // Cache for future use
+                        localStorage.setItem(cacheKey, JSON.stringify({
+                            data,
+                            timestamp: Date.now()
+                        }));
+                        return data;
+                    }
+
+                    const teacherDoc = await getDoc(doc(db, 'teacherStudents', studentId));
+
+                    if (teacherDoc.exists()) {
+                        const data = { id: teacherDoc.id, ...teacherDoc.data() };
+                        // Cache for future use
+                        localStorage.setItem(cacheKey, JSON.stringify({
+                            data,
+                            timestamp: Date.now()
+                        }));
+                        return data;
+                    }
+
+                    return null;
+                })(),
+                // Load homework assignments
+                getDocs(query(
+                    collection(db, 'telegramAssignments'),
+                    where('studentId', '==', studentId),
+                    orderBy('assignedAt', 'desc')
+                )),
+                // Load homework reports
+                getDocs(query(
+                    collection(db, 'telegramHomeworkReports'),
+                    where('studentId', '==', studentId)
+                ))
+            ]);
 
             if (!studentData) {
                 setError('Student not found');
@@ -85,14 +136,6 @@ const StudentHomeworkPageInner: React.FC<IPageProps> = ({ studentId: propStudent
             console.log('Student loaded:', studentData);
             setStudent(studentData);
 
-            // Load homework assignments
-            const assignmentsRef = collection(db, 'telegramAssignments');
-            const assignmentsQuery = query(
-                assignmentsRef,
-                where('studentId', '==', studentId),
-                orderBy('assignedAt', 'desc')
-            );
-            const assignmentsSnapshot = await getDocs(assignmentsQuery);
             const assignmentsData = assignmentsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -101,10 +144,6 @@ const StudentHomeworkPageInner: React.FC<IPageProps> = ({ studentId: propStudent
             console.log('Assignments loaded:', assignmentsData.length);
             setAssignments(assignmentsData);
 
-            // Load homework reports
-            const reportsRef = collection(db, 'telegramHomeworkReports');
-            const reportsQuery = query(reportsRef, where('studentId', '==', studentId));
-            const reportsSnapshot = await getDocs(reportsQuery);
             const reportsData = reportsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()

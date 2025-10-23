@@ -61,6 +61,7 @@ import { useWhiteboardButton } from '../whiteboard/hooks';
 import { setFullScreen } from './actions.web';
 import DownloadButton from './components/DownloadButton';
 import HelpButton from './components/HelpButton';
+import SetTimerButton from './components/web/SetTimerButton';
 import AudioSettingsButton from './components/web/AudioSettingsButton';
 import CustomOptionButton from './components/web/CustomOptionButton';
 import FullscreenButton from './components/web/FullscreenButton';
@@ -170,6 +171,13 @@ const download = {
 const help = {
     key: 'help',
     Content: HelpButton,
+    group: 4
+};
+
+const timer = {
+    key: 'timer',
+    id: 'timer',
+    Content: SetTimerButton,
     group: 4
 };
 
@@ -316,8 +324,6 @@ export function useToolboxButtons(
     const _download = useDownloadButton();
     const _help = useHelpButton();
     const annotations = useAnnotationButton();
-    
-    console.log('🎨 Annotations button object:', annotations);
 
     const buttons: { [key in ToolbarButton]?: IToolboxButton; } = {
         microphone,
@@ -351,7 +357,8 @@ export function useToolboxButtons(
         embedmeeting: embed,
         feedback,
         download: _download,
-        help: _help
+        help: _help,
+        timer
     };
     const buttonKeys = Object.keys(buttons) as ToolbarButton[];
 
@@ -376,10 +383,7 @@ export function useToolboxButtons(
         ...buttons,
         ...customButtons
     };
-    
-    console.log('🎨 Final toolbar buttons:', Object.keys(result));
-    console.log('🎨 Annotations in result?', 'annotations' in result, result.annotations);
-    
+
     return result;
 }
 

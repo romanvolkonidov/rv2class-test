@@ -10,6 +10,7 @@ declare global {
         firebaseApp: any;
         firebaseDb: any;
         firebaseAuth: any;
+        firebase: any;
     }
 }
 
@@ -112,22 +113,43 @@ const HomeworkQuizPageInner: React.FC<IPageProps> = ({ homeworkId: propHomeworkI
             });
             setHomework(homeworkData);
 
-            // Load questions from telegramQuestions collection by topicId (rv2class structure)
-            const allQuestions: any[] = [];
+            // OPTIMIZED: Load questions in parallel or with 'in' query if few topics
+            let allQuestions: any[] = [];
             
-            for (const topicId of topicIds) {
-                console.log('Querying questions for topicId:', topicId);
+            if (topicIds.length === 0) {
+                console.log('No topics assigned to homework');
+            } else if (topicIds.length <= 10) {
+                // Use 'in' query for up to 10 topics (Firestore limit)
+                console.log('Using optimized "in" query for', topicIds.length, 'topics');
                 const questionsSnapshot = await db.collection('telegramQuestions')
-                    .where('topicId', '==', topicId)
+                    .where('topicId', 'in', topicIds)
                     .get();
                 
-                const topicQuestions = questionsSnapshot.docs.map((doc: any) => ({
+                allQuestions = questionsSnapshot.docs.map((doc: any) => ({
                     id: doc.id,
                     ...doc.data()
                 }));
                 
-                console.log(`Found ${topicQuestions.length} questions for topic ${topicId}`);
-                allQuestions.push(...topicQuestions);
+                console.log(`Found ${allQuestions.length} questions for ${topicIds.length} topics`);
+            } else {
+                // For more than 10 topics, use parallel queries
+                console.log('Using parallel queries for', topicIds.length, 'topics');
+                const questionPromises = topicIds.map((topicId: string) => 
+                    db.collection('telegramQuestions')
+                        .where('topicId', '==', topicId)
+                        .get()
+                );
+                
+                const snapshots = await Promise.all(questionPromises);
+                
+                snapshots.forEach((snapshot, index) => {
+                    const topicQuestions = snapshot.docs.map((doc: any) => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    console.log(`Found ${topicQuestions.length} questions for topic ${topicIds[index]}`);
+                    allQuestions.push(...topicQuestions);
+                });
             }
 
             // Sort by order field to maintain correct sequence
@@ -192,21 +214,37 @@ const HomeworkQuizPageInner: React.FC<IPageProps> = ({ homeworkId: propHomeworkI
 
             const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
 
+            // Convert answers object to array format for database
+            const submittedAnswers = Object.entries(answers).map(([questionId, answer]) => ({
+                questionId,
+                answer
+            }));
+
+            console.log('📊 Submission Summary:');
+            console.log(`   Total questions: ${totalQuestions}`);
+            console.log(`   Correct answers: ${correctAnswers}`);
+            console.log(`   Score: ${score}%`);
+            console.log(`   Submitted answers count: ${submittedAnswers.length}`);
+
             // Save report to Firebase
             const reportData = {
                 studentId: student.id,
                 homeworkId: homework.id,
-                answers,
+                score,
                 correctAnswers,
                 totalQuestions,
-                score,
+                submittedAnswers,
                 completedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+                completedVia: 'jitsi-web',
                 teacherId: homework.teacherId || student.teacherUid
             };
 
-            console.log('Saving report:', reportData);
+            console.log('💾 Saving report to database...');
+            console.log('   Sample submitted answer:', submittedAnswers[0]);
 
             await db.collection('telegramHomeworkReports').add(reportData);
+            
+            console.log('✅ Report saved successfully!');
 
             // Navigate to results
             window.location.href = `/static/homework-results.html?homework=${encodeURIComponent(homework.id)}&student=${encodeURIComponent(student.id)}&score=${score}`;

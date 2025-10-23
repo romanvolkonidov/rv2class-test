@@ -128,6 +128,12 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
                 }
             }
 
+            // OPTIMIZED: Load homework count in parallel with student data (if found)
+            const homeworkPromise = studentData ? db.collection('telegramAssignments')
+                .where('studentId', '==', studentId)
+                .where('completed', '==', false)
+                .get() : null;
+
             if (!studentData) {
                 setError('Student not found');
                 setLoading(false);
@@ -137,13 +143,12 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
 
             setStudent(studentData);
 
-            // Count uncompleted homework using compat API
-            const homeworkSnapshot = await db.collection('telegramAssignments')
-                .where('studentId', '==', studentId)
-                .where('completed', '==', false)
-                .get();
+            // Wait for homework count query if it was started
+            if (homeworkPromise) {
+                const homeworkSnapshot = await homeworkPromise;
+                setUncompletedCount(homeworkSnapshot.docs.length);
+            }
 
-            setUncompletedCount(homeworkSnapshot.docs.length);
             setLoading(false);
 
         } catch (err) {

@@ -34,8 +34,15 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded');
+            console.log('JitsiMeetJS:', window.JitsiMeetJS);
+            console.log('JitsiMeetJS.app:', window.JitsiMeetJS?.app);
+            console.log('entryPoints:', window.JitsiMeetJS?.app?.entryPoints);
+            console.log('TEACHER_HOMEWORK:', window.JitsiMeetJS?.app?.entryPoints?.TEACHER_HOMEWORK);
+            
             // Render the teacher homework review entry point
             if (window.JitsiMeetJS && window.JitsiMeetJS.app) {
+                console.log('Attempting to render TEACHER_HOMEWORK entrypoint');
                 window.JitsiMeetJS.app.renderEntryPoint({
                     Component: window.JitsiMeetJS.app.entryPoints.TEACHER_HOMEWORK,
                     props: {},
@@ -45,7 +52,7 @@
                 console.error('JitsiMeetJS not loaded');
                 document.getElementById('react').innerHTML = `
                     <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; font-size: 18px; color: #E15350;">
-                        Error loading application
+                        Error loading application. Check console for details.
                     </div>
                 `;
             }

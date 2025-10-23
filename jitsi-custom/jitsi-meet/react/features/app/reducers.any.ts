@@ -37,6 +37,7 @@ import '../google-api/reducer';
 import '../invite/reducer';
 import '../jaas/reducer';
 import '../large-video/reducer';
+import '../lesson-timer/reducer';
 import '../lobby/reducer';
 import '../notifications/reducer';
 import '../participants-pane/reducer';

@@ -14,7 +14,7 @@ const useStyles = makeStyles()(theme => {
             gap: '8px'
         },
         logo: {
-            height: '24px',
+            height: '40px',
             width: 'auto',
             marginLeft: '8px'
         },
@@ -50,32 +50,20 @@ const SubjectText = () => {
     const subject = useSelector(getConferenceName);
     const { classes } = useStyles();
 
-    // Hide room name for teacher rooms but show logo
+    // Hide for teacher rooms (logo now in TopLeftPanel)
     if (subject && subject.toLowerCase().startsWith('teacher')) {
-        return (
-            <div className = { classes.wrapper }>
-                <img
-                    alt = "RV2Class"
-                    className = { classes.logo }
-                    src = "/images/logo-white-tight.png" />
-            </div>
-        );
+        return null;
     }
 
+    // For other rooms, show room name without logo (logo in TopLeftPanel)
     return (
-        <div className = { classes.wrapper }>
-            <img
-                alt = "RV2Class"
-                className = { classes.logo }
-                src = "/images/logo-white-tight.png" />
-            <Tooltip
-                content = { subject }
-                position = 'bottom'>
-                <div className = { classes.container }>
-                    <div className = { clsx('subject-text--content', classes.content) }>{subject}</div>
-                </div>
-            </Tooltip>
-        </div>
+        <Tooltip
+            content = { subject }
+            position = 'bottom'>
+            <div className = { classes.container }>
+                <div className = { clsx('subject-text--content', classes.content) }>{subject}</div>
+            </div>
+        </Tooltip>
     );
 };
 

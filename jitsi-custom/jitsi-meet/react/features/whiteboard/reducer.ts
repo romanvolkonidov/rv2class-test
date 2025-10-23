@@ -1,6 +1,6 @@
 import ReducerRegistry from '../base/redux/ReducerRegistry';
 
-import { RESET_WHITEBOARD, SETUP_WHITEBOARD } from './actionTypes';
+import { RESET_WHITEBOARD, SET_WHITEBOARD_OPEN, SETUP_WHITEBOARD } from './actionTypes';
 
 export interface IWhiteboardState {
 
@@ -50,6 +50,12 @@ ReducerRegistry.register(
     'features/whiteboard',
     (state: IWhiteboardState = DEFAULT_STATE, action: IWhiteboardAction) => {
         switch (action.type) {
+        case SET_WHITEBOARD_OPEN: {
+            return {
+                ...state,
+                isOpen: action.isOpen || false
+            };
+        }
         case SETUP_WHITEBOARD: {
             return {
                 ...state,

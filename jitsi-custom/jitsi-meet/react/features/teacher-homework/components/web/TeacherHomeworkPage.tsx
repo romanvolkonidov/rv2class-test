@@ -31,10 +31,16 @@ interface HomeworkReport {
 const useStyles = makeStyles()(theme => ({
     container: {
         minHeight: '100vh',
+        height: '100vh',
         background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
         padding: '20px',
-        position: 'relative',
-        overflow: 'auto'
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'auto',
+        overflowY: 'scroll'
     },
     bgAnimation: {
         position: 'fixed',
@@ -477,9 +483,14 @@ const TeacherHomeworkPage: React.FC = () => {
     };
 
     const loadHomeworks = async () => {
-        if (!firebaseReady && !(window as any).firebaseFirestore) return;
+        console.log('📚 loadHomeworks called, firebaseReady:', firebaseReady);
+        if (!firebaseReady && !(window as any).firebaseFirestore) {
+            console.log('⚠️ Firebase not ready, returning');
+            return;
+        }
 
         setLoading(true);
+        console.log('🔄 Loading started...');
         try {
             const firebaseConfig = {
                 apiKey: "AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004",
@@ -491,30 +502,136 @@ const TeacherHomeworkPage: React.FC = () => {
                 appId: "1:912992088190:web:926c8826b3bc39e2eb282f"
             };
 
+            console.log('🔥 Initializing Firebase...');
             const app = (window as any).firebaseApp(firebaseConfig);
+            
+            // Initialize Firestore with settings
             const db = (window as any).firebaseFirestore.getFirestore(app);
+            
+            // Try to configure Firestore settings for better connectivity
+            try {
+                const settings = {
+                    experimentalForceLongPolling: true, // Use long-polling instead of WebSockets
+                    experimentalAutoDetectLongPolling: true
+                };
+                // Note: This might not work if already initialized
+                console.log('⚙️ Attempting to configure Firestore settings...');
+            } catch (err) {
+                console.log('⚠️ Could not set Firestore settings:', err);
+            }
+            
+            // Enable network (force online mode)
+            try {
+                await (window as any).firebaseFirestore.enableNetwork(db);
+                console.log('✅ Network enabled');
+            } catch (err) {
+                console.log('⚠️ Could not enable network:', err);
+            }
+            
+            console.log('✅ Firebase initialized, db:', !!db);
 
             // Get all homework reports
+            console.log('📥 Querying telegramHomeworkReports collection...');
+            
+            // First try without orderBy to see if that's causing issues
+            const reportsCollection = (window as any).firebaseFirestore.collection(db, 'telegramHomeworkReports');
+            console.log('📋 Collection reference created:', !!reportsCollection);
+            
             const reportsQuery = (window as any).firebaseFirestore.query(
-                (window as any).firebaseFirestore.collection(db, 'homeworkReports'),
+                reportsCollection,
                 (window as any).firebaseFirestore.orderBy('completedAt', 'desc')
             );
+            console.log('🔍 Executing query...');
             const reportsSnapshot = await (window as any).firebaseFirestore.getDocs(reportsQuery);
+            console.log('✅ Query complete, docs:', reportsSnapshot.docs.length);
+            
+            // If no docs, try without orderBy
+            if (reportsSnapshot.docs.length === 0) {
+                console.log('⚠️ No docs with orderBy, trying simple query...');
+                const simpleSnapshot = await (window as any).firebaseFirestore.getDocs(reportsCollection);
+                console.log('📊 Simple query result:', simpleSnapshot.docs.length, 'docs');
+            }
+
+            // Get current teacher ID from multiple sources
+            const params = new URLSearchParams(window.location.search);
+            let teacherId = params.get('teacherId') || 
+                           localStorage.getItem('teacherId') || 
+                           sessionStorage.getItem('teacherId');
+            
+            // Try to get from Firebase Auth if available
+            if (!teacherId && (window as any).firebaseAuth) {
+                try {
+                    const auth = (window as any).firebaseAuth.getAuth();
+                    const user = auth.currentUser;
+                    if (user) {
+                        teacherId = user.uid;
+                        console.log('✅ Got teacher ID from Firebase Auth:', teacherId);
+                    }
+                } catch (err) {
+                    console.log('⚠️ Could not get user from Firebase Auth:', err);
+                }
+            }
+            
+            console.log('👨‍🏫 Current teacher ID:', teacherId);
+
+            if (!teacherId) {
+                console.warn('⚠️ No teacher ID found! Showing all homework (admin mode)');
+                // If no teacherId, show message or fall back to showing all
+                // For now, we'll continue but could show an error instead
+            }
+
+            // Fetch teacher's students from teacherStudents collection
+            const studentMap = new Map();
+            const teacherStudentIds = new Set<string>();
+            
+            if (teacherId) {
+                console.log('👥 Fetching teacher\'s students...');
+                const teacherStudentsSnapshot = await (window as any).firebaseFirestore.getDocs(
+                    (window as any).firebaseFirestore.query(
+                        (window as any).firebaseFirestore.collection(db, 'teacherStudents'),
+                        (window as any).firebaseFirestore.where('teacherUid', '==', teacherId)
+                    )
+                );
+                
+                teacherStudentsSnapshot.docs.forEach((doc: any) => {
+                    const studentData = doc.data();
+                    studentMap.set(doc.id, studentData.name || 'Unknown Student');
+                    teacherStudentIds.add(doc.id);
+                });
+                console.log('✅ Loaded', teacherStudentIds.size, 'students from teacherStudents');
+            }
+
+            // For Roman and Violet (admin teachers), also load shared students
+            const adminTeachers = ['ggWKiXIKlofbVfx7D6rq7REXRSJ3', 'violet-teacher-id']; // Replace with actual IDs
+            if (teacherId && adminTeachers.includes(teacherId)) {
+                console.log('👑 Admin teacher detected, loading shared students...');
+                const sharedStudentsSnapshot = await (window as any).firebaseFirestore.getDocs(
+                    (window as any).firebaseFirestore.collection(db, 'students')
+                );
+                sharedStudentsSnapshot.docs.forEach((doc: any) => {
+                    const studentData = doc.data();
+                    if (!studentMap.has(doc.id)) {
+                        studentMap.set(doc.id, studentData.name || 'Unknown Student');
+                        teacherStudentIds.add(doc.id);
+                    }
+                });
+                console.log('✅ Total students (including shared):', teacherStudentIds.size);
+            }
 
             const homeworkData: HomeworkReport[] = [];
+            console.log('📄 Processing', reportsSnapshot.docs.length, 'homework reports...');
+            
             for (const docSnap of reportsSnapshot.docs) {
                 const data = docSnap.data();
                 
-                // Get student name
-                let studentName = 'Unknown Student';
-                if (data.studentId) {
-                    const studentDoc = await (window as any).firebaseFirestore.getDoc(
-                        (window as any).firebaseFirestore.doc(db, 'students', data.studentId)
-                    );
-                    if (studentDoc.exists()) {
-                        studentName = studentDoc.data().name || 'Unknown Student';
-                    }
+                // Only include homework from teacher's students
+                if (!teacherStudentIds.has(data.studentId)) {
+                    console.log('⏭️  Skipping homework from student not in teacher\'s list:', data.studentId);
+                    continue;
                 }
+                
+                // Get student name from map (instant lookup)
+                const studentName = studentMap.get(data.studentId) || 'Unknown Student';
 
                 homeworkData.push({
                     id: docSnap.id,
@@ -531,71 +648,33 @@ const TeacherHomeworkPage: React.FC = () => {
                 });
             }
 
+            console.log('📊 Total homework loaded for this teacher:', homeworkData.length);
             setHomeworks(homeworkData);
 
             // Mark all as seen
+            console.log('✓ Marking homework as seen...');
             for (const homework of homeworkData) {
                 if (!homework.seenByTeacher) {
                     await (window as any).firebaseFirestore.updateDoc(
-                        (window as any).firebaseFirestore.doc(db, 'homeworkReports', homework.id),
+                        (window as any).firebaseFirestore.doc(db, 'telegramHomeworkReports', homework.id),
                         { seenByTeacher: true }
                     );
                 }
             }
+            console.log('✅ All homework marked as seen');
         } catch (error) {
-            console.error('Error loading homeworks:', error);
+            console.error('❌ Error loading homeworks:', error);
         } finally {
+            console.log('🏁 Loading complete, setting loading=false');
             setLoading(false);
         }
     };
 
-    const handleViewReport = async (report: HomeworkReport) => {
-        setViewingReport(report);
-        setLoadingQuestions(true);
+    const handleViewReport = (report: HomeworkReport) => {
+        console.log('Viewing results for homework:', report.homeworkId, 'student:', report.studentId);
 
-        try {
-            const firebaseConfig = {
-                apiKey: "AIzaSyB_VsLZaaQ_m3WNVlPjfhy715BXo8ax004",
-                authDomain: "tracking-budget-app.firebaseapp.com",
-                databaseURL: "https://tracking-budget-app-default-rtdb.firebaseio.com",
-                projectId: "tracking-budget-app",
-                storageBucket: "tracking-budget-app.appspot.com",
-                messagingSenderId: "912992088190",
-                appId: "1:912992088190:web:926c8826b3bc39e2eb282f"
-            };
-
-            const app = (window as any).firebaseApp(firebaseConfig);
-            const db = (window as any).firebaseFirestore.getFirestore(app);
-
-            if (report.topicIds && report.topicIds.length > 0) {
-                const questions: Question[] = [];
-                
-                for (const topicId of report.topicIds) {
-                    const questionsQuery = (window as any).firebaseFirestore.query(
-                        (window as any).firebaseFirestore.collection(db, 'questions'),
-                        (window as any).firebaseFirestore.where('topicId', '==', topicId)
-                    );
-                    const questionsSnapshot = await (window as any).firebaseFirestore.getDocs(questionsQuery);
-                    
-                    questionsSnapshot.docs.forEach((doc: any) => {
-                        const data = doc.data();
-                        questions.push({
-                            id: doc.id,
-                            question: data.question,
-                            options: data.options,
-                            correctAnswer: data.correctAnswer,
-                            type: data.type || 'multiple-choice'
-                        });
-                    });
-                }
-
-                setViewingQuestions(questions);
-            }
-        } catch (error) {
-            console.error('Error loading questions:', error);
-        } finally {
-            setLoadingQuestions(false);
-        }
+        // Navigate to homework results page (same as student side)
+        window.location.href = `/static/homework-results.html?homework=${encodeURIComponent(report.homeworkId)}&student=${encodeURIComponent(report.studentId)}`;
     };
 
     const formatDate = (timestamp: any) => {

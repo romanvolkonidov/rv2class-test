@@ -121,22 +121,52 @@ const HomeworkResultsPageInner: React.FC<IPageProps> = ({ homeworkId: propHomewo
                 ...reportsSnapshot.docs[0].data()
             };
 
+            console.log('📊 Report data loaded:', {
+                reportId: reportData.id,
+                hasSubmittedAnswers: !!reportData.submittedAnswers,
+                hasAnswers: !!reportData.answers,
+                submittedAnswersLength: reportData.submittedAnswers?.length,
+                answersLength: reportData.answers?.length,
+                usingField: reportData.submittedAnswers ? 'submittedAnswers' : 'answers',
+                sampleAnswer: (reportData.submittedAnswers || reportData.answers)?.[0],
+                score: reportData.score,
+                correctAnswers: reportData.correctAnswers
+            });
+
             setReport(reportData);
 
-            // Load questions from telegramQuestions collection by topicId (rv2class structure)
-            const allQuestions: any[] = [];
+            // OPTIMIZED: Load questions efficiently
+            let allQuestions: any[] = [];
             
-            for (const topicId of topicIds) {
+            if (topicIds.length === 0) {
+                console.log('No topics assigned to homework');
+            } else if (topicIds.length <= 10) {
+                // Use 'in' query for up to 10 topics (Firestore limit)
                 const questionsSnapshot = await db.collection('telegramQuestions')
-                    .where('topicId', '==', topicId)
+                    .where('topicId', 'in', topicIds)
                     .get();
                 
-                const topicQuestions = questionsSnapshot.docs.map((doc: any) => ({
+                allQuestions = questionsSnapshot.docs.map((doc: any) => ({
                     id: doc.id,
                     ...doc.data()
                 }));
+            } else {
+                // For more than 10 topics, use parallel queries
+                const questionPromises = topicIds.map((topicId: string) => 
+                    db.collection('telegramQuestions')
+                        .where('topicId', '==', topicId)
+                        .get()
+                );
                 
-                allQuestions.push(...topicQuestions);
+                const snapshots = await Promise.all(questionPromises);
+                
+                snapshots.forEach((snapshot) => {
+                    const topicQuestions = snapshot.docs.map((doc: any) => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    allQuestions.push(...topicQuestions);
+                });
             }
 
             // Sort by order field to maintain correct sequence
@@ -144,6 +174,12 @@ const HomeworkResultsPageInner: React.FC<IPageProps> = ({ homeworkId: propHomewo
                 const orderA = a.order ?? 999999;
                 const orderB = b.order ?? 999999;
                 return orderA - orderB;
+            });
+
+            console.log('❓ Questions loaded:', {
+                totalQuestions: allQuestions.length,
+                firstQuestion: allQuestions[0],
+                questionIds: allQuestions.map(q => q.id)
             });
 
             setQuestions(allQuestions);
@@ -158,23 +194,21 @@ const HomeworkResultsPageInner: React.FC<IPageProps> = ({ homeworkId: propHomewo
     };
 
     const handleBackToHomework = () => {
-        if (!student) {
+        // Go back to student homework list
+        if (student?.id) {
+            window.location.href = `/static/student-homework.html?student=${encodeURIComponent(student.id)}`;
+        } else {
             window.location.href = '/';
-
-            return;
         }
-
-        window.location.href = `/static/student-homework.html?student=${encodeURIComponent(student.id)}`;
     };
 
     const handleBackToWelcome = () => {
-        if (!student) {
+        // Go back to student welcome page
+        if (student?.id) {
+            window.location.href = `/static/student-welcome.html?studentId=${encodeURIComponent(student.id)}`;
+        } else {
             window.location.href = '/';
-
-            return;
         }
-
-        window.location.href = `/static/student-welcome.html?student=${encodeURIComponent(student.id)}`;
     };
 
     const handleThemeChange = (newTheme: 'dark' | 'light') => {

@@ -145,10 +145,25 @@ function StudentHomeworkList({
     return (
         <div className = 'homework-screen'>
             <div className = 'homework-header'>
-                <div style = {{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div style = {{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '20px' }}>
                     <button
                         className = 'homework-back-button'
-                        onClick = { onBack }>
+                        onClick = { onBack }
+                        style = {{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '12px 24px',
+                            background: 'rgba(61, 124, 201, 0.9)',
+                            border: 'none',
+                            borderRadius: '12px',
+                            color: '#ffffff',
+                            fontSize: '15px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 4px 12px rgba(61, 124, 201, 0.3)'
+                        }}>
                         <Icon
                             size = { 20 }
                             src = { IconArrowLeft } />

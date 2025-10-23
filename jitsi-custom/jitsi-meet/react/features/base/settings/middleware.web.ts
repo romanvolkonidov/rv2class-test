@@ -37,6 +37,7 @@ MiddlewareRegistry.register(store => next => action => {
 
 /**
  * Updates the display name to the one in JWT if there is one.
+ * Also checks for teacher credentials in localStorage and sets display name accordingly.
  *
  * @param {Store} store - The redux store.
  * @private
@@ -53,6 +54,26 @@ function _maybeUpdateDisplayName({ dispatch, getState }: IStore) {
             dispatch(updateSettings({
                 displayName
             }));
+        }
+    } else {
+        // Check if this is a teacher joining their room
+        try {
+            const teacherFirstName = localStorage.getItem('teacherFirstName');
+            const teacherRoomId = localStorage.getItem('teacherRoomId');
+            const roomName = state['features/base/conference'].room;
+            
+            // If teacher credentials exist and room matches, set display name to "Teacher [FirstName]"
+            if (teacherFirstName && teacherRoomId && roomName) {
+                if (roomName.toLowerCase() === teacherRoomId.toLowerCase()) {
+                    const teacherDisplayName = `Teacher ${teacherFirstName}`;
+                    dispatch(updateSettings({
+                        displayName: teacherDisplayName
+                    }));
+                    logger.info(`Setting teacher display name: ${teacherDisplayName}`);
+                }
+            }
+        } catch (err) {
+            logger.warn('Could not check teacher status for display name:', err);
         }
     }
 }

@@ -79,7 +79,9 @@ function devServerProxyBypass({ path }) {
             || tpath.startsWith('/sounds/')
             || tpath.startsWith('/static/')
             || tpath.endsWith('.wasm')
-            || tpath.endsWith('.html')) {
+            || tpath.endsWith('.html')
+            || tpath === '/config.js'
+            || tpath === '/interface_config.js') {
 
         return tpath;
     }

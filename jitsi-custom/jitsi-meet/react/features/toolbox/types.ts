@@ -51,6 +51,7 @@ export type ToolbarButton = 'annotations' |
     'shortcuts' |
     'stats' |
     'tileview' |
+    'timer' |
     'toggle-camera' |
     'videoquality' |
     'whiteboard' |

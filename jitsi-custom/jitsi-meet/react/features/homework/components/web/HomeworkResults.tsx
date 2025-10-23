@@ -357,11 +357,25 @@ const HomeworkResults: React.FC<IProps> = ({
                         <h3 className = { classes.detailsTitle }>Подробные результаты</h3>
                         <div className = { classes.questionsList }>
                             {questions.map((question, index) => {
-                                // Get student's answer from submittedAnswers array
-                                const submittedAnswerObj = report.submittedAnswers?.find(
+                                // Get student's answer from submittedAnswers array OR answers array (legacy Telegram bot format)
+                                const answersArray = report.submittedAnswers || report.answers || [];
+                                const submittedAnswerObj = answersArray.find(
                                     (a: any) => a.questionId === question.id
                                 );
                                 const submittedAnswer = submittedAnswerObj?.answer;
+                                
+                                // Debug logging
+                                if (index === 0) {
+                                    console.log('🔍 Debug first question:', {
+                                        questionId: question.id,
+                                        hasSubmittedAnswers: !!report.submittedAnswers,
+                                        hasAnswers: !!report.answers,
+                                        usingField: report.submittedAnswers ? 'submittedAnswers' : 'answers',
+                                        answersArray,
+                                        submittedAnswerObj,
+                                        submittedAnswer
+                                    });
+                                }
                                 
                                 // Determine if answer is correct (matching rv2class logic)
                                 let isCorrect = false;
@@ -510,7 +524,7 @@ const HomeworkResults: React.FC<IProps> = ({
                                                                         <Icon
                                                                             size = { 16 }
                                                                             src = { isThisCorrect ? IconCheck : IconCloseLarge } />
-                                                                        <strong>Ваш ответ</strong>
+                                                                        <strong>Student's Answer</strong>
                                                                     </span>
                                                                 )}
                                                                 {isThisCorrect && !isThisSelected && (
@@ -529,7 +543,7 @@ const HomeworkResults: React.FC<IProps> = ({
                                                                         <Icon
                                                                             size = { 16 }
                                                                             src = { IconCheck } />
-                                                                        <strong>Правильный ответ</strong>
+                                                                        <strong>Correct Answer</strong>
                                                                     </span>
                                                                 )}
                                                             </div>

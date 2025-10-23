@@ -282,6 +282,38 @@ function _conferenceFailed({ dispatch, getState }: IStore, next: Function, actio
     const { lobbyError, membersOnly } = state['features/base/conference'];
     const nonFirstFailure = Boolean(membersOnly);
 
+    // Check if this is a teacher trying to join their own room
+    const isTeacherRejoining = (() => {
+        try {
+            const roomName = state['features/base/conference'].room;
+            const teacherRoomId = localStorage.getItem('teacherRoomId');
+            const teacherFirstName = localStorage.getItem('teacherFirstName');
+            
+            // Teacher is rejoining if:
+            // 1. We have teacher credentials in localStorage
+            // 2. The room name matches the teacher's room
+            if (teacherFirstName && teacherRoomId && roomName) {
+                return roomName.toLowerCase() === teacherRoomId.toLowerCase();
+            }
+            return false;
+        } catch (err) {
+            console.warn('Could not check teacher status:', err);
+            return false;
+        }
+    })();
+
+    // If teacher is rejoining their own room, auto-knock and they'll be auto-approved server-side
+    // or bypass lobby entirely if possible
+    if (isTeacherRejoining && error.name === JitsiConferenceErrors.MEMBERS_ONLY_ERROR) {
+        const result = next(action);
+        
+        // Don't show lobby screen for teachers - they should auto-join
+        console.log('Teacher rejoining their own room - attempting auto-knock');
+        dispatch(startKnocking());
+        
+        return result;
+    }
+
     if (error.name === JitsiConferenceErrors.MEMBERS_ONLY_ERROR) {
         if (typeof error.recoverable === 'undefined') {
             error.recoverable = true;

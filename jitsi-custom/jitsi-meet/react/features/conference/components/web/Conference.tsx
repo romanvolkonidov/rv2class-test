@@ -45,6 +45,7 @@ import {
 } from '../AbstractConference';
 
 import ConferenceInfo from './ConferenceInfo';
+import TopLeftPanel from './TopLeftPanel';
 import { default as Notice } from './Notice';
 
 /**
@@ -246,6 +247,7 @@ class Conference extends AbstractConference<IProps, any> {
                     id = 'videoconference_page'
                     onMouseMove = { isMobileBrowser() ? undefined : this._onShowToolbar }>
                     { _showPrejoin || _showLobby || <ConferenceInfo /> }
+                    { _showPrejoin || _showLobby || <TopLeftPanel /> }
                     <Notice />
                     <div
                         id = 'videospace'
