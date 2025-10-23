@@ -47,6 +47,7 @@ import { IInviteState } from '../invite/reducer';
 import { IJaaSState } from '../jaas/reducer';
 import { IKeyboardShortcutsState } from '../keyboard-shortcuts/types';
 import { ILargeVideoState } from '../large-video/reducer';
+import { ILessonTimerState } from '../lesson-timer/reducer';
 import { ILobbyState } from '../lobby/reducer';
 import { IMobileAudioModeState } from '../mobile/audio-mode/reducer';
 import { IMobileBackgroundState } from '../mobile/background/reducer';
@@ -136,6 +137,7 @@ export interface IReduxState {
     'features/jaas': IJaaSState;
     'features/keyboard-shortcuts': IKeyboardShortcutsState;
     'features/large-video': ILargeVideoState;
+    'features/lesson-timer': ILessonTimerState;
     'features/lobby': ILobbyState;
     'features/mobile/audio-mode': IMobileAudioModeState;
     'features/mobile/background': IMobileBackgroundState;

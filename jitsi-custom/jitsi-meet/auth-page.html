@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html itemscope itemtype="http://schema.org/Product" prefix="og: http://ogp.me/ns#" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="theme-color" content="#2A3A4B">
+    
+    <title>RV2Class - Teacher Login</title>
+    
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/all.css?v=8821">
+    <link rel="manifest" id="manifest-placeholder">
+
+    <script>
+        function contextRoot(pathname) {
+            const contextRootEndIndex = pathname.lastIndexOf('/');
+            return (
+                contextRootEndIndex === -1
+                ? '/'
+                : pathname.substring(0, contextRootEndIndex + 1)
+            );
+        }
+        window.EXCALIDRAW_ASSET_PATH = 'libs/';
+        document.querySelector('#manifest-placeholder')?.setAttribute('href', window.location.origin + contextRoot(window.location.pathname) + 'manifest.json');
+        
+        // Set up for rendering TeacherAuthPage
+        window.APP_ENTRY_POINT = 'TEACHER_AUTH';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!JitsiMeetJS || !JitsiMeetJS.app) {
+                console.error('JitsiMeetJS not loaded');
+                return;
+            }
+
+            // Render TeacherAuthPage
+            console.log('Rendering TeacherAuthPage');
+            JitsiMeetJS.app.renderEntryPoint({
+                Component: JitsiMeetJS.app.entryPoints.TEACHER_AUTH || JitsiMeetJS.app.entryPoints.APP,
+                props: {},
+                elementId: 'react'
+            });
+        });
+    </script>
+    
+    <script src="/config.js"></script>
+    <script src="/interface_config.js"></script>
+    <script src="libs/lib-jitsi-meet.min.js?v=8821"></script>
+    <script src="libs/app.bundle.min.js?v=8821"></script>
+</head>
+<body>
+    <noscript aria-hidden="true">
+        <div>JavaScript is disabled. For this site to work you have to enable JavaScript.</div>
+    </noscript>
+    
+    <div id="react" role="main"></div>
+</body>
+</html>

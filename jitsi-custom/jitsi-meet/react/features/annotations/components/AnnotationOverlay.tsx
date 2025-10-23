@@ -4,13 +4,16 @@ import {
   Pencil, 
   Undo, 
   Type, 
-  ArrowUpRight
+  ArrowUpRight,
+  Edit,
+  Trash2,
+  GripVertical
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useSelector } from 'react-redux';
 import { IReduxState } from '../../app/types';
 
-type AnnotationTool = "pencil" | "text" | "arrow";
+type AnnotationTool = "pencil" | "text" | "arrow" | "eraser" | "rectangle" | "circle" | "pointer";
 
 // Use relative coordinates (0-1 range) instead of absolute pixels
 interface RelativePoint {
