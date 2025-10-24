@@ -80,7 +80,7 @@ function isUserTeacher(store: IStore): boolean {
         return false;
     }
     
-    const urlParams = parseURLParams(locationURL);
+    const urlParams = locationURL ? parseURLParams(locationURL) : {};
     
     // Check if userType parameter explicitly says "teacher"
     const userType = urlParams['userInfo.userType'];
@@ -144,32 +144,19 @@ MiddlewareRegistry.register(store => next => action => {
             // Server-side will grant owner/moderator role automatically
             return next(action);
         } else {
-            console.log('👨‍🎓 [TeacherAuth] STUDENT detected - MUST go to lobby');
+            console.log('👨‍🎓 [TeacherAuth] STUDENT detected - will be sent to lobby');
+            
+            // With server-side enable-auto-owner: false, students should automatically
+            // be sent to lobby even if they're first to join
             
             // Check if server has already enabled members-only (lobby)
             const isMembersOnly = conference?.isMembersOnly && conference.isMembersOnly();
             
-            if (isMembersOnly) {
-                console.log('[TeacherAuth] ✅ Server lobby is active - student will knock normally');
-                // Let the normal flow handle it - student will automatically be sent to lobby
-                return next(action);
-            } else {
-                console.log('[TeacherAuth] ⚠️  Server lobby NOT active - BLOCKING student and forcing lobby screen');
-                
-                // Server hasn't enabled lobby yet (race condition or config issue)
-                // Force the student to wait by opening lobby screen
-                store.dispatch(openLobbyScreen());
-                
-                // DON'T try to enable lobby - students aren't moderators and can't enable it
-                // The teacher will enable lobby when they join
-                
-                // Start knocking so student appears in waiting list
-                store.dispatch(startKnocking());
-                
-                // BLOCK the join - don't call next(action)
-                console.log('🚫 [TeacherAuth] Student JOIN BLOCKED - must wait in lobby');
-                return action;
-            }
+            console.log('[TeacherAuth] Server lobby active?', isMembersOnly);
+            
+            // Let student proceed to join - they'll automatically be put in lobby state
+            // by the server or by our lobby logic
+            return next(action);
         }
     }
     case CONFERENCE_JOINED:
@@ -272,12 +259,8 @@ function _conferenceJoined(store: IStore, next: Function, action: AnyAction) {
             store.dispatch(openLobbyScreen());
             conference.leave();
             
-            // Re-enable lobby
-            try {
-                conference.enableLobby();
-            } catch (e) {
-                console.log('[TeacherAuth] Error enabling lobby:', e);
-            }
+            // DON'T try to enable lobby - student isn't moderator
+            // The teacher will enable lobby when they join
             
             // Start knocking again
             setTimeout(() => {
@@ -347,7 +330,7 @@ StateListenerRegistry.register(
             return;
         }
         
-        const urlParams = parseURLParams(locationURL);
+        const urlParams = locationURL ? parseURLParams(locationURL) : {};
         const userType = urlParams['userInfo.userType'];
         const isTeacher = userType === 'teacher';
         const email = urlParams['userInfo.email'] || getState()['features/base/settings'].email;
