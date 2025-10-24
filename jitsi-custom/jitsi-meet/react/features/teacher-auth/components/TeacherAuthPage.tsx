@@ -338,8 +338,12 @@ const TeacherAuthPage = () => {
         
         // Add userType=teacher parameter so middleware can identify teacher
         // displayName will be prefilled and readonly in prejoin screen
+        // IMPORTANT: Use JSON.stringify() so parseURLParams can parse them correctly as JSON
         const teacherEmail = user?.email || 'romanvolkonidov@gmail.com';
-        window.location.href = `/${roomName}#userInfo.userType=teacher&userInfo.email=${encodeURIComponent(teacherEmail)}&userInfo.displayName=${encodeURIComponent(teacherDisplayName)}`;
+        const displayName = encodeURIComponent(JSON.stringify(teacherDisplayName));
+        const userType = encodeURIComponent(JSON.stringify('teacher'));
+        const email = encodeURIComponent(JSON.stringify(teacherEmail));
+        window.location.href = `/${roomName}#userInfo.userType=${userType}&userInfo.email=${email}&userInfo.displayName=${displayName}`;
     };
 
     const handleViewStudents = () => {

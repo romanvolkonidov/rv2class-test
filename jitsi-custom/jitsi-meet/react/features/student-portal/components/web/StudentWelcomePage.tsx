@@ -216,7 +216,10 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
         // Redirect to Jitsi room with student name in URL config
         // displayName will be prefilled and readonly in prejoin screen
         // Add userType=student parameter so middleware can identify student
-        const roomUrl = `/${teacherRoom}#config.prejoinPageEnabled=true&userInfo.displayName=${encodeURIComponent(student.name)}&userInfo.userType=student`;
+        // IMPORTANT: Use JSON.stringify() so parseURLParams can parse them correctly as JSON
+        const displayName = encodeURIComponent(JSON.stringify(student.name));
+        const userType = encodeURIComponent(JSON.stringify('student'));
+        const roomUrl = `/${teacherRoom}#config.prejoinPageEnabled=true&userInfo.displayName=${displayName}&userInfo.userType=${userType}`;
 
         console.log('Redirecting to prejoin:', roomUrl);
         window.location.href = roomUrl;
