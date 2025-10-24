@@ -193,19 +193,12 @@ function getConfig(options = {}) {
             minimize: isProduction,
             splitChunks: {
                 chunks: 'async',
-                cacheGroups: {
-                    excalidraw: {
-                        test: /[\\/]node_modules[\\/]@jitsi[\\/]excalidraw/,
-                        name: 'excalidraw',
-                        chunks: 'async',
-                        priority: 10
-                    }
-                }
+                maxSize: 5000000
             }
         },
         output: {
             filename: `[name]${isProduction ? '.min' : ''}.js`,
-            chunkFilename: `[name]${isProduction ? '.min' : ''}.js`,
+            chunkFilename: `[id]${isProduction ? '.min' : ''}.js`,
             path: `${__dirname}/build`,
             publicPath: '/libs/',
             sourceMapFilename: '[file].map'
