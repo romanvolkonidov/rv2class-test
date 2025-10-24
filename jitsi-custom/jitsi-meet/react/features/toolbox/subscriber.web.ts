@@ -69,7 +69,8 @@ const checkToolboxOverlap = (clientHeight: number, store: IStore) => {
         }
     }
 
-    store.dispatch(setShiftUp(isIntersecting));
+    // Always dispatch false to prevent toolbar shift-up
+    store.dispatch(setShiftUp(false));
 };
 
 const throttledCheckOverlap = throttle(checkToolboxOverlap, 100, {

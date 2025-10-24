@@ -4,6 +4,25 @@
  * Using !important to override inline styles and library defaults
  */
 
+// Override the default negative bottom positioning
+.new-toolbox {
+    bottom: 0 !important;
+    
+    &.visible {
+        bottom: 0 !important;
+    }
+    
+    &.shift-up {
+        bottom: 0 !important;
+        
+        .toolbox-content {
+            margin-bottom: 16px !important;
+        }
+    }
+    
+    transform: none !important;
+}
+
 // Fix prejoin avatar/initials positioning - MAXIMUM PRIORITY
 .premeeting-screen {
     #new-toolbox {
@@ -112,4 +131,16 @@
 #filmstripLocalScreenShare {
     align-self: flex-end !important;
     margin-bottom: 8px !important;
+}
+
+// FIX THE ROOT CAUSE: Parent flex container pushing content up
+.css-1uhb7h9-container {
+    justify-content: flex-end !important;
+    align-items: flex-end !important;
+}
+
+// Also fix premeeting screen specifically
+.premeeting-screen.css-1uhb7h9-container {
+    justify-content: flex-end !important;
+    align-items: flex-end !important;
 }

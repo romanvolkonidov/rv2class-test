@@ -118,7 +118,7 @@ export function handleToggleVideoMuted(muted: boolean, showUI: boolean, ensureTr
 export function setShiftUp(shiftUp: boolean) {
     return {
         type: SET_TOOLBOX_SHIFT_UP,
-        shiftUp
+        shiftUp: false // Force disabled to fix positioning issues
     };
 }
 
