@@ -74,57 +74,10 @@ jobs:
           mv /tmp/jitsi-node-modules-backup jitsi-custom/jitsi-meet/node_modules 2>/dev/null || true
         fi
         
-        echo "🏗️  Building Jitsi Meet..."
+        echo "📦 Deploying pre-built files (no build needed)..."
         cd jitsi-custom/jitsi-meet || { echo "❌ Failed to navigate to jitsi-meet directory"; exit 1; }
         
-        # Check if we need to install dependencies
-        NEED_INSTALL=false
-        if [ ! -d "node_modules" ]; then
-          echo "  → node_modules not found, will install..."
-          NEED_INSTALL=true
-        fi
-        
-        if [ "$NEED_INSTALL" = true ]; then
-          echo "  → Installing Jitsi dependencies (this may take 5-10 minutes)..."
-          npm install --legacy-peer-deps || { echo "❌ npm install failed"; exit 1; }
-        else
-          echo "  ✅ Dependencies already installed, skipping..."
-        fi
-        
-        echo "  → Starting Jitsi Meet build in background..."
-        echo "  💡 This will take 15-25 minutes on first build, 2-5 minutes on subsequent builds"
-        
-        # Kill any existing build
-        pkill -f webpack 2>/dev/null || true
-        
-        # Start build in background
-        nohup make > /tmp/jitsi-build.log 2>&1 &
-        BUILD_PID=$!
-        
-        echo "  → Build started (PID: $BUILD_PID)"
-        echo "  → Waiting 10 seconds to ensure build starts properly..."
-        sleep 10
-        
-        # Check if build is still running
-        if ps -p $BUILD_PID > /dev/null 2>&1; then
-          echo "  ✅ Build is running in background"
-          echo "  📊 Check progress: ssh root@108.61.245.179 'tail -f /tmp/jitsi-build.log'"
-          echo ""
-          echo "  ⚠️  Build will continue after this deployment completes"
-          echo "  ⚠️  Files will be deployed on NEXT git push (after build finishes)"
-        else
-          # Build already finished (unlikely) or failed quickly
-          if [ -f "libs/app.bundle.min.js" ]; then
-            echo "  ✅ Build completed (using cached build)"
-          else
-            echo "  ❌ Build failed to start. Check logs:"
-            tail -30 /tmp/jitsi-build.log || echo "No log file found"
-            echo ""
-            echo "  ⚠️  Deployment will continue with existing files"
-          fi
-        fi
-        
-        echo "  → Deploying built files to /usr/share/jitsi-meet/"
+        echo "  → Deploying files to /usr/share/jitsi-meet/"
         # Copy each directory/file type separately to handle missing files gracefully
         [ -d "css" ] && cp -r css /usr/share/jitsi-meet/ && echo "    ✅ CSS deployed" || echo "    ⚠️  CSS not found"
         [ -d "libs" ] && cp -r libs /usr/share/jitsi-meet/ && echo "    ✅ Libs deployed" || echo "    ⚠️  Libs not found (build may still be running)"
