@@ -27,6 +27,7 @@ MiddlewareRegistry.register((store: IStore) => next => action => {
 
     switch (action.type) {
     case SET_WHITEBOARD_OPEN: {
+        console.log('🎨 middleware.any.ts: SET_WHITEBOARD_OPEN received', action);
         const enforceUserLimit = shouldEnforceUserLimit(state);
         const notifyUserLimit = shouldNotifyUserLimit(state);
 
