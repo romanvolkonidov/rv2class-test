@@ -43,27 +43,26 @@ jobs:
         path: rv2class-build.tar.gz
         retention-days: 7
     
-    - name: Setup SSH key
+    - name: Install sshpass
       run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/deploy_key
-        chmod 600 ~/.ssh/deploy_key
-        chmod 700 ~/.ssh
-        ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
-        # Debug key format
-        head -1 ~/.ssh/deploy_key
-        # Test the key
-        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -vvv root@${{ secrets.SERVER_IP }} "echo 'SSH connection successful'" 2>&1 | grep -i "debug\|error\|permission" | head -20
+        sudo apt-get update
+        sudo apt-get install -y sshpass
         
     - name: Deploy to server via SCP
+      env:
+        SERVER_IP: ${{ secrets.SERVER_IP }}
+        SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
       run: |
-        scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-          rv2class-build.tar.gz root@${{ secrets.SERVER_IP }}:/tmp/
+        sshpass -p "$SERVER_PASSWORD" scp -o StrictHostKeyChecking=no \
+          rv2class-build.tar.gz root@$SERVER_IP:/tmp/
         
     - name: Execute deployment commands
+      env:
+        SERVER_IP: ${{ secrets.SERVER_IP }}
+        SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
       run: |
-        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-          root@${{ secrets.SERVER_IP }} << 'DEPLOY'
+        sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no \
+          root@$SERVER_IP << 'DEPLOY'
           cd /usr/share/jitsi-meet
           echo "📦 Backing up current version..."
           tar -czf /tmp/backup-$(date +%Y%m%d-%H%M%S).tar.gz . 2>/dev/null || true
@@ -74,9 +73,14 @@ jobs:
           echo "🔒 Setting permissions..."
           chown -R www-data:www-data .
           
+          echo "🔄 Clearing nginx cache..."
+          rm -rf /var/cache/nginx/*
+          
           echo "🔄 Restarting nginx..."
           systemctl restart nginx
           
           echo "✅ Deployment complete!"
-          ls -lh libs/app.bundle.min.js 2>/dev/null || echo "Bundle file check failed"
+          echo "📊 Checking deployed files..."
+          ls -lh libs/app.bundle.min.js 2>/dev/null || echo "⚠️ Bundle file check failed"
+          ls -lh css/ images/ fonts/ sounds/ | head -10
         DEPLOY
