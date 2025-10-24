@@ -137,11 +137,30 @@ MiddlewareRegistry.register(store => next => action => {
         if (isTeacher) {
             console.log('👨‍🏫 [TeacherAuth] TEACHER detected, will join directly as moderator');
             
+            // Mark display name with [TEACHER] prefix so Prosody can grant owner role
+            const settings = state['features/base/settings'];
+            const currentDisplayName = settings.displayName || 'Teacher';
+            
+            // Only add prefix if not already present
+            if (!currentDisplayName.startsWith('[TEACHER]')) {
+                const teacherDisplayName = `[TEACHER] ${currentDisplayName}`;
+                console.log('[TeacherAuth] Setting teacher display name:', teacherDisplayName);
+                
+                // Update settings with prefixed name
+                store.dispatch({
+                    type: 'SETTINGS_UPDATED',
+                    settings: {
+                        ...settings,
+                        displayName: teacherDisplayName
+                    }
+                });
+            }
+            
             // Teachers always bypass lobby
             store.dispatch(hideLobbyScreen());
             
             // Pass action through - teacher joins directly
-            // Server-side will grant owner/moderator role automatically
+            // Prosody mod_grant_teacher_role will grant owner/moderator based on [TEACHER] prefix
             return next(action);
         } else {
             console.log('👨‍🎓 [TeacherAuth] STUDENT detected - allowing XMPP connection (Zoom-style)');
