@@ -74,13 +74,19 @@ jobs:
           mv /tmp/jitsi-node-modules-backup jitsi-custom/jitsi-meet/node_modules 2>/dev/null || true
         fi
         
-        echo "📦 Deploying pre-built files (no build needed)..."
+        echo "📦 Building custom Jitsi with homework system..."
         cd jitsi-custom/jitsi-meet || { echo "❌ Failed to navigate to jitsi-meet directory"; exit 1; }
         
-        echo "  → Deploying files to /usr/share/jitsi-meet/"
+        echo "  → Installing dependencies..."
+        npm install || { echo "❌ npm install failed"; exit 1; }
+        
+        echo "  → Building application..."
+        make || { echo "❌ Build failed"; exit 1; }
+        
+        echo "  → Deploying built files to /usr/share/jitsi-meet/"
         # Copy each directory/file type separately to handle missing files gracefully
         [ -d "css" ] && cp -r css /usr/share/jitsi-meet/ && echo "    ✅ CSS deployed" || echo "    ⚠️  CSS not found"
-        [ -d "libs" ] && cp -r libs /usr/share/jitsi-meet/ && echo "    ✅ Libs deployed" || echo "    ⚠️  Libs not found (build may still be running)"
+        [ -d "libs" ] && cp -r libs /usr/share/jitsi-meet/ && echo "    ✅ Libs deployed" || echo "    ⚠️  Libs not found"
         [ -d "sounds" ] && cp -r sounds /usr/share/jitsi-meet/ 2>/dev/null || true
         [ -d "images" ] && cp -r images /usr/share/jitsi-meet/ 2>/dev/null || true
         [ -d "fonts" ] && cp -r fonts /usr/share/jitsi-meet/ 2>/dev/null || true
