@@ -1,18 +1,5 @@
-// Lazy load Excalidraw utils
-let generateCollaborationLinkData: any;
-
-const loadExcalidrawUtils = async () => {
-    if (!generateCollaborationLinkData) {
-        try {
-            const module = await import('@jitsi/excalidraw');
-            generateCollaborationLinkData = module.generateCollaborationLinkData;
-        } catch (error) {
-            console.error('Failed to load Excalidraw utils:', error);
-            generateCollaborationLinkData = () => ({ roomId: '', roomKey: '' });
-        }
-    }
-    return generateCollaborationLinkData;
-};
+// Static import - Excalidraw is bundled with main app
+import { generateCollaborationLinkData } from '@jitsi/excalidraw';
 
 import { AnyAction } from 'redux';
 
@@ -156,23 +143,33 @@ function raiseWhiteboardNotification(status: WhiteboardStatus) {
  * @returns {Promise}
  */
 async function setNewWhiteboardOpen(store: IStore) {
+    console.log('🎨 setNewWhiteboardOpen called');
     const { dispatch, getState } = store;
-    const generateFn = await loadExcalidrawUtils();
-    const collabLinkData = await generateFn();
-    const state = getState();
-    const conference = getCurrentConference(state);
-    const collabServerUrl = generateCollabServerUrl(state);
-    const roomId = getCurrentRoomId(state);
-    const collabData = {
-        collabDetails: {
-            roomId,
-            roomKey: collabLinkData.roomKey
-        },
-        collabServerUrl
-    };
+    
+    try {
+        console.log('🎨 Generating collab link data...');
+        const collabLinkData = await generateCollaborationLinkData();
+        console.log('🎨 Collab link data generated:', collabLinkData);
+        
+        const state = getState();
+        const conference = getCurrentConference(state);
+        const collabServerUrl = generateCollabServerUrl(state);
+        const roomId = getCurrentRoomId(state);
+        const collabData = {
+            collabDetails: {
+                roomId,
+                roomKey: collabLinkData.roomKey
+            },
+            collabServerUrl
+        };
 
-    focusWhiteboard(store);
-    dispatch(setupWhiteboard(collabData));
-    conference?.getMetadataHandler().setMetadata(WHITEBOARD_ID, collabData);
-    raiseWhiteboardNotification(WhiteboardStatus.INSTANTIATED);
+        console.log('🎨 Focusing whiteboard and setting up...');
+        focusWhiteboard(store);
+        dispatch(setupWhiteboard(collabData));
+        conference?.getMetadataHandler().setMetadata(WHITEBOARD_ID, collabData);
+        raiseWhiteboardNotification(WhiteboardStatus.INSTANTIATED);
+        console.log('🎨 Whiteboard setup complete');
+    } catch (error) {
+        console.error('🎨 Error in setNewWhiteboardOpen:', error);
+    }
 }
