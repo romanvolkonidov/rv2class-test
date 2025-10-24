@@ -195,7 +195,7 @@ ReducerRegistry.register<IToolboxState>(
         case SET_TOOLBOX_SHIFT_UP:
             return {
                 ...state,
-                shiftUp: action.shiftUp
+                shiftUp: false // Force disabled to prevent UI elements from being pushed up
             };
 
         case SET_TOOLBOX_VISIBLE:
