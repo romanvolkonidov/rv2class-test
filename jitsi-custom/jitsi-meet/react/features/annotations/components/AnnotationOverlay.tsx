@@ -3,13 +3,21 @@ import { Button } from "./ui/button";
 import { 
   Pencil, 
   Undo, 
+  Redo,
   Type, 
   ArrowUpRight,
   Edit,
   Trash2,
   GripVertical,
   X,
-  Minimize2
+  Minimize2,
+  Eraser,
+  Square,
+  Circle,
+  MousePointer2,
+  Minus,
+  Palette,
+  ChevronDown
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useSelector, useDispatch } from 'react-redux';
@@ -2043,7 +2051,7 @@ export default function AnnotationOverlay({
         </div>
       )}
 
-      {/* Toolbar - Modern Jitsi-style design with close button */}
+      {/* Toolbar - Zoom-inspired Professional Design with Jitsi Styling */}
       {toolbarVisible && (
         <div 
           ref={toolbarRef}
@@ -2059,102 +2067,93 @@ export default function AnnotationOverlay({
           onTouchStart={handleToolbarTouchStart}
           onTouchEnd={handleToolbarTouchEnd}
         >
-          {/* Drag Hint - Shows when long press is activated */}
+          {/* Drag Hint */}
           {showDragHint && (
             <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-blue-500/90 text-white px-3 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap animate-pulse shadow-lg z-[70] border border-blue-400/30">
               ✋ Dragging enabled!
             </div>
           )}
           
-          {/* Drag Handle - Subtle and professional */}
+          {/* Drag Handle */}
           <div 
             className={cn(
-              "drag-handle absolute px-3 py-1 bg-gray-900/80 backdrop-blur-xl border border-gray-700 flex items-center gap-1.5 transition-all pointer-events-auto rounded-md",
-              isDraggingToolbar ? "cursor-grabbing bg-gray-900/95" : "cursor-grab hover:bg-gray-800/90",
+              "drag-handle absolute px-3 py-1 bg-gray-900/90 backdrop-blur-xl border border-gray-600/50 flex items-center gap-1.5 transition-all pointer-events-auto rounded-md",
+              isDraggingToolbar ? "cursor-grabbing bg-blue-600/30" : "cursor-grab hover:bg-gray-800/95 hover:border-gray-500",
               toolbarOrientation === 'horizontal' 
                 ? "-top-5 left-1/2 transform -translate-x-1/2 rounded-t-md border-b-0" 
                 : "-left-5 top-1/2 transform -translate-y-1/2 rounded-l-md border-r-0 flex-col"
             )}
           >
             <GripVertical className={cn(
-              "h-3.5 w-3.5 text-gray-400",
+              "h-3.5 w-3.5 text-gray-300",
               toolbarOrientation === 'vertical' && "rotate-90"
             )} />
           </div>
 
-          {/* Main Toolbar with Professional Jitsi-native styling */}
+          {/* Main Toolbar - Zoom-style Professional Design */}
           <div 
             className={cn(
-              "backdrop-blur-xl bg-gradient-to-br from-gray-900/95 to-gray-800/95 border border-gray-700/80 rounded-2xl shadow-2xl transition-all",
+              "backdrop-blur-xl bg-gradient-to-br from-[#1a1d24]/98 to-[#14161b]/98 border border-gray-700/60 rounded-2xl shadow-2xl transition-all",
               toolbarOrientation === 'horizontal' && "max-w-[calc(100vw-40px)]",
               toolbarOrientation === 'vertical' && "max-h-[calc(100vh-40px)]"
             )}
             style={{
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 2px 8px rgba(59, 130, 246, 0.15)'
             }}
           >
             <div className={cn(
-              "flex items-center gap-2 p-2.5",
+              "flex items-center gap-1.5 p-3",
               toolbarOrientation === 'vertical' && "flex-col"
             )}>
-              {/* Close Button - Premium design */}
+              
+              {/* === MOUSE POINTER TOOL === */}
               <button
-                onClick={() => setToolbarVisible(false)}
-                className="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-700/60 to-gray-800/60 hover:from-gray-600/70 hover:to-gray-700/70 border border-gray-600/50 hover:border-gray-500/50 text-gray-300 hover:text-white transition-all active:scale-95 flex items-center justify-center group shadow-md"
-                title="Hide toolbar (annotations remain)"
-                aria-label="Hide toolbar"
+                onClick={() => setTool("pointer")}
+                title="Select & Move (Pointer)"
+                className={cn(
+                  "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                  tool === "pointer" 
+                    ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/40 border-blue-400/60 scale-105' 
+                    : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                )}
               >
-                <Minimize2 className="h-4.5 w-4.5 group-hover:scale-110 transition-transform" />
+                <MousePointer2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
               </button>
 
               {/* Divider */}
               <div className={cn(
-                "bg-gradient-to-br from-gray-700/40 to-gray-600/30",
-                toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
+                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
               )} />
 
-              {/* Drawing Tools Group */}
+              {/* === DRAWING TOOLS GROUP === */}
               <div className={cn(
                 "flex gap-1.5",
                 toolbarOrientation === 'vertical' && "flex-col"
               )}>
-                {/* Pencil Tool */}
+                {/* Pencil/Draw Tool */}
                 <button
                   onClick={() => setTool("pencil")}
                   title="Draw (Pencil)"
                   className={cn(
-                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border",
+                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
                     tool === "pencil" 
-                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/30 border-blue-500/50' 
-                      : 'bg-gradient-to-br from-gray-700/60 to-gray-800/60 hover:from-gray-600/70 hover:to-gray-700/70 text-gray-300 hover:text-white border-gray-600/50 hover:border-gray-500/50'
+                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/40 border-blue-400/60 scale-105' 
+                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
                   )}
                 >
                   <Pencil className="h-5 w-5 group-hover:scale-110 transition-transform" />
                 </button>
 
-                {/* Text Tool */}
-                <button
-                  onClick={() => setTool("text")}
-                  title="Add Text"
-                  className={cn(
-                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border",
-                    tool === "text" 
-                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/30 border-blue-500/50' 
-                      : 'bg-gradient-to-br from-gray-700/60 to-gray-800/60 hover:from-gray-600/70 hover:to-gray-700/70 text-gray-300 hover:text-white border-gray-600/50 hover:border-gray-500/50'
-                  )}
-                >
-                  <Type className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                </button>
-
-                {/* Arrow Tool */}
+                {/* Line/Arrow Tool */}
                 <button
                   onClick={() => setTool("arrow")}
                   title="Draw Arrow"
                   className={cn(
-                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border",
+                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
                     tool === "arrow" 
-                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/30 border-blue-500/50' 
-                      : 'bg-gradient-to-br from-gray-700/60 to-gray-800/60 hover:from-gray-600/70 hover:to-gray-700/70 text-gray-300 hover:text-white border-gray-600/50 hover:border-gray-500/50'
+                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/40 border-blue-400/60 scale-105' 
+                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
                   )}
                 >
                   <ArrowUpRight className="h-5 w-5 group-hover:scale-110 transition-transform" />
@@ -2163,63 +2162,222 @@ export default function AnnotationOverlay({
 
               {/* Divider */}
               <div className={cn(
-                "bg-gradient-to-br from-gray-700/40 to-gray-600/30",
-                toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
+                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
               )} />
 
-              {/* Undo Button */}
+              {/* === SHAPES GROUP === */}
+              <div className={cn(
+                "flex gap-1.5",
+                toolbarOrientation === 'vertical' && "flex-col"
+              )}>
+                {/* Rectangle Tool */}
+                <button
+                  onClick={() => setTool("rectangle")}
+                  title="Draw Rectangle"
+                  className={cn(
+                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                    tool === "rectangle" 
+                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/40 border-blue-400/60 scale-105' 
+                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                  )}
+                >
+                  <Square className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                </button>
+
+                {/* Circle Tool */}
+                <button
+                  onClick={() => setTool("circle")}
+                  title="Draw Circle"
+                  className={cn(
+                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                    tool === "circle" 
+                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/40 border-blue-400/60 scale-105' 
+                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                  )}
+                >
+                  <Circle className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                </button>
+
+                {/* Text Tool */}
+                <button
+                  onClick={() => setTool("text")}
+                  title="Add Text"
+                  className={cn(
+                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                    tool === "text" 
+                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/40 border-blue-400/60 scale-105' 
+                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                  )}
+                >
+                  <Type className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                </button>
+              </div>
+
+              {/* Divider */}
+              <div className={cn(
+                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
+                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
+              )} />
+
+              {/* === ERASER TOOL === */}
               <button
-                onClick={undo}
-                disabled={historyStep === 0}
-                title="Undo"
+                onClick={() => setTool("eraser")}
+                title="Eraser"
                 className={cn(
-                  "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border",
-                  "bg-gradient-to-br from-gray-700/60 to-gray-800/60 hover:from-gray-600/70 hover:to-gray-700/70 text-gray-300 hover:text-white border-gray-600/50 hover:border-gray-500/50",
-                  "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:from-gray-700/60 disabled:hover:to-gray-800/60"
+                  "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                  tool === "eraser" 
+                    ? 'bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white shadow-lg shadow-red-500/40 border-red-400/60 scale-105' 
+                    : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
                 )}
               >
-                <Undo className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                <Eraser className="h-5 w-5 group-hover:scale-110 transition-transform" />
               </button>
 
               {/* Divider */}
               <div className={cn(
-                "bg-gradient-to-br from-gray-700/40 to-gray-600/30",
-                toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
+                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
               )} />
 
-              {/* Color Picker with premium styling */}
+              {/* === STROKE WIDTH CONTROL === */}
+              <div className="relative size-picker-container">
+                <button
+                  className={cn(
+                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5 group border shadow-md",
+                    showSizePicker
+                      ? 'bg-gradient-to-br from-blue-600/20 to-blue-700/20 border-blue-500/60'
+                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                  )}
+                  onClick={() => setShowSizePicker(!showSizePicker)}
+                  title={`Line Width: ${lineWidth}px`}
+                  aria-label="Choose line width"
+                >
+                  <Minus className={cn(
+                    "transition-colors",
+                    showSizePicker ? "text-blue-400" : "text-gray-300 group-hover:text-white"
+                  )} 
+                  style={{ 
+                    width: `${Math.max(12, Math.min(20, lineWidth * 2))}px`,
+                    height: `${Math.max(2, Math.min(4, lineWidth))}px`,
+                    strokeWidth: lineWidth
+                  }} />
+                  <ChevronDown className={cn(
+                    "h-3 w-3 transition-all",
+                    showSizePicker ? "rotate-180 text-blue-400" : "text-gray-400 group-hover:text-gray-300"
+                  )} />
+                </button>
+                
+                {showSizePicker && (
+                  <div className={cn(
+                    "absolute z-[70] bg-gradient-to-br from-[#1a1d24]/98 to-[#14161b]/98 backdrop-blur-xl border border-gray-600/60 rounded-xl p-4 shadow-2xl min-w-[200px]",
+                    toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
+                  )}>
+                    <div className="text-xs text-gray-300 font-semibold mb-3 tracking-wide flex items-center justify-between">
+                      <span>STROKE WIDTH</span>
+                      <span className="text-blue-400 font-bold">{lineWidth}px</span>
+                    </div>
+                    
+                    {/* Width Presets */}
+                    <div className="space-y-2.5 mb-4">
+                      {[
+                        { value: 1, label: 'Thin', icon: '─' },
+                        { value: 3, label: 'Medium', icon: '━' },
+                        { value: 5, label: 'Thick', icon: '━' },
+                        { value: 8, label: 'Extra Thick', icon: '━' }
+                      ].map((preset) => (
+                        <button
+                          key={preset.value}
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all border",
+                            lineWidth === preset.value
+                              ? 'bg-blue-600/30 border-blue-500/60 text-white shadow-lg shadow-blue-500/20'
+                              : 'bg-gray-800/40 border-gray-700/50 text-gray-300 hover:bg-gray-700/50 hover:border-gray-600/60'
+                          )}
+                          onClick={() => {
+                            setLineWidth(preset.value);
+                            setShowSizePicker(false);
+                          }}
+                        >
+                          <div 
+                            className="flex-1 h-0.5 bg-current rounded-full"
+                            style={{ height: `${preset.value}px` }}
+                          />
+                          <span className="text-xs font-medium whitespace-nowrap">{preset.label}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Custom Slider */}
+                    <div className="pt-2 border-t border-gray-700/50">
+                      <label className="text-xs text-gray-400 mb-2 block">Custom</label>
+                      <input
+                        type="range"
+                        min="1"
+                        max="12"
+                        value={lineWidth}
+                        onChange={(e) => setLineWidth(Number(e.target.value))}
+                        className="w-full h-2 bg-gray-700/50 rounded-lg appearance-none cursor-pointer
+                          [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
+                          [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500 
+                          [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg
+                          [&::-webkit-slider-thumb]:hover:bg-blue-400 [&::-webkit-slider-thumb]:transition-colors
+                          [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full 
+                          [&::-moz-range-thumb]:bg-blue-500 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className={cn(
+                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
+                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
+              )} />
+
+              {/* === COLOR PICKER === */}
               <div className="relative color-picker-container">
                 <button
-                  className="h-11 w-11 rounded-xl transition-all border-2 border-gray-600/70 hover:border-gray-500/70 active:scale-95 shadow-lg flex items-center justify-center"
+                  className={cn(
+                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center border-2 shadow-md group relative overflow-hidden",
+                    showColorPicker
+                      ? 'border-gray-500/80 scale-105'
+                      : 'border-gray-600/50 hover:border-gray-500/70 hover:scale-105'
+                  )}
                   style={{ 
-                    backgroundColor: color,
-                    boxShadow: `0 4px 12px ${color}40`
+                    background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
+                    boxShadow: `0 4px 16px ${color}50, inset 0 1px 2px rgba(255,255,255,0.1)`
                   }}
                   onClick={() => setShowColorPicker(!showColorPicker)}
                   title={`Color: ${availableColors.find(c => c.value === color)?.label || color}`}
                   aria-label="Choose color"
                 >
-                  <div className="w-7 h-7 rounded-lg border-2 border-white/30" style={{ backgroundColor: color }} />
+                  <Palette className="h-5 w-5 text-white drop-shadow-md group-hover:scale-110 transition-transform" />
                 </button>
+                
                 {showColorPicker && (
                   <div className={cn(
-                    "absolute z-[70] bg-gradient-to-br from-gray-900/98 to-gray-800/98 backdrop-blur-xl border border-gray-600 rounded-xl p-4 shadow-2xl",
+                    "absolute z-[70] bg-gradient-to-br from-[#1a1d24]/98 to-[#14161b]/98 backdrop-blur-xl border border-gray-600/60 rounded-xl p-4 shadow-2xl",
                     toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
                   )}>
-                    <div className="text-xs text-gray-300 font-semibold mb-3 tracking-wide">COLOR PALETTE</div>
-                    <div className="grid grid-cols-2 gap-2.5">
+                    <div className="text-xs text-gray-300 font-semibold mb-3 tracking-wide flex items-center gap-2">
+                      <Palette className="h-3.5 w-3.5 text-blue-400" />
+                      <span>COLOR PALETTE</span>
+                    </div>
+                    <div className="grid grid-cols-5 gap-2">
                       {availableColors.map((c) => (
                         <button
                           key={c.value}
                           className={cn(
-                            "w-12 h-12 rounded-lg transition-all border-2 active:scale-95 flex items-center justify-center",
+                            "w-11 h-11 rounded-lg transition-all border-2 active:scale-95 flex items-center justify-center group relative overflow-hidden",
                             color === c.value 
-                              ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900 border-gray-400 scale-105' 
-                              : 'border-gray-600 hover:border-gray-400 hover:scale-105'
+                              ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#14161b] border-white/40 scale-105 shadow-xl' 
+                              : 'border-gray-600/50 hover:border-gray-400/70 hover:scale-110 shadow-md'
                           )}
                           style={{ 
-                            backgroundColor: c.value,
-                            boxShadow: color === c.value ? `0 4px 16px ${c.value}60` : 'none'
+                            background: `linear-gradient(135deg, ${c.value} 0%, ${c.value}dd 100%)`,
+                            boxShadow: color === c.value ? `0 4px 20px ${c.value}70, inset 0 1px 2px rgba(255,255,255,0.15)` : `0 2px 8px ${c.value}30`
                           }}
                           onClick={() => {
                             setColor(c.value);
@@ -2229,7 +2387,7 @@ export default function AnnotationOverlay({
                           aria-label={c.label}
                         >
                           {color === c.value && (
-                            <div className="w-4 h-4 rounded-full bg-white/90 shadow-lg" />
+                            <div className="w-3 h-3 rounded-full bg-white shadow-lg border border-gray-200" />
                           )}
                         </button>
                       ))}
@@ -2237,6 +2395,134 @@ export default function AnnotationOverlay({
                   </div>
                 )}
               </div>
+
+              {/* Divider */}
+              <div className={cn(
+                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
+                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
+              )} />
+
+              {/* === UNDO/REDO GROUP === */}
+              <div className={cn(
+                "flex gap-1.5",
+                toolbarOrientation === 'vertical' && "flex-col"
+              )}>
+                {/* Undo Button */}
+                <button
+                  onClick={undo}
+                  disabled={historyStep === 0}
+                  title="Undo (Ctrl+Z)"
+                  className={cn(
+                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                    historyStep === 0
+                      ? 'bg-gradient-to-br from-gray-800/30 to-gray-900/30 text-gray-600 border-gray-700/30 cursor-not-allowed opacity-50'
+                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                  )}
+                >
+                  <Undo className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                </button>
+
+                {/* Redo Button */}
+                <button
+                  onClick={redo}
+                  disabled={historyStep >= history.length}
+                  title="Redo (Ctrl+Y)"
+                  className={cn(
+                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                    historyStep >= history.length
+                      ? 'bg-gradient-to-br from-gray-800/30 to-gray-900/30 text-gray-600 border-gray-700/30 cursor-not-allowed opacity-50'
+                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                  )}
+                >
+                  <Redo className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                </button>
+              </div>
+
+              {/* Divider */}
+              <div className={cn(
+                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
+                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
+              )} />
+
+              {/* === CLEAR ALL BUTTON === */}
+              <button
+                onClick={() => setShowClearOptions(true)}
+                title="Clear All Annotations"
+                className="h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md
+                  bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-red-900/40 hover:to-red-800/40 
+                  text-gray-300 hover:text-red-400 border-gray-600/40 hover:border-red-500/60 hover:shadow-lg hover:shadow-red-500/20"
+              >
+                <Trash2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
+              </button>
+
+              {/* Divider */}
+              <div className={cn(
+                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
+                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
+              )} />
+
+              {/* === CLOSE/MINIMIZE BUTTON === */}
+              <button
+                onClick={() => setToolbarVisible(false)}
+                title="Minimize Toolbar"
+                className="h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md
+                  bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 
+                  text-gray-400 hover:text-gray-200 border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg"
+                aria-label="Minimize toolbar"
+              >
+                <Minimize2 className="h-4.5 w-4.5 group-hover:scale-110 transition-transform" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Options Modal - Zoom-style Confirmation Dialog */}
+      {showClearOptions && (
+        <div 
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowClearOptions(false)}
+        >
+          <div 
+            className="clear-options-container bg-gradient-to-br from-[#1a1d24]/98 to-[#14161b]/98 backdrop-blur-xl border border-gray-600/60 rounded-2xl shadow-2xl p-6 max-w-md mx-4"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08) inset'
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-12 w-12 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center">
+                <Trash2 className="h-6 w-6 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Clear Annotations</h3>
+                <p className="text-sm text-gray-400">This action cannot be undone</p>
+              </div>
+            </div>
+
+            {/* Description */}
+            <p className="text-gray-300 mb-6 leading-relaxed">
+              Are you sure you want to clear all annotations? This will remove all drawings, shapes, and text from the screen for all participants.
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClearOptions(false)}
+                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border border-gray-600/40 hover:border-gray-500/60 transition-all active:scale-95 font-medium shadow-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  clearCanvas();
+                  setShowClearOptions(false);
+                }}
+                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white border border-red-500/50 hover:border-red-400/60 transition-all active:scale-95 font-medium shadow-lg shadow-red-500/30"
+              >
+                Clear All
+              </button>
             </div>
           </div>
         </div>
