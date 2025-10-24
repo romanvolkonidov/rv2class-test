@@ -133,14 +133,14 @@
     margin-bottom: 8px !important;
 }
 
-// FIX THE ROOT CAUSE: Parent flex container pushing content up
+// FIX THE ROOT CAUSE: Parent flex container - use space-between instead
 .css-1uhb7h9-container {
-    justify-content: flex-end !important;
-    align-items: flex-end !important;
+    justify-content: space-between !important;
+    align-items: center !important;
 }
 
-// Also fix premeeting screen specifically
+// Fix premeeting screen specifically - center the content
 .premeeting-screen.css-1uhb7h9-container {
-    justify-content: flex-end !important;
-    align-items: flex-end !important;
+    justify-content: center !important;
+    align-items: center !important;
 }
