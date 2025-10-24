@@ -1659,10 +1659,10 @@ export default function AnnotationOverlay({
     };
 
     conference.addCommandListener('annotation', handleMessage);
-    console.log('✅ Annotation command listener added');
+    // console.log('✅ Annotation command listener added');
     
     return () => {
-      console.log('🔴 Removing annotation command listener');
+      // console.log('🔴 Removing annotation command listener');
       conference.removeCommandListener('annotation', handleMessage);
     };
   }, [conference, viewOnly, redrawCanvas, clearCanvas]);
@@ -1792,14 +1792,7 @@ export default function AnnotationOverlay({
       >
         {/* Annotation Canvas - transparent background to see screen share */}
         <canvas
-          ref={(el) => {
-            if (el) {
-              // @ts-ignore - We need to update the ref imperatively
-              canvasRef.current = el;
-              const pointerEvents = viewOnly || tool === 'pointer' ? 'none' : 'auto';
-              console.log('🖼️ Canvas ref set:', { tool, viewOnly, pointerEvents, rect: el.getBoundingClientRect() });
-            }
-          }}
+          ref={canvasRef}
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
