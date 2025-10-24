@@ -113,7 +113,7 @@ const useStyles = makeStyles()(theme => {
             zIndex: 252,
 
             '@media (max-width: 720px)': {
-                flexDirection: 'column-reverse'
+                flexDirection: 'column'
             }
         },
         content: {
