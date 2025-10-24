@@ -1,5 +1,8 @@
 import React, { useRef, useState, useEffect, useLayoutEffect } from "react";
+import { makeStyles } from 'tss-react/mui';
 import { Button } from "./ui/button";
+import Icon from '../../base/icons/components/Icon';
+import { IconPencil } from '../../base/icons/svg/index';
 import { 
   Pencil, 
   Undo, 
@@ -24,6 +27,179 @@ import { useSelector, useDispatch } from 'react-redux';
 import { IReduxState } from '../../app/types';
 import { TRACK_REMOVED } from '../../base/tracks/actionTypes';
 import { getLocalDesktopTrack } from '../../base/tracks/functions.any';
+
+// Material-UI styled toolbar with proper Jitsi theme
+const useStyles = makeStyles()(theme => {
+    return {
+        toolbar: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: theme.spacing(1),
+            padding: theme.spacing(1.5),
+            backgroundColor: (theme.palette as any).ui01,
+            borderRadius: `${theme.shape.borderRadius * 2}px`,
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1) inset',
+            backdropFilter: 'blur(20px)',
+        },
+        toolButton: {
+            width: '40px',
+            height: '40px',
+            minWidth: '40px',
+            padding: 0,
+            borderRadius: `${theme.shape.borderRadius}px`,
+            backgroundColor: (theme.palette as any).action03,
+            border: 0,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: (theme.palette as any).icon01,
+
+            '&:hover': {
+                backgroundColor: (theme.palette as any).ui02,
+                transform: 'scale(1.05)',
+            },
+
+            '&:active': {
+                transform: 'scale(0.95)',
+            },
+
+            '&.focus-visible': {
+                outline: `2px solid ${(theme.palette as any).focus01}`,
+                outlineOffset: '2px',
+            },
+        },
+        activeButton: {
+            backgroundColor: (theme.palette as any).action01,
+            color: (theme.palette as any).text01,
+            transform: 'scale(1.05)',
+
+            '&:hover': {
+                backgroundColor: (theme.palette as any).action01Hover,
+            },
+        },
+        disabledButton: {
+            opacity: 0.4,
+            cursor: 'not-allowed',
+            pointerEvents: 'none',
+        },
+        eraserActive: {
+            backgroundColor: theme.palette.error.main,
+            color: '#fff',
+
+            '&:hover': {
+                backgroundColor: theme.palette.error.dark,
+            },
+        },
+        divider: {
+            width: '1px',
+            height: '32px',
+            backgroundColor: (theme.palette as any).ui03,
+            opacity: 0.5,
+        },
+        dividerVertical: {
+            width: '32px',
+            height: '1px',
+        },
+        dragHandle: {
+            position: 'absolute',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: theme.spacing(0.5, 1.5),
+            backgroundColor: (theme.palette as any).ui02,
+            borderRadius: `${theme.shape.borderRadius}px`,
+            cursor: 'grab',
+            transition: 'all 0.2s ease',
+            border: `1px solid ${(theme.palette as any).ui03}`,
+
+            '&:hover': {
+                backgroundColor: (theme.palette as any).ui03,
+            },
+
+            '&:active': {
+                cursor: 'grabbing',
+                backgroundColor: (theme.palette as any).ui04,
+            },
+        },
+        colorButton: {
+            border: `2px solid ${(theme.palette as any).ui04}`,
+            transition: 'all 0.2s ease',
+
+            '&:hover': {
+                borderColor: (theme.palette as any).ui05,
+            },
+        },
+        pickerPanel: {
+            position: 'absolute',
+            zIndex: 70,
+            backgroundColor: (theme.palette as any).ui01,
+            borderRadius: `${theme.shape.borderRadius * 1.5}px`,
+            padding: theme.spacing(2),
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+            border: `1px solid ${(theme.palette as any).ui03}`,
+            minWidth: '200px',
+        },
+        pickerTitle: {
+            fontSize: '11px',
+            fontWeight: 600,
+            color: (theme.palette as any).text02,
+            marginBottom: theme.spacing(1.5),
+            letterSpacing: '0.5px',
+        },
+        colorGrid: {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: theme.spacing(1),
+        },
+        colorSwatch: {
+            width: '36px',
+            height: '36px',
+            borderRadius: `${theme.shape.borderRadius}px`,
+            border: `2px solid ${(theme.palette as any).ui04}`,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+
+            '&:hover': {
+                transform: 'scale(1.1)',
+                borderColor: (theme.palette as any).ui05,
+            },
+        },
+        colorSwatchActive: {
+            transform: 'scale(1.1)',
+            borderColor: (theme.palette as any).action01,
+            boxShadow: `0 0 0 2px ${(theme.palette as any).action01}`,
+        },
+        widthPreset: {
+            width: '100%',
+            padding: theme.spacing(1.25, 1.5),
+            borderRadius: `${theme.shape.borderRadius}px`,
+            border: `1px solid ${(theme.palette as any).ui04}`,
+            backgroundColor: (theme.palette as any).ui02,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: theme.spacing(1.5),
+            marginBottom: theme.spacing(1),
+
+            '&:hover': {
+                backgroundColor: (theme.palette as any).ui03,
+                borderColor: (theme.palette as any).ui05,
+            },
+        },
+        widthPresetActive: {
+            backgroundColor: (theme.palette as any).action03,
+            borderColor: (theme.palette as any).action01,
+            boxShadow: `0 0 0 1px ${(theme.palette as any).action01}`,
+        },
+    };
+});
 
 type AnnotationTool = "pencil" | "text" | "arrow" | "eraser" | "rectangle" | "circle" | "pointer";
 
@@ -81,6 +257,9 @@ export default function AnnotationOverlay({
   isClosing?: boolean;
   isTutor?: boolean;
 }) {
+  // Material-UI styles
+  const { classes: styles, cx } = useStyles();
+  
   // Get the conference object from Jitsi's Redux store
   const conference = useSelector((state: IReduxState) => (state as any)['features/base/conference'].conference);
   const localParticipant = useSelector((state: IReduxState) => (state as any)['features/base/participants'].local);
@@ -2077,28 +2256,34 @@ export default function AnnotationOverlay({
           {/* Drag Handle */}
           <div 
             className={cn(
-              "drag-handle absolute px-3 py-1 bg-gray-900/90 backdrop-blur-xl border border-gray-600/50 flex items-center gap-1.5 transition-all pointer-events-auto rounded-md",
-              isDraggingToolbar ? "cursor-grabbing bg-blue-600/30" : "cursor-grab hover:bg-gray-800/95 hover:border-gray-500",
+              "drag-handle absolute px-3 py-1 backdrop-blur-xl border flex items-center gap-1.5 transition-all pointer-events-auto rounded-md",
+              isDraggingToolbar ? "cursor-grabbing" : "cursor-grab",
               toolbarOrientation === 'horizontal' 
                 ? "-top-5 left-1/2 transform -translate-x-1/2 rounded-t-md border-b-0" 
                 : "-left-5 top-1/2 transform -translate-y-1/2 rounded-l-md border-r-0 flex-col"
             )}
+            style={{
+              backgroundColor: 'rgba(38, 50, 56, 0.9)',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+            }}
           >
             <GripVertical className={cn(
-              "h-3.5 w-3.5 text-gray-300",
+              "h-3.5 w-3.5 text-gray-400",
               toolbarOrientation === 'vertical' && "rotate-90"
             )} />
           </div>
 
-          {/* Main Toolbar - Zoom-style Professional Design */}
+          {/* Main Toolbar - Modern MUI/Jitsi Style */}
           <div 
             className={cn(
-              "backdrop-blur-xl bg-gradient-to-br from-[#1a1d24]/98 to-[#14161b]/98 border border-gray-700/60 rounded-2xl shadow-2xl transition-all",
+              "backdrop-blur-2xl rounded-2xl shadow-2xl transition-all border",
               toolbarOrientation === 'horizontal' && "max-w-[calc(100vw-40px)]",
               toolbarOrientation === 'vertical' && "max-h-[calc(100vh-40px)]"
             )}
             style={{
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 2px 8px rgba(59, 130, 246, 0.15)'
+              backgroundColor: 'rgba(28, 32, 36, 0.95)',
+              borderColor: 'rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
             }}
           >
             <div className={cn(
@@ -2111,20 +2296,34 @@ export default function AnnotationOverlay({
                 onClick={() => setTool("pointer")}
                 title="Select & Move (Pointer)"
                 className={cn(
-                  "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                  "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
                   tool === "pointer" 
-                    ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/40 border-blue-400/60 scale-105' 
-                    : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                    ? 'text-white scale-105' 
+                    : 'text-gray-300 hover:text-white'
                 )}
+                style={{
+                  backgroundColor: tool === "pointer" ? '#1565C0' : 'rgba(255, 255, 255, 0.08)',
+                  boxShadow: tool === "pointer" ? '0 2px 8px rgba(21, 101, 192, 0.4)' : 'none',
+                }}
+                onMouseEnter={(e) => {
+                  if (tool !== "pointer") {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (tool !== "pointer") {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                  }
+                }}
               >
-                <MousePointer2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                <MousePointer2 className="h-5 w-5" />
               </button>
 
               {/* Divider */}
-              <div className={cn(
-                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
-                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
-              )} />
+              <div 
+                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+              />
 
               {/* === DRAWING TOOLS GROUP === */}
               <div className={cn(
@@ -2136,13 +2335,27 @@ export default function AnnotationOverlay({
                   onClick={() => setTool("pencil")}
                   title="Draw (Pencil)"
                   className={cn(
-                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
                     tool === "pencil" 
-                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/40 border-blue-400/60 scale-105' 
-                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                      ? 'text-white scale-105' 
+                      : 'text-gray-300 hover:text-white'
                   )}
+                  style={{
+                    backgroundColor: tool === "pencil" ? '#1565C0' : 'rgba(255, 255, 255, 0.08)',
+                    boxShadow: tool === "pencil" ? '0 2px 8px rgba(21, 101, 192, 0.4)' : 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (tool !== "pencil") {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (tool !== "pencil") {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    }
+                  }}
                 >
-                  <Pencil className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  <Pencil className="h-5 w-5" />
                 </button>
 
                 {/* Line/Arrow Tool */}
@@ -2150,21 +2363,35 @@ export default function AnnotationOverlay({
                   onClick={() => setTool("arrow")}
                   title="Draw Arrow"
                   className={cn(
-                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
                     tool === "arrow" 
-                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/40 border-blue-400/60 scale-105' 
-                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                      ? 'text-white scale-105' 
+                      : 'text-gray-300 hover:text-white'
                   )}
+                  style={{
+                    backgroundColor: tool === "arrow" ? '#1565C0' : 'rgba(255, 255, 255, 0.08)',
+                    boxShadow: tool === "arrow" ? '0 2px 8px rgba(21, 101, 192, 0.4)' : 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (tool !== "arrow") {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (tool !== "arrow") {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    }
+                  }}
                 >
-                  <ArrowUpRight className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  <ArrowUpRight className="h-5 w-5" />
                 </button>
               </div>
 
               {/* Divider */}
-              <div className={cn(
-                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
-                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
-              )} />
+              <div 
+                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+              />
 
               {/* === SHAPES GROUP === */}
               <div className={cn(
@@ -2176,13 +2403,27 @@ export default function AnnotationOverlay({
                   onClick={() => setTool("rectangle")}
                   title="Draw Rectangle"
                   className={cn(
-                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
                     tool === "rectangle" 
-                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/40 border-blue-400/60 scale-105' 
-                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                      ? 'text-white scale-105' 
+                      : 'text-gray-300 hover:text-white'
                   )}
+                  style={{
+                    backgroundColor: tool === "rectangle" ? '#1565C0' : 'rgba(255, 255, 255, 0.08)',
+                    boxShadow: tool === "rectangle" ? '0 2px 8px rgba(21, 101, 192, 0.4)' : 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (tool !== "rectangle") {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (tool !== "rectangle") {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    }
+                  }}
                 >
-                  <Square className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  <Square className="h-5 w-5" />
                 </button>
 
                 {/* Circle Tool */}
@@ -2190,13 +2431,27 @@ export default function AnnotationOverlay({
                   onClick={() => setTool("circle")}
                   title="Draw Circle"
                   className={cn(
-                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
                     tool === "circle" 
-                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/40 border-blue-400/60 scale-105' 
-                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                      ? 'text-white scale-105' 
+                      : 'text-gray-300 hover:text-white'
                   )}
+                  style={{
+                    backgroundColor: tool === "circle" ? '#1565C0' : 'rgba(255, 255, 255, 0.08)',
+                    boxShadow: tool === "circle" ? '0 2px 8px rgba(21, 101, 192, 0.4)' : 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (tool !== "circle") {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (tool !== "circle") {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    }
+                  }}
                 >
-                  <Circle className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  <Circle className="h-5 w-5" />
                 </button>
 
                 {/* Text Tool */}
@@ -2204,59 +2459,97 @@ export default function AnnotationOverlay({
                   onClick={() => setTool("text")}
                   title="Add Text"
                   className={cn(
-                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
                     tool === "text" 
-                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/40 border-blue-400/60 scale-105' 
-                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                      ? 'text-white scale-105' 
+                      : 'text-gray-300 hover:text-white'
                   )}
+                  style={{
+                    backgroundColor: tool === "text" ? '#1565C0' : 'rgba(255, 255, 255, 0.08)',
+                    boxShadow: tool === "text" ? '0 2px 8px rgba(21, 101, 192, 0.4)' : 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (tool !== "text") {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (tool !== "text") {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    }
+                  }}
                 >
-                  <Type className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  <Type className="h-5 w-5" />
                 </button>
               </div>
 
               {/* Divider */}
-              <div className={cn(
-                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
-                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
-              )} />
+              <div 
+                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+              />
 
               {/* === ERASER TOOL === */}
               <button
                 onClick={() => setTool("eraser")}
                 title="Eraser"
                 className={cn(
-                  "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                  "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
                   tool === "eraser" 
-                    ? 'bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white shadow-lg shadow-red-500/40 border-red-400/60 scale-105' 
-                    : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                    ? 'text-white scale-105' 
+                    : 'text-gray-300 hover:text-white'
                 )}
+                style={{
+                  backgroundColor: tool === "eraser" ? '#D32F2F' : 'rgba(255, 255, 255, 0.08)',
+                  boxShadow: tool === "eraser" ? '0 2px 8px rgba(211, 47, 47, 0.4)' : 'none',
+                }}
+                onMouseEnter={(e) => {
+                  if (tool !== "eraser") {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (tool !== "eraser") {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                  }
+                }}
               >
-                <Eraser className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                <Eraser className="h-5 w-5" />
               </button>
 
               {/* Divider */}
-              <div className={cn(
-                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
-                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
-              )} />
+              <div 
+                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+              />
 
               {/* === STROKE WIDTH CONTROL === */}
               <div className="relative size-picker-container">
                 <button
                   className={cn(
-                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5 group border shadow-md",
+                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5 group border-0",
                     showSizePicker
-                      ? 'bg-gradient-to-br from-blue-600/20 to-blue-700/20 border-blue-500/60'
-                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                      ? 'text-blue-400'
+                      : 'text-gray-300 hover:text-white'
                   )}
+                  style={{
+                    backgroundColor: showSizePicker ? 'rgba(21, 101, 192, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!showSizePicker) {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!showSizePicker) {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    }
+                  }}
                   onClick={() => setShowSizePicker(!showSizePicker)}
                   title={`Line Width: ${lineWidth}px`}
                   aria-label="Choose line width"
                 >
-                  <Minus className={cn(
-                    "transition-colors",
-                    showSizePicker ? "text-blue-400" : "text-gray-300 group-hover:text-white"
-                  )} 
+                  <Minus className="transition-colors" 
                   style={{ 
                     width: `${Math.max(12, Math.min(20, lineWidth * 2))}px`,
                     height: `${Math.max(2, Math.min(4, lineWidth))}px`,
@@ -2264,15 +2557,20 @@ export default function AnnotationOverlay({
                   }} />
                   <ChevronDown className={cn(
                     "h-3 w-3 transition-all",
-                    showSizePicker ? "rotate-180 text-blue-400" : "text-gray-400 group-hover:text-gray-300"
+                    showSizePicker && "rotate-180"
                   )} />
                 </button>
                 
                 {showSizePicker && (
                   <div className={cn(
-                    "absolute z-[70] bg-gradient-to-br from-[#1a1d24]/98 to-[#14161b]/98 backdrop-blur-xl border border-gray-600/60 rounded-xl p-4 shadow-2xl min-w-[200px]",
+                    "absolute z-[70] backdrop-blur-xl border rounded-xl p-4 shadow-2xl min-w-[200px]",
                     toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
-                  )}>
+                  )}
+                  style={{
+                    backgroundColor: 'rgba(28, 32, 36, 0.98)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                  }}
+                  >
                     <div className="text-xs text-gray-300 font-semibold mb-3 tracking-wide flex items-center justify-between">
                       <span>STROKE WIDTH</span>
                       <span className="text-blue-400 font-bold">{lineWidth}px</span>
@@ -2281,19 +2579,34 @@ export default function AnnotationOverlay({
                     {/* Width Presets */}
                     <div className="space-y-2.5 mb-4">
                       {[
-                        { value: 1, label: 'Thin', icon: '─' },
-                        { value: 3, label: 'Medium', icon: '━' },
-                        { value: 5, label: 'Thick', icon: '━' },
-                        { value: 8, label: 'Extra Thick', icon: '━' }
+                        { value: 1, label: 'Thin' },
+                        { value: 3, label: 'Medium' },
+                        { value: 5, label: 'Thick' },
+                        { value: 8, label: 'Extra Thick' }
                       ].map((preset) => (
                         <button
                           key={preset.value}
                           className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all border",
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all border-0",
                             lineWidth === preset.value
-                              ? 'bg-blue-600/30 border-blue-500/60 text-white shadow-lg shadow-blue-500/20'
-                              : 'bg-gray-800/40 border-gray-700/50 text-gray-300 hover:bg-gray-700/50 hover:border-gray-600/60'
+                              ? 'text-white'
+                              : 'text-gray-300 hover:text-white'
                           )}
+                          style={{
+                            backgroundColor: lineWidth === preset.value 
+                              ? 'rgba(21, 101, 192, 0.3)' 
+                              : 'rgba(255, 255, 255, 0.05)',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (lineWidth !== preset.value) {
+                              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (lineWidth !== preset.value) {
+                              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                            }
+                          }}
                           onClick={() => {
                             setLineWidth(preset.value);
                             setShowSizePicker(false);
@@ -2309,7 +2622,7 @@ export default function AnnotationOverlay({
                     </div>
 
                     {/* Custom Slider */}
-                    <div className="pt-2 border-t border-gray-700/50">
+                    <div className="pt-2 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
                       <label className="text-xs text-gray-400 mb-2 block">Custom</label>
                       <input
                         type="range"
@@ -2317,13 +2630,10 @@ export default function AnnotationOverlay({
                         max="12"
                         value={lineWidth}
                         onChange={(e) => setLineWidth(Number(e.target.value))}
-                        className="w-full h-2 bg-gray-700/50 rounded-lg appearance-none cursor-pointer
-                          [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
-                          [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500 
-                          [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg
-                          [&::-webkit-slider-thumb]:hover:bg-blue-400 [&::-webkit-slider-thumb]:transition-colors
-                          [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full 
-                          [&::-moz-range-thumb]:bg-blue-500 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+                        className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                        style={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        }}
                       />
                     </div>
                   </div>
@@ -2331,23 +2641,23 @@ export default function AnnotationOverlay({
               </div>
 
               {/* Divider */}
-              <div className={cn(
-                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
-                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
-              )} />
+              <div 
+                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+              />
 
               {/* === COLOR PICKER === */}
               <div className="relative color-picker-container">
                 <button
                   className={cn(
-                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center border-2 shadow-md group relative overflow-hidden",
+                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center border-2 group relative overflow-hidden",
                     showColorPicker
-                      ? 'border-gray-500/80 scale-105'
-                      : 'border-gray-600/50 hover:border-gray-500/70 hover:scale-105'
+                      ? 'border-white/30 scale-105'
+                      : 'border-white/20 hover:border-white/30 hover:scale-105'
                   )}
                   style={{ 
                     background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
-                    boxShadow: `0 4px 16px ${color}50, inset 0 1px 2px rgba(255,255,255,0.1)`
+                    boxShadow: `0 4px 16px ${color}50`
                   }}
                   onClick={() => setShowColorPicker(!showColorPicker)}
                   title={`Color: ${availableColors.find(c => c.value === color)?.label || color}`}
@@ -2358,9 +2668,14 @@ export default function AnnotationOverlay({
                 
                 {showColorPicker && (
                   <div className={cn(
-                    "absolute z-[70] bg-gradient-to-br from-[#1a1d24]/98 to-[#14161b]/98 backdrop-blur-xl border border-gray-600/60 rounded-xl p-4 shadow-2xl",
+                    "absolute z-[70] backdrop-blur-xl border rounded-xl p-4 shadow-2xl",
                     toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
-                  )}>
+                  )}
+                  style={{
+                    backgroundColor: 'rgba(28, 32, 36, 0.98)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                  }}
+                  >
                     <div className="text-xs text-gray-300 font-semibold mb-3 tracking-wide flex items-center gap-2">
                       <Palette className="h-3.5 w-3.5 text-blue-400" />
                       <span>COLOR PALETTE</span>
@@ -2370,14 +2685,15 @@ export default function AnnotationOverlay({
                         <button
                           key={c.value}
                           className={cn(
-                            "w-11 h-11 rounded-lg transition-all border-2 active:scale-95 flex items-center justify-center group relative overflow-hidden",
+                            "w-10 h-10 rounded-lg transition-all border-2 active:scale-95 flex items-center justify-center group relative overflow-hidden",
                             color === c.value 
-                              ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#14161b] border-white/40 scale-105 shadow-xl' 
-                              : 'border-gray-600/50 hover:border-gray-400/70 hover:scale-110 shadow-md'
+                              ? 'ring-2 ring-blue-500 ring-offset-2 border-white/40 scale-105 shadow-xl' 
+                              : 'border-white/20 hover:border-white/40 hover:scale-110 shadow-md'
                           )}
                           style={{ 
                             background: `linear-gradient(135deg, ${c.value} 0%, ${c.value}dd 100%)`,
-                            boxShadow: color === c.value ? `0 4px 20px ${c.value}70, inset 0 1px 2px rgba(255,255,255,0.15)` : `0 2px 8px ${c.value}30`
+                            boxShadow: color === c.value ? `0 4px 20px ${c.value}70` : `0 2px 8px ${c.value}30`,
+                            ringOffsetColor: 'rgba(28, 32, 36, 1)',
                           }}
                           onClick={() => {
                             setColor(c.value);
@@ -2397,10 +2713,10 @@ export default function AnnotationOverlay({
               </div>
 
               {/* Divider */}
-              <div className={cn(
-                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
-                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
-              )} />
+              <div 
+                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+              />
 
               {/* === UNDO/REDO GROUP === */}
               <div className={cn(
@@ -2413,13 +2729,28 @@ export default function AnnotationOverlay({
                   disabled={historyStep === 0}
                   title="Undo (Ctrl+Z)"
                   className={cn(
-                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
                     historyStep === 0
-                      ? 'bg-gradient-to-br from-gray-800/30 to-gray-900/30 text-gray-600 border-gray-700/30 cursor-not-allowed opacity-50'
-                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                      ? 'text-gray-600 cursor-not-allowed opacity-50'
+                      : 'text-gray-300 hover:text-white'
                   )}
+                  style={{
+                    backgroundColor: historyStep === 0 
+                      ? 'rgba(255, 255, 255, 0.03)' 
+                      : 'rgba(255, 255, 255, 0.08)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (historyStep !== 0) {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (historyStep !== 0) {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    }
+                  }}
                 >
-                  <Undo className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  <Undo className="h-5 w-5" />
                 </button>
 
                 {/* Redo Button */}
@@ -2428,49 +2759,78 @@ export default function AnnotationOverlay({
                   disabled={historyStep >= history.length}
                   title="Redo (Ctrl+Y)"
                   className={cn(
-                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md",
+                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
                     historyStep >= history.length
-                      ? 'bg-gradient-to-br from-gray-800/30 to-gray-900/30 text-gray-600 border-gray-700/30 cursor-not-allowed opacity-50'
-                      : 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg'
+                      ? 'text-gray-600 cursor-not-allowed opacity-50'
+                      : 'text-gray-300 hover:text-white'
                   )}
+                  style={{
+                    backgroundColor: historyStep >= history.length 
+                      ? 'rgba(255, 255, 255, 0.03)' 
+                      : 'rgba(255, 255, 255, 0.08)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (historyStep < history.length) {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (historyStep < history.length) {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    }
+                  }}
                 >
-                  <Redo className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  <Redo className="h-5 w-5" />
                 </button>
               </div>
 
               {/* Divider */}
-              <div className={cn(
-                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
-                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
-              )} />
+              <div 
+                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+              />
 
               {/* === CLEAR ALL BUTTON === */}
               <button
                 onClick={() => setShowClearOptions(true)}
                 title="Clear All Annotations"
-                className="h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md
-                  bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-red-900/40 hover:to-red-800/40 
-                  text-gray-300 hover:text-red-400 border-gray-600/40 hover:border-red-500/60 hover:shadow-lg hover:shadow-red-500/20"
+                className="h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0 text-gray-300 hover:text-red-400"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(211, 47, 47, 0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                }}
               >
-                <Trash2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                <Trash2 className="h-5 w-5" />
               </button>
 
               {/* Divider */}
-              <div className={cn(
-                "bg-gradient-to-br from-gray-600/30 to-gray-700/20",
-                toolbarOrientation === 'horizontal' ? "w-px h-10" : "h-px w-10"
-              )} />
+              <div 
+                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+              />
 
               {/* === CLOSE/MINIMIZE BUTTON === */}
               <button
                 onClick={() => setToolbarVisible(false)}
                 title="Minimize Toolbar"
-                className="h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border shadow-md
-                  bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 
-                  text-gray-400 hover:text-gray-200 border-gray-600/40 hover:border-gray-500/60 hover:shadow-lg"
+                className="h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0 text-gray-400 hover:text-gray-200"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                }}
                 aria-label="Minimize toolbar"
               >
-                <Minimize2 className="h-4.5 w-4.5 group-hover:scale-110 transition-transform" />
+                <Minimize2 className="h-4.5 w-4.5" />
               </button>
             </div>
           </div>
@@ -2480,19 +2840,27 @@ export default function AnnotationOverlay({
       {/* Clear Options Modal - Zoom-style Confirmation Dialog */}
       {showClearOptions && (
         <div 
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[10000] flex items-center justify-center backdrop-blur-sm"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
           onClick={() => setShowClearOptions(false)}
         >
           <div 
-            className="clear-options-container bg-gradient-to-br from-[#1a1d24]/98 to-[#14161b]/98 backdrop-blur-xl border border-gray-600/60 rounded-2xl shadow-2xl p-6 max-w-md mx-4"
-            onClick={(e) => e.stopPropagation()}
+            className="clear-options-container backdrop-blur-xl border rounded-2xl shadow-2xl p-6 max-w-md mx-4"
             style={{
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08) inset'
+              backgroundColor: 'rgba(28, 32, 36, 0.98)',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)'
             }}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="h-12 w-12 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center">
+              <div className="h-12 w-12 rounded-xl border flex items-center justify-center"
+                style={{ 
+                  backgroundColor: 'rgba(211, 47, 47, 0.2)',
+                  borderColor: 'rgba(211, 47, 47, 0.4)',
+                }}
+              >
                 <Trash2 className="h-6 w-6 text-red-400" />
               </div>
               <div>
@@ -2510,7 +2878,16 @@ export default function AnnotationOverlay({
             <div className="flex gap-3">
               <button
                 onClick={() => setShowClearOptions(false)}
-                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/70 hover:to-gray-800/70 text-gray-300 hover:text-white border border-gray-600/40 hover:border-gray-500/60 transition-all active:scale-95 font-medium shadow-md"
+                className="flex-1 px-4 py-3 rounded-xl text-gray-300 hover:text-white border-0 transition-all active:scale-95 font-medium shadow-md"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                }}
               >
                 Cancel
               </button>
@@ -2519,7 +2896,17 @@ export default function AnnotationOverlay({
                   clearCanvas();
                   setShowClearOptions(false);
                 }}
-                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white border border-red-500/50 hover:border-red-400/60 transition-all active:scale-95 font-medium shadow-lg shadow-red-500/30"
+                className="flex-1 px-4 py-3 rounded-xl text-white border-0 transition-all active:scale-95 font-medium shadow-lg"
+                style={{
+                  backgroundColor: '#D32F2F',
+                  boxShadow: '0 4px 16px rgba(211, 47, 47, 0.3)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#C62828';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#D32F2F';
+                }}
               >
                 Clear All
               </button>
