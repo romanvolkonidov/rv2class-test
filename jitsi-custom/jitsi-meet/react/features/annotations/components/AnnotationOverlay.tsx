@@ -7,11 +7,15 @@ import {
   ArrowUpRight,
   Edit,
   Trash2,
-  GripVertical
+  GripVertical,
+  X,
+  Minimize2
 } from "lucide-react";
 import { cn } from "../lib/utils";
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { IReduxState } from '../../app/types';
+import { TRACK_REMOVED } from '../../base/tracks/actionTypes';
+import { getLocalDesktopTrack } from '../../base/tracks/functions.any';
 
 type AnnotationTool = "pencil" | "text" | "arrow" | "eraser" | "rectangle" | "circle" | "pointer";
 
@@ -72,6 +76,8 @@ export default function AnnotationOverlay({
   // Get the conference object from Jitsi's Redux store
   const conference = useSelector((state: IReduxState) => (state as any)['features/base/conference'].conference);
   const localParticipant = useSelector((state: IReduxState) => (state as any)['features/base/participants'].local);
+  const dispatch = useDispatch();
+  const tracks = useSelector((state: IReduxState) => (state as any)['features/base/tracks']);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -92,7 +98,8 @@ export default function AnnotationOverlay({
   const [remoteActions, setRemoteActions] = useState<AnnotationAction[]>([]); // Separate array for remote actions
   const [startPoint, setStartPoint] = useState<RelativePoint | null>(null);
   const [screenShareElement, setScreenShareElement] = useState<HTMLVideoElement | null>(null);
-  const [toolbarCollapsed, setToolbarCollapsed] = useState(true); // Start minimized by default
+  const [toolbarVisible, setToolbarVisible] = useState(true); // Control toolbar visibility
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(false); // Start expanded
   const [textInput, setTextInput] = useState("");
   const [textInputPosition, setTextInputPosition] = useState<RelativePoint | null>(null);
   const [isTextInputVisible, setIsTextInputVisible] = useState(false);
@@ -114,10 +121,10 @@ export default function AnnotationOverlay({
   };
   
   // Toolbar dragging state
-  // Start with a visible position (bottom-center) instead of (0, 0)
+  // Start with bottom-right corner position (professional location)
   const [toolbarPosition, setToolbarPosition] = useState({ 
-    x: window.innerWidth / 2 - 300, // Approximate center (assuming toolbar ~600px wide)
-    y: window.innerHeight - 150 // 150px from bottom
+    x: window.innerWidth - 420, // 420px from right edge (toolbar is ~400px wide + margin)
+    y: window.innerHeight - 100 // 100px from bottom
   });
   const [isDraggingToolbar, setIsDraggingToolbar] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -338,6 +345,31 @@ export default function AnnotationOverlay({
       return () => clearInterval(interval);
     }
   }, [isClosing]);
+
+  // Monitor for screenshare stop - auto-close toolbar and clear annotations
+  useEffect(() => {
+    const checkScreenShare = () => {
+      const desktopTrack = getLocalDesktopTrack(tracks);
+      
+      // If there's no desktop track and we have a conference, screen share has stopped
+      if (!desktopTrack && conference && !isClosing) {
+        console.log('🛑 Screen share stopped - closing annotations');
+        
+        // Clear all annotations
+        clearCanvas();
+        
+        // Close the overlay if onClose is provided
+        if (onClose) {
+          onClose();
+        }
+      }
+    };
+
+    // Check periodically
+    const interval = setInterval(checkScreenShare, 1000);
+    
+    return () => clearInterval(interval);
+  }, [tracks, conference, isClosing, onClose]);
 
   // Detect browser zoom level
   useEffect(() => {
@@ -2027,184 +2059,204 @@ export default function AnnotationOverlay({
         </div>
       )}
 
-      {/* Toolbar - Show for both teachers and students, but students get view-only version */}
-      <div 
-        ref={toolbarRef}
-        style={{
-          position: 'fixed',
-          left: `${toolbarPosition.x}px`,
-          top: `${toolbarPosition.y}px`,
-          zIndex: 9999,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          backdropFilter: 'blur(10px)',
-          padding: '12px',
-          borderRadius: '12px',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
-          pointerEvents: 'auto',
-        }}
-        onMouseDown={handleToolbarMouseDown}
-        onMouseUp={handleToolbarMouseUp}
-        onTouchStart={handleToolbarTouchStart}
-        onTouchEnd={handleToolbarTouchEnd}
-      >
-        {/* Drag Hint - Shows when long press is activated */}
-        {showDragHint && (
-          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-blue-500/90 text-white px-3 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap animate-pulse shadow-lg z-[70] border border-blue-400/30">
-            ✋ Dragging enabled!
-          </div>
-        )}
-        
-        {/* Drag Handle - Always show, students can drag too */}
+      {/* Toolbar - Modern Jitsi-style design with close button */}
+      {toolbarVisible && (
         <div 
-          className={cn(
-            "drag-handle absolute px-4 py-1.5 bg-black/40 backdrop-blur-xl border border-white/20 flex items-center gap-2 transition-colors pointer-events-auto",
-            isDraggingToolbar ? "cursor-grabbing bg-black/60" : "cursor-grab hover:bg-black/50",
-            toolbarOrientation === 'horizontal' 
-              ? "-top-6 left-1/2 transform -translate-x-1/2 rounded-t-lg border-b-0" 
-              : "-left-6 top-1/2 transform -translate-y-1/2 rounded-l-lg border-r-0 flex-col"
-          )}
+          ref={toolbarRef}
+          style={{
+            position: 'fixed',
+            left: `${toolbarPosition.x}px`,
+            top: `${toolbarPosition.y}px`,
+            zIndex: 9999,
+            pointerEvents: 'auto',
+          }}
+          onMouseDown={handleToolbarMouseDown}
+          onMouseUp={handleToolbarMouseUp}
+          onTouchStart={handleToolbarTouchStart}
+          onTouchEnd={handleToolbarTouchEnd}
         >
-          <GripVertical className={cn(
-            "h-4 w-4 text-white/60",
-            toolbarOrientation === 'vertical' && "rotate-90"
-          )} />
-          <span className={cn(
-            "text-xs text-white/70 font-medium select-none",
-            toolbarOrientation === 'vertical' && "writing-mode-vertical transform rotate-180"
-          )}>
-            {toolbarOrientation === 'horizontal' ? 'Drag Here or Between Buttons' : 'Drag'}
-          </span>
-        </div>
-
-          {/* Main Toolbar with Jitsi-native styling */}
+          {/* Drag Hint - Shows when long press is activated */}
+          {showDragHint && (
+            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-blue-500/90 text-white px-3 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap animate-pulse shadow-lg z-[70] border border-blue-400/30">
+              ✋ Dragging enabled!
+            </div>
+          )}
+          
+          {/* Drag Handle - Subtle and professional */}
           <div 
             className={cn(
-              "backdrop-blur-md bg-gray-800/95 border border-gray-700/80 rounded-xl shadow-2xl p-2.5 transition-all",
+              "drag-handle absolute px-3 py-1 bg-gray-900/80 backdrop-blur-xl border border-gray-700 flex items-center gap-1.5 transition-all pointer-events-auto rounded-md",
+              isDraggingToolbar ? "cursor-grabbing bg-gray-900/95" : "cursor-grab hover:bg-gray-800/90",
+              toolbarOrientation === 'horizontal' 
+                ? "-top-5 left-1/2 transform -translate-x-1/2 rounded-t-md border-b-0" 
+                : "-left-5 top-1/2 transform -translate-y-1/2 rounded-l-md border-r-0 flex-col"
+            )}
+          >
+            <GripVertical className={cn(
+              "h-3.5 w-3.5 text-gray-400",
+              toolbarOrientation === 'vertical' && "rotate-90"
+            )} />
+          </div>
+
+          {/* Main Toolbar with Professional Jitsi-native styling */}
+          <div 
+            className={cn(
+              "backdrop-blur-xl bg-gradient-to-br from-gray-900/95 to-gray-800/95 border border-gray-700/80 rounded-2xl shadow-2xl transition-all",
               toolbarOrientation === 'horizontal' && "max-w-[calc(100vw-40px)]",
               toolbarOrientation === 'vertical' && "max-h-[calc(100vh-40px)]"
             )}
+            style={{
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
+            }}
           >
-              /* Toolbar - Native Jitsi style */
+            <div className={cn(
+              "flex items-center gap-2 p-2.5",
+              toolbarOrientation === 'vertical' && "flex-col"
+            )}>
+              {/* Close Button - Premium design */}
+              <button
+                onClick={() => setToolbarVisible(false)}
+                className="h-10 w-10 rounded-xl bg-gradient-to-br from-gray-700/60 to-gray-800/60 hover:from-gray-600/70 hover:to-gray-700/70 border border-gray-600/50 hover:border-gray-500/50 text-gray-300 hover:text-white transition-all active:scale-95 flex items-center justify-center group shadow-md"
+                title="Hide toolbar (annotations remain)"
+                aria-label="Hide toolbar"
+              >
+                <Minimize2 className="h-4.5 w-4.5 group-hover:scale-110 transition-transform" />
+              </button>
+
+              {/* Divider */}
               <div className={cn(
-                "flex items-center gap-2.5",
+                "bg-gradient-to-br from-gray-700/40 to-gray-600/30",
+                toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+              )} />
+
+              {/* Drawing Tools Group */}
+              <div className={cn(
+                "flex gap-1.5",
                 toolbarOrientation === 'vertical' && "flex-col"
               )}>
-                {/* Drawing Tools */}
-                <div className={cn(
-                  "flex gap-2",
-                  toolbarOrientation === 'vertical' && "flex-col"
-                )}>
-                  {/* Pencil */}
-                  <Button
-                    size="icon"
-                    variant={tool === "pencil" ? "default" : "ghost"}
-                    onClick={() => setTool("pencil")}
-                    title="Pencil"
-                    className={`h-11 w-11 rounded-lg transition-all active:scale-95 ${
-                      tool === "pencil" 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg' 
-                        : 'bg-gray-700/90 hover:bg-gray-600/90 text-white'
-                    }`}
-                  >
-                    <Pencil className="h-5 w-5" />
-                  </Button>
-
-                  {/* Text */}
-                  <Button
-                    size="icon"
-                    variant={tool === "text" ? "default" : "ghost"}
-                    onClick={() => setTool("text")}
-                    title="Text"
-                    className={`h-11 w-11 rounded-lg transition-all active:scale-95 ${
-                      tool === "text" 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg' 
-                        : 'bg-gray-700/90 hover:bg-gray-600/90 text-white'
-                    }`}
-                  >
-                    <Type className="h-5 w-5" />
-                  </Button>
-
-                  {/* Arrow */}
-                  <Button
-                    size="icon"
-                    variant={tool === "arrow" ? "default" : "ghost"}
-                    onClick={() => setTool("arrow")}
-                    title="Arrow"
-                    className={`h-11 w-11 rounded-lg transition-all active:scale-95 ${
-                      tool === "arrow" 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg' 
-                        : 'bg-gray-700/90 hover:bg-gray-600/90 text-white'
-                    }`}
-                  >
-                    <ArrowUpRight className="h-5 w-5" />
-                  </Button>
-                </div>
-
-                {/* Divider */}
-                <div className={cn(
-                  "bg-gray-500/30",
-                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
-                )} />
-
-                {/* Undo Button */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={undo}
-                  disabled={historyStep === 0}
-                  title="Undo"
-                  className="h-11 w-11 rounded-lg bg-gray-700/90 hover:bg-gray-600/90 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all active:scale-95"
-                >
-                  <Undo className="h-5 w-5" />
-                </Button>
-
-                {/* Divider */}
-                <div className={cn(
-                  "bg-gray-500/30",
-                  toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
-                )} />
-
-                {/* Color Picker */}
-                <div className="relative color-picker-container">
-                  <button
-                    className="h-11 w-11 rounded-lg transition-all border-2 border-gray-600 hover:border-gray-500 active:scale-95 shadow-md"
-                    style={{ backgroundColor: color }}
-                    onClick={() => setShowColorPicker(!showColorPicker)}
-                    title={`Color: ${availableColors.find(c => c.value === color)?.label || color}`}
-                    aria-label="Choose color"
-                  />
-                  {showColorPicker && (
-                    <div className={cn(
-                      "absolute z-[70] bg-gray-800/95 backdrop-blur-sm border border-gray-600 rounded-lg p-3 shadow-2xl",
-                      toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
-                    )}>
-                      <div className="text-xs text-gray-300 font-medium mb-2">Color:</div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {availableColors.map((c) => (
-                          <button
-                            key={c.value}
-                            className={`w-10 h-10 rounded-md transition-all border active:scale-95 ${
-                              color === c.value 
-                                ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-800 border-gray-500' 
-                                : 'border-gray-600 hover:border-gray-500'
-                            }`}
-                            style={{ backgroundColor: c.value }}
-                            onClick={() => {
-                              setColor(c.value);
-                              setShowColorPicker(false);
-                            }}
-                            title={c.label}
-                            aria-label={c.label}
-                          />
-                        ))}
-                      </div>
-                    </div>
+                {/* Pencil Tool */}
+                <button
+                  onClick={() => setTool("pencil")}
+                  title="Draw (Pencil)"
+                  className={cn(
+                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border",
+                    tool === "pencil" 
+                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/30 border-blue-500/50' 
+                      : 'bg-gradient-to-br from-gray-700/60 to-gray-800/60 hover:from-gray-600/70 hover:to-gray-700/70 text-gray-300 hover:text-white border-gray-600/50 hover:border-gray-500/50'
                   )}
-                </div>
+                >
+                  <Pencil className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                </button>
+
+                {/* Text Tool */}
+                <button
+                  onClick={() => setTool("text")}
+                  title="Add Text"
+                  className={cn(
+                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border",
+                    tool === "text" 
+                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/30 border-blue-500/50' 
+                      : 'bg-gradient-to-br from-gray-700/60 to-gray-800/60 hover:from-gray-600/70 hover:to-gray-700/70 text-gray-300 hover:text-white border-gray-600/50 hover:border-gray-500/50'
+                  )}
+                >
+                  <Type className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                </button>
+
+                {/* Arrow Tool */}
+                <button
+                  onClick={() => setTool("arrow")}
+                  title="Draw Arrow"
+                  className={cn(
+                    "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border",
+                    tool === "arrow" 
+                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg shadow-blue-500/30 border-blue-500/50' 
+                      : 'bg-gradient-to-br from-gray-700/60 to-gray-800/60 hover:from-gray-600/70 hover:to-gray-700/70 text-gray-300 hover:text-white border-gray-600/50 hover:border-gray-500/50'
+                  )}
+                >
+                  <ArrowUpRight className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                </button>
               </div>
+
+              {/* Divider */}
+              <div className={cn(
+                "bg-gradient-to-br from-gray-700/40 to-gray-600/30",
+                toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+              )} />
+
+              {/* Undo Button */}
+              <button
+                onClick={undo}
+                disabled={historyStep === 0}
+                title="Undo"
+                className={cn(
+                  "h-11 w-11 rounded-xl transition-all active:scale-95 flex items-center justify-center group border",
+                  "bg-gradient-to-br from-gray-700/60 to-gray-800/60 hover:from-gray-600/70 hover:to-gray-700/70 text-gray-300 hover:text-white border-gray-600/50 hover:border-gray-500/50",
+                  "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:from-gray-700/60 disabled:hover:to-gray-800/60"
+                )}
+              >
+                <Undo className="h-5 w-5 group-hover:scale-110 transition-transform" />
+              </button>
+
+              {/* Divider */}
+              <div className={cn(
+                "bg-gradient-to-br from-gray-700/40 to-gray-600/30",
+                toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"
+              )} />
+
+              {/* Color Picker with premium styling */}
+              <div className="relative color-picker-container">
+                <button
+                  className="h-11 w-11 rounded-xl transition-all border-2 border-gray-600/70 hover:border-gray-500/70 active:scale-95 shadow-lg flex items-center justify-center"
+                  style={{ 
+                    backgroundColor: color,
+                    boxShadow: `0 4px 12px ${color}40`
+                  }}
+                  onClick={() => setShowColorPicker(!showColorPicker)}
+                  title={`Color: ${availableColors.find(c => c.value === color)?.label || color}`}
+                  aria-label="Choose color"
+                >
+                  <div className="w-7 h-7 rounded-lg border-2 border-white/30" style={{ backgroundColor: color }} />
+                </button>
+                {showColorPicker && (
+                  <div className={cn(
+                    "absolute z-[70] bg-gradient-to-br from-gray-900/98 to-gray-800/98 backdrop-blur-xl border border-gray-600 rounded-xl p-4 shadow-2xl",
+                    toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
+                  )}>
+                    <div className="text-xs text-gray-300 font-semibold mb-3 tracking-wide">COLOR PALETTE</div>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {availableColors.map((c) => (
+                        <button
+                          key={c.value}
+                          className={cn(
+                            "w-12 h-12 rounded-lg transition-all border-2 active:scale-95 flex items-center justify-center",
+                            color === c.value 
+                              ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900 border-gray-400 scale-105' 
+                              : 'border-gray-600 hover:border-gray-400 hover:scale-105'
+                          )}
+                          style={{ 
+                            backgroundColor: c.value,
+                            boxShadow: color === c.value ? `0 4px 16px ${c.value}60` : 'none'
+                          }}
+                          onClick={() => {
+                            setColor(c.value);
+                            setShowColorPicker(false);
+                          }}
+                          title={c.label}
+                          aria-label={c.label}
+                        >
+                          {color === c.value && (
+                            <div className="w-4 h-4 rounded-full bg-white/90 shadow-lg" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
+      )}
       </>
     );
 }
