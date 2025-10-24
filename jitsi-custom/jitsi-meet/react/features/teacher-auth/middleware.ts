@@ -137,47 +137,24 @@ MiddlewareRegistry.register(store => next => action => {
         if (isTeacher) {
             console.log('👨‍🏫 [TeacherAuth] TEACHER detected, will join directly as moderator');
             
-            // Mark display name with [TEACHER] prefix so Prosody can grant owner role
-            const settings = state['features/base/settings'];
-            const currentDisplayName = settings.displayName || 'Teacher';
-            
-            // Only add prefix if not already present
-            if (!currentDisplayName.startsWith('[TEACHER]')) {
-                const teacherDisplayName = `[TEACHER] ${currentDisplayName}`;
-                console.log('[TeacherAuth] Setting teacher display name:', teacherDisplayName);
-                
-                // Update settings with prefixed name
-                store.dispatch({
-                    type: 'SETTINGS_UPDATED',
-                    settings: {
-                        ...settings,
-                        displayName: teacherDisplayName
-                    }
-                });
-            }
-            
             // Teachers always bypass lobby
             store.dispatch(hideLobbyScreen());
             
             // Pass action through - teacher joins directly
-            // Prosody mod_grant_teacher_role will grant owner/moderator based on [TEACHER] prefix
+            // Server-side will grant owner/moderator role automatically
             return next(action);
         } else {
             console.log('👨‍🎓 [TeacherAuth] STUDENT detected - allowing XMPP connection (Zoom-style)');
             
             // ZOOM APPROACH:
             // 1. Allow connection to XMPP (next(action)) ✅
-            // 2. Auto-knock immediately so student sees "Waiting..." not "Ask to Join" ✅
-            // 3. Teacher gets notification automatically ✅
+            // 2. Prosody will route student to lobby MUC automatically ✅
+            // 3. Student connects but is held in lobby room ✅
+            // 4. Student can knock from there ✅
             
-            console.log('[TeacherAuth] ✅ Allowing student XMPP connection');
+            console.log('[TeacherAuth] ✅ Allowing student XMPP connection - Prosody will route to lobby');
             
-            // Auto-knock FIRST so student immediately sees "Waiting to be admitted"
-            // instead of seeing "Ask to Join" button (Zoom behavior)
-            store.dispatch(startKnocking());
-            console.log('[TeacherAuth] 🚪 Auto-knocked for student (Zoom-style) - will show waiting screen');
-            
-            // Let the connection proceed
+            // Let the connection proceed - Prosody lobby will handle routing
             return next(action);
         }
     }
