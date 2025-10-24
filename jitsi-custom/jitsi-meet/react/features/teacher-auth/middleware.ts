@@ -167,13 +167,17 @@ MiddlewareRegistry.register(store => next => action => {
             
             // ZOOM APPROACH:
             // 1. Allow connection to XMPP (next(action)) ✅
-            // 2. Prosody will route student to lobby MUC automatically ✅
-            // 3. Student connects but is held in lobby room ✅
-            // 4. Student can knock from there ✅
+            // 2. Auto-knock immediately so student sees "Waiting..." not "Ask to Join" ✅
+            // 3. Teacher gets notification automatically ✅
             
-            console.log('[TeacherAuth] ✅ Allowing student XMPP connection - Prosody will route to lobby');
+            console.log('[TeacherAuth] ✅ Allowing student XMPP connection');
             
-            // Let the connection proceed - Prosody lobby will handle routing
+            // Auto-knock FIRST so student immediately sees "Waiting to be admitted"
+            // instead of seeing "Ask to Join" button (Zoom behavior)
+            store.dispatch(startKnocking());
+            console.log('[TeacherAuth] 🚪 Auto-knocked for student (Zoom-style) - will show waiting screen');
+            
+            // Let the connection proceed
             return next(action);
         }
     }
