@@ -327,16 +327,19 @@ const TeacherAuthPage = () => {
         
         // Store teacher info for the room
         const teacherFirstName = (user?.displayName || 'Roman').split(' ')[0];
+        const teacherDisplayName = user?.displayName || 'Teacher Roman';
         localStorage.setItem('teacherFirstName', teacherFirstName);
         localStorage.setItem('teacherRoomId', roomName);
         
-        console.log('🔑 Teacher UID:', teacherUid);
-        console.log('🏠 Teacher permanent room:', roomName);
-        console.log('⚠️  Make sure students have teacherUid:', teacherUid, 'in their Firestore documents!');
+        console.log('�‍🏫 TEACHER JOINING:');
+        console.log('   Name:', teacherDisplayName);
+        console.log('   UID:', teacherUid);
+        console.log('   Room:', roomName);
         
         // Add userType=teacher parameter so middleware can identify teacher
+        // displayName will be prefilled and readonly in prejoin screen
         const teacherEmail = user?.email || 'romanvolkonidov@gmail.com';
-        window.location.href = `/${roomName}#userInfo.userType=teacher&userInfo.email=${encodeURIComponent(teacherEmail)}&userInfo.displayName=${encodeURIComponent(user?.displayName || 'Teacher')}`;
+        window.location.href = `/${roomName}#userInfo.userType=teacher&userInfo.email=${encodeURIComponent(teacherEmail)}&userInfo.displayName=${encodeURIComponent(teacherDisplayName)}`;
     };
 
     const handleViewStudents = () => {

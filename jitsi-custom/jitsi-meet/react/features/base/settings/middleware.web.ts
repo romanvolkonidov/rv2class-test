@@ -56,25 +56,10 @@ function _maybeUpdateDisplayName({ dispatch, getState }: IStore) {
             }));
         }
     } else {
-        // Check if this is a teacher joining their room
-        try {
-            const teacherFirstName = localStorage.getItem('teacherFirstName');
-            const teacherRoomId = localStorage.getItem('teacherRoomId');
-            const roomName = state['features/base/conference'].room;
-            
-            // If teacher credentials exist and room matches, set display name to "Teacher [FirstName]"
-            if (teacherFirstName && teacherRoomId && roomName) {
-                if (roomName.toLowerCase() === teacherRoomId.toLowerCase()) {
-                    const teacherDisplayName = `Teacher ${teacherFirstName}`;
-                    dispatch(updateSettings({
-                        displayName: teacherDisplayName
-                    }));
-                    logger.info(`Setting teacher display name: ${teacherDisplayName}`);
-                }
-            }
-        } catch (err) {
-            logger.warn('Could not check teacher status for display name:', err);
-        }
+        // Don't automatically set teacher display name from localStorage
+        // Display name should come from URL parameter (userInfo.displayName)
+        // This prevents students from inheriting teacher's name
+        logger.info('No JWT - display name will be set from URL parameter or user input');
     }
 }
 

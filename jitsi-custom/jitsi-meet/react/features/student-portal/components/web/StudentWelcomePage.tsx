@@ -81,6 +81,14 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
 
                 if (sharedDoc.exists) {
                     const data = sharedDoc.data();
+                    
+                    console.log('📦 Loaded student data from Firestore:', {
+                        id: sharedDoc.id,
+                        name: data.name,
+                        teacher: data.teacher,
+                        teacherUid: data.teacherUid,
+                        teacherEmail: data.teacherEmail
+                    });
 
                     studentData = {
                         id: sharedDoc.id,
@@ -182,26 +190,31 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
         
         const teacherRoom = `teacher-${teacherUid.substring(0, 8)}`;
 
-        console.log('🔑 Student\'s teacher UID from database:', student.teacherUid);
-        console.log('🔑 Using teacherUid:', teacherUid);
-        console.log('🏠 Joining room:', teacherRoom);
+        console.log('👨‍🎓 STUDENT JOINING:');
+        console.log('   Name:', student.name);
+        console.log('   Teacher UID:', teacherUid);
+        console.log('   Room:', teacherRoom);
         
-        if (!student.teacherUid) {
-            console.warn('⚠️  WARNING: Student has no teacherUid in database! Using fallback.');
+        // Warn if student name looks like teacher name
+        if (student.name && (student.name.toLowerCase().includes('teacher') || student.name.toLowerCase().includes('roman'))) {
+            console.warn('⚠️ WARNING: Student name looks suspicious:', student.name);
+            console.warn('⚠️ Check Firestore database - student.name should be the STUDENT\'S name, not the teacher\'s name!');
+            console.warn('⚠️ Expected: "Danya", "Max", etc. Got:', student.name);
         }
 
-        // Store teacher info in localStorage for room
+        // Store teacher info in localStorage for room tracking
         const teacherFirstName = (student.teacher || 'Roman').split(' ')[0];
-
         localStorage.setItem('teacherFirstName', teacherFirstName);
         localStorage.setItem('teacherRoomId', teacherRoom);
 
-        // Store student name for prejoin page (Jitsi will use this as display name)
+        // Store student info for reference
         localStorage.setItem('studentName', student.name);
         localStorage.setItem('studentId', student.id);
+        
+        console.log('✅ Student info stored in localStorage:', student.name);
 
         // Redirect to Jitsi room with student name in URL config
-        // Jitsi prejoin page will show camera/mic preview before joining
+        // displayName will be prefilled and readonly in prejoin screen
         // Add userType=student parameter so middleware can identify student
         const roomUrl = `/${teacherRoom}#config.prejoinPageEnabled=true&userInfo.displayName=${encodeURIComponent(student.name)}&userInfo.userType=student`;
 
