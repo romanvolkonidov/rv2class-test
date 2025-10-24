@@ -19,7 +19,8 @@ import {
   MousePointer2,
   Minus,
   Palette,
-  ChevronDown
+  ChevronDown,
+  Move
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useSelector, useDispatch } from 'react-redux';
@@ -2245,465 +2246,491 @@ export default function AnnotationOverlay({
           onTouchStart={handleToolbarTouchStart}
           onTouchEnd={handleToolbarTouchEnd}
         >
-          {/* Drag Hint */}
-          {showDragHint && (
-            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-blue-500/90 text-white px-3 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap animate-pulse shadow-lg z-[70] border border-blue-400/30">
-              ✋ Dragging enabled!
-            </div>
-          )}
-          
-          {/* Drag Handle */}
+          {/* Main Toolbar - Professional Design */}
           <div 
-            className={cn(
-              "drag-handle absolute px-3 py-1 backdrop-blur-xl border flex items-center gap-1.5 transition-all pointer-events-auto rounded-md",
-              isDraggingToolbar ? "cursor-grabbing" : "cursor-grab",
-              toolbarOrientation === 'horizontal' 
-                ? "-top-5 left-1/2 transform -translate-x-1/2 rounded-t-md border-b-0" 
-                : "-left-5 top-1/2 transform -translate-y-1/2 rounded-l-md border-r-0 flex-col"
-            )}
+            className="rounded-xl shadow-2xl transition-all max-w-[calc(100vw-40px)]"
             style={{
-              backgroundColor: 'rgba(38, 50, 56, 0.9)',
-              borderColor: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: '#1f2937',
+              border: '1px solid #374151',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
             }}
           >
-            <GripVertical className={cn(
-              "h-3.5 w-3.5 text-gray-400",
-              toolbarOrientation === 'vertical' && "rotate-90"
-            )} />
-          </div>
-
-          {/* Main Toolbar - Modern MUI/Jitsi Style */}
-          <div 
-            className={cn(
-              "backdrop-blur-2xl rounded-2xl shadow-2xl transition-all border",
-              toolbarOrientation === 'horizontal' && "max-w-[calc(100vw-40px)]",
-              toolbarOrientation === 'vertical' && "max-h-[calc(100vh-40px)]"
-            )}
-            style={{
-              backgroundColor: 'rgba(28, 32, 36, 0.95)',
-              borderColor: 'rgba(255, 255, 255, 0.08)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
-            }}
-          >
-            <div className={cn(
-              "flex items-center gap-1.5 p-3",
-              toolbarOrientation === 'vertical' && "flex-col"
-            )}>
+            <div className="flex items-center gap-2 p-3">
               
-              {/* === MOUSE POINTER TOOL === */}
+              {/* === CLOSE BUTTON === */}
               <button
-                onClick={() => setTool("pointer")}
-                title="Select & Move (Pointer)"
-                className={cn(
-                  "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
-                  tool === "pointer" 
-                    ? 'text-white scale-105' 
-                    : 'text-gray-300 hover:text-white'
-                )}
+                onClick={() => setToolbarVisible(false)}
+                title="Close Toolbar"
                 style={{
-                  backgroundColor: tool === "pointer" ? '#1565C0' : 'rgba(255, 255, 255, 0.08)',
-                  boxShadow: tool === "pointer" ? '0 2px 8px rgba(21, 101, 192, 0.4)' : 'none',
+                  width: '40px',
+                  height: '40px',
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#9ca3af',
+                  transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
-                  if (tool !== "pointer") {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
-                  }
+                  e.currentTarget.style.background = '#7f1d1d';
+                  e.currentTarget.style.color = '#fca5a5';
                 }}
                 onMouseLeave={(e) => {
-                  if (tool !== "pointer") {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                  }
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#9ca3af';
                 }}
               >
-                <MousePointer2 className="h-5 w-5" />
+                <X size={20} />
+              </button>
+
+              {/* === DRAG HANDLE === */}
+              <button
+                className={isDraggingToolbar ? "cursor-grabbing" : "cursor-grab"}
+                title="Drag Toolbar"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: '6px',
+                  cursor: isDraggingToolbar ? 'grabbing' : 'grab',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#9ca3af',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#374151';
+                  e.currentTarget.style.color = '#e5e7eb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#9ca3af';
+                }}
+              >
+                <Move size={20} />
               </button>
 
               {/* Divider */}
               <div 
-                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                style={{ 
+                  width: '1px',
+                  height: '32px',
+                  background: '#4b5563',
+                  margin: '0 4px'
+                }}
+              />
+              
+              {/* === MOUSE POINTER TOOL === */}
+              <button
+                onClick={() => setTool("pointer")}
+                title="Select & Move"
+                className="tool-btn"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  border: 'none',
+                  background: tool === "pointer" ? '#3b82f6' : 'transparent',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: tool === "pointer" ? 'white' : '#9ca3af',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (tool !== "pointer") {
+                    e.currentTarget.style.background = '#374151';
+                    e.currentTarget.style.color = '#e5e7eb';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (tool !== "pointer") {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = '#9ca3af';
+                  }
+                }}
+              >
+                <MousePointer2 size={20} />
+              </button>
+
+              {/* Divider */}
+              <div 
+                style={{ 
+                  width: '1px',
+                  height: '32px',
+                  background: '#4b5563',
+                  margin: '0 4px'
+                }}
               />
 
               {/* === DRAWING TOOLS GROUP === */}
-              <div className={cn(
-                "flex gap-1.5",
-                toolbarOrientation === 'vertical' && "flex-col"
-              )}>
-                {/* Pencil/Draw Tool */}
+              <div className="flex gap-1">
+                {/* Pencil Tool */}
                 <button
                   onClick={() => setTool("pencil")}
-                  title="Draw (Pencil)"
-                  className={cn(
-                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
-                    tool === "pencil" 
-                      ? 'text-white scale-105' 
-                      : 'text-gray-300 hover:text-white'
-                  )}
+                  title="Draw"
                   style={{
-                    backgroundColor: tool === "pencil" ? '#1565C0' : 'rgba(255, 255, 255, 0.08)',
-                    boxShadow: tool === "pencil" ? '0 2px 8px rgba(21, 101, 192, 0.4)' : 'none',
+                    width: '40px',
+                    height: '40px',
+                    border: 'none',
+                    background: tool === "pencil" ? '#3b82f6' : 'transparent',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: tool === "pencil" ? 'white' : '#9ca3af',
+                    transition: 'all 0.2s',
                   }}
                   onMouseEnter={(e) => {
                     if (tool !== "pencil") {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                      e.currentTarget.style.background = '#374151';
+                      e.currentTarget.style.color = '#e5e7eb';
+                    } else {
+                      e.currentTarget.style.background = '#2563eb';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (tool !== "pencil") {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#9ca3af';
+                    } else {
+                      e.currentTarget.style.background = '#3b82f6';
                     }
                   }}
                 >
-                  <Pencil className="h-5 w-5" />
+                  <Pencil size={20} />
                 </button>
 
-                {/* Line/Arrow Tool */}
+                {/* Arrow Tool */}
                 <button
                   onClick={() => setTool("arrow")}
-                  title="Draw Arrow"
-                  className={cn(
-                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
-                    tool === "arrow" 
-                      ? 'text-white scale-105' 
-                      : 'text-gray-300 hover:text-white'
-                  )}
+                  title="Arrow"
                   style={{
-                    backgroundColor: tool === "arrow" ? '#1565C0' : 'rgba(255, 255, 255, 0.08)',
-                    boxShadow: tool === "arrow" ? '0 2px 8px rgba(21, 101, 192, 0.4)' : 'none',
+                    width: '40px',
+                    height: '40px',
+                    border: 'none',
+                    background: tool === "arrow" ? '#3b82f6' : 'transparent',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: tool === "arrow" ? 'white' : '#9ca3af',
+                    transition: 'all 0.2s',
                   }}
                   onMouseEnter={(e) => {
                     if (tool !== "arrow") {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                      e.currentTarget.style.background = '#374151';
+                      e.currentTarget.style.color = '#e5e7eb';
+                    } else {
+                      e.currentTarget.style.background = '#2563eb';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (tool !== "arrow") {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#9ca3af';
+                    } else {
+                      e.currentTarget.style.background = '#3b82f6';
                     }
                   }}
                 >
-                  <ArrowUpRight className="h-5 w-5" />
+                  <ArrowUpRight size={20} />
                 </button>
               </div>
 
               {/* Divider */}
               <div 
-                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                style={{ 
+                  width: '1px',
+                  height: '32px',
+                  background: '#4b5563',
+                  margin: '0 4px'
+                }}
               />
 
-              {/* === SHAPES GROUP === */}
-              <div className={cn(
-                "flex gap-1.5",
-                toolbarOrientation === 'vertical' && "flex-col"
-              )}>
-                {/* Rectangle Tool */}
-                <button
-                  onClick={() => setTool("rectangle")}
-                  title="Draw Rectangle"
-                  className={cn(
-                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
-                    tool === "rectangle" 
-                      ? 'text-white scale-105' 
-                      : 'text-gray-300 hover:text-white'
-                  )}
-                  style={{
-                    backgroundColor: tool === "rectangle" ? '#1565C0' : 'rgba(255, 255, 255, 0.08)',
-                    boxShadow: tool === "rectangle" ? '0 2px 8px rgba(21, 101, 192, 0.4)' : 'none',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (tool !== "rectangle") {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (tool !== "rectangle") {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                    }
-                  }}
-                >
-                  <Square className="h-5 w-5" />
-                </button>
-
-                {/* Circle Tool */}
-                <button
-                  onClick={() => setTool("circle")}
-                  title="Draw Circle"
-                  className={cn(
-                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
-                    tool === "circle" 
-                      ? 'text-white scale-105' 
-                      : 'text-gray-300 hover:text-white'
-                  )}
-                  style={{
-                    backgroundColor: tool === "circle" ? '#1565C0' : 'rgba(255, 255, 255, 0.08)',
-                    boxShadow: tool === "circle" ? '0 2px 8px rgba(21, 101, 192, 0.4)' : 'none',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (tool !== "circle") {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (tool !== "circle") {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                    }
-                  }}
-                >
-                  <Circle className="h-5 w-5" />
-                </button>
-
-                {/* Text Tool */}
-                <button
-                  onClick={() => setTool("text")}
-                  title="Add Text"
-                  className={cn(
-                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
-                    tool === "text" 
-                      ? 'text-white scale-105' 
-                      : 'text-gray-300 hover:text-white'
-                  )}
-                  style={{
-                    backgroundColor: tool === "text" ? '#1565C0' : 'rgba(255, 255, 255, 0.08)',
-                    boxShadow: tool === "text" ? '0 2px 8px rgba(21, 101, 192, 0.4)' : 'none',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (tool !== "text") {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (tool !== "text") {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                    }
-                  }}
-                >
-                  <Type className="h-5 w-5" />
-                </button>
-              </div>
+              {/* === TEXT TOOL === */}
+              <button
+                onClick={() => setTool("text")}
+                title="Text"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  border: 'none',
+                  background: tool === "text" ? '#3b82f6' : 'transparent',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: tool === "text" ? 'white' : '#9ca3af',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (tool !== "text") {
+                    e.currentTarget.style.background = '#374151';
+                    e.currentTarget.style.color = '#e5e7eb';
+                  } else {
+                    e.currentTarget.style.background = '#2563eb';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (tool !== "text") {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = '#9ca3af';
+                  } else {
+                    e.currentTarget.style.background = '#3b82f6';
+                  }
+                }}
+              >
+                <Type size={20} />
+              </button>
 
               {/* Divider */}
               <div 
-                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                style={{ 
+                  width: '1px',
+                  height: '32px',
+                  background: '#4b5563',
+                  margin: '0 4px'
+                }}
               />
 
               {/* === ERASER TOOL === */}
               <button
                 onClick={() => setTool("eraser")}
                 title="Eraser"
-                className={cn(
-                  "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
-                  tool === "eraser" 
-                    ? 'text-white scale-105' 
-                    : 'text-gray-300 hover:text-white'
-                )}
                 style={{
-                  backgroundColor: tool === "eraser" ? '#D32F2F' : 'rgba(255, 255, 255, 0.08)',
-                  boxShadow: tool === "eraser" ? '0 2px 8px rgba(211, 47, 47, 0.4)' : 'none',
+                  width: '40px',
+                  height: '40px',
+                  border: 'none',
+                  background: tool === "eraser" ? '#ef4444' : 'transparent',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: tool === "eraser" ? 'white' : '#9ca3af',
+                  transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
                   if (tool !== "eraser") {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                    e.currentTarget.style.background = '#374151';
+                    e.currentTarget.style.color = '#e5e7eb';
+                  } else {
+                    e.currentTarget.style.background = '#dc2626';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (tool !== "eraser") {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = '#9ca3af';
+                  } else {
+                    e.currentTarget.style.background = '#ef4444';
                   }
                 }}
               >
-                <Eraser className="h-5 w-5" />
+                <Eraser size={20} />
               </button>
 
               {/* Divider */}
               <div 
-                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                style={{ 
+                  width: '1px',
+                  height: '32px',
+                  background: '#4b5563',
+                  margin: '0 4px'
+                }}
               />
 
               {/* === STROKE WIDTH CONTROL === */}
               <div className="relative size-picker-container">
                 <button
-                  className={cn(
-                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5 group border-0",
-                    showSizePicker
-                      ? 'text-blue-400'
-                      : 'text-gray-300 hover:text-white'
-                  )}
+                  onClick={() => setShowSizePicker(!showSizePicker)}
+                  title={`Line Width: ${lineWidth}px`}
+                  aria-label="Choose line width"
                   style={{
-                    backgroundColor: showSizePicker ? 'rgba(21, 101, 192, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+                    width: '40px',
+                    height: '40px',
+                    border: 'none',
+                    background: showSizePicker ? '#3b82f6' : 'transparent',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: showSizePicker ? 'white' : '#9ca3af',
+                    transition: 'all 0.2s',
                   }}
                   onMouseEnter={(e) => {
                     if (!showSizePicker) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+                      e.currentTarget.style.background = '#374151';
+                      e.currentTarget.style.color = '#e5e7eb';
+                    } else {
+                      e.currentTarget.style.background = '#2563eb';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!showSizePicker) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#9ca3af';
+                    } else {
+                      e.currentTarget.style.background = '#3b82f6';
                     }
                   }}
-                  onClick={() => setShowSizePicker(!showSizePicker)}
-                  title={`Line Width: ${lineWidth}px`}
-                  aria-label="Choose line width"
                 >
-                  <Minus className="transition-colors" 
-                  style={{ 
-                    width: `${Math.max(12, Math.min(20, lineWidth * 2))}px`,
-                    height: `${Math.max(2, Math.min(4, lineWidth))}px`,
-                    strokeWidth: lineWidth
-                  }} />
-                  <ChevronDown className={cn(
-                    "h-3 w-3 transition-all",
-                    showSizePicker && "rotate-180"
-                  )} />
+                  <Minus size={20} strokeWidth={lineWidth} />
                 </button>
                 
                 {showSizePicker && (
-                  <div className={cn(
-                    "absolute z-[70] backdrop-blur-xl border rounded-xl p-4 shadow-2xl min-w-[200px]",
-                    toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
-                  )}
-                  style={{
-                    backgroundColor: 'rgba(28, 32, 36, 0.98)',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                  }}
+                  <div
+                    className={cn(
+                      "absolute z-[70]",
+                      toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
+                    )}
+                    style={{
+                      background: '#1f2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+                      minWidth: '180px',
+                    }}
                   >
-                    <div className="text-xs text-gray-300 font-semibold mb-3 tracking-wide flex items-center justify-between">
-                      <span>STROKE WIDTH</span>
-                      <span className="text-blue-400 font-bold">{lineWidth}px</span>
+                    <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px', fontWeight: 500 }}>
+                      Stroke Width: {lineWidth}px
                     </div>
-                    
-                    {/* Width Presets */}
-                    <div className="space-y-2.5 mb-4">
-                      {[
-                        { value: 1, label: 'Thin' },
-                        { value: 3, label: 'Medium' },
-                        { value: 5, label: 'Thick' },
-                        { value: 8, label: 'Extra Thick' }
-                      ].map((preset) => (
-                        <button
-                          key={preset.value}
-                          className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all border-0",
-                            lineWidth === preset.value
-                              ? 'text-white'
-                              : 'text-gray-300 hover:text-white'
-                          )}
-                          style={{
-                            backgroundColor: lineWidth === preset.value 
-                              ? 'rgba(21, 101, 192, 0.3)' 
-                              : 'rgba(255, 255, 255, 0.05)',
-                          }}
-                          onMouseEnter={(e) => {
-                            if (lineWidth !== preset.value) {
-                              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (lineWidth !== preset.value) {
-                              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                            }
-                          }}
-                          onClick={() => {
-                            setLineWidth(preset.value);
-                            setShowSizePicker(false);
-                          }}
-                        >
-                          <div 
-                            className="flex-1 h-0.5 bg-current rounded-full"
-                            style={{ height: `${preset.value}px` }}
-                          />
-                          <span className="text-xs font-medium whitespace-nowrap">{preset.label}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Custom Slider */}
-                    <div className="pt-2 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-                      <label className="text-xs text-gray-400 mb-2 block">Custom</label>
-                      <input
-                        type="range"
-                        min="1"
-                        max="12"
-                        value={lineWidth}
-                        onChange={(e) => setLineWidth(Number(e.target.value))}
-                        className="w-full h-2 rounded-lg appearance-none cursor-pointer"
-                        style={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        }}
-                      />
-                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={lineWidth}
+                      onChange={(e) => setLineWidth(Number(e.target.value))}
+                      style={{
+                        width: '100%',
+                        accentColor: '#3b82f6',
+                      }}
+                    />
                   </div>
                 )}
               </div>
 
               {/* Divider */}
               <div 
-                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                style={{ 
+                  width: '1px',
+                  height: '32px',
+                  background: '#4b5563',
+                  margin: '0 4px'
+                }}
               />
 
               {/* === COLOR PICKER === */}
               <div className="relative color-picker-container">
                 <button
-                  className={cn(
-                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center border-2 group relative overflow-hidden",
-                    showColorPicker
-                      ? 'border-white/30 scale-105'
-                      : 'border-white/20 hover:border-white/30 hover:scale-105'
-                  )}
-                  style={{ 
-                    background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
-                    boxShadow: `0 4px 16px ${color}50`
-                  }}
                   onClick={() => setShowColorPicker(!showColorPicker)}
                   title={`Color: ${availableColors.find(c => c.value === color)?.label || color}`}
                   aria-label="Choose color"
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    border: 'none',
+                    background: showColorPicker ? '#3b82f6' : 'transparent',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: showColorPicker ? 'white' : '#9ca3af',
+                    transition: 'all 0.2s',
+                    position: 'relative',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!showColorPicker) {
+                      e.currentTarget.style.background = '#374151';
+                      e.currentTarget.style.color = '#e5e7eb';
+                    } else {
+                      e.currentTarget.style.background = '#2563eb';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!showColorPicker) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#9ca3af';
+                    } else {
+                      e.currentTarget.style.background = '#3b82f6';
+                    }
+                  }}
                 >
-                  <Palette className="h-5 w-5 text-white drop-shadow-md group-hover:scale-110 transition-transform" />
+                  <Palette size={20} />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '4px',
+                      right: '4px',
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      backgroundColor: color,
+                      border: '2px solid #1f2937',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                    }}
+                  />
                 </button>
                 
                 {showColorPicker && (
-                  <div className={cn(
-                    "absolute z-[70] backdrop-blur-xl border rounded-xl p-4 shadow-2xl",
-                    toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
-                  )}
-                  style={{
-                    backgroundColor: 'rgba(28, 32, 36, 0.98)',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                  }}
+                  <div
+                    className={cn(
+                      "absolute z-[70]",
+                      toolbarOrientation === 'horizontal' ? "top-full mt-2" : "left-full ml-2"
+                    )}
+                    style={{
+                      background: '#1f2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+                    }}
                   >
-                    <div className="text-xs text-gray-300 font-semibold mb-3 tracking-wide flex items-center gap-2">
-                      <Palette className="h-3.5 w-3.5 text-blue-400" />
-                      <span>COLOR PALETTE</span>
-                    </div>
-                    <div className="grid grid-cols-5 gap-2">
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(4, 32px)',
+                        gap: '8px',
+                      }}
+                    >
                       {availableColors.map((c) => (
                         <button
                           key={c.value}
-                          className={cn(
-                            "w-10 h-10 rounded-lg transition-all border-2 active:scale-95 flex items-center justify-center group relative overflow-hidden",
-                            color === c.value 
-                              ? 'ring-2 ring-blue-500 ring-offset-2 border-white/40 scale-105 shadow-xl' 
-                              : 'border-white/20 hover:border-white/40 hover:scale-110 shadow-md'
-                          )}
-                          style={{ 
-                            background: `linear-gradient(135deg, ${c.value} 0%, ${c.value}dd 100%)`,
-                            boxShadow: color === c.value ? `0 4px 20px ${c.value}70` : `0 2px 8px ${c.value}30`,
-                          }}
                           onClick={() => {
                             setColor(c.value);
                             setShowColorPicker(false);
                           }}
                           title={c.label}
                           aria-label={c.label}
-                        >
-                          {color === c.value && (
-                            <div className="w-3 h-3 rounded-full bg-white shadow-lg border border-gray-200" />
-                          )}
-                        </button>
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '6px',
+                            backgroundColor: c.value,
+                            border: color === c.value ? '2px solid white' : '1px solid #374151',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
+                        />
                       ))}
                     </div>
                   </div>
@@ -2712,131 +2739,241 @@ export default function AnnotationOverlay({
 
               {/* Divider */}
               <div 
-                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                style={{ 
+                  width: '1px',
+                  height: '32px',
+                  background: '#4b5563',
+                  margin: '0 4px'
+                }}
               />
 
-              {/* === UNDO/REDO GROUP === */}
-              <div className={cn(
-                "flex gap-1.5",
-                toolbarOrientation === 'vertical' && "flex-col"
-              )}>
-                {/* Undo Button */}
-                <button
-                  onClick={undo}
-                  disabled={historyStep === 0}
-                  title="Undo (Ctrl+Z)"
-                  className={cn(
-                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
-                    historyStep === 0
-                      ? 'text-gray-600 cursor-not-allowed opacity-50'
-                      : 'text-gray-300 hover:text-white'
-                  )}
-                  style={{
-                    backgroundColor: historyStep === 0 
-                      ? 'rgba(255, 255, 255, 0.03)' 
-                      : 'rgba(255, 255, 255, 0.08)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (historyStep !== 0) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (historyStep !== 0) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                    }
-                  }}
-                >
-                  <Undo className="h-5 w-5" />
-                </button>
-
-                {/* Redo Button */}
-                <button
-                  onClick={redo}
-                  disabled={historyStep >= history.length}
-                  title="Redo (Ctrl+Y)"
-                  className={cn(
-                    "h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0",
-                    historyStep >= history.length
-                      ? 'text-gray-600 cursor-not-allowed opacity-50'
-                      : 'text-gray-300 hover:text-white'
-                  )}
-                  style={{
-                    backgroundColor: historyStep >= history.length 
-                      ? 'rgba(255, 255, 255, 0.03)' 
-                      : 'rgba(255, 255, 255, 0.08)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (historyStep < history.length) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (historyStep < history.length) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                    }
-                  }}
-                >
-                  <Redo className="h-5 w-5" />
-                </button>
-              </div>
+              {/* === UNDO BUTTON === */}
+              <button
+                onClick={undo}
+                disabled={historyStep === 0}
+                title="Undo (Ctrl+Z)"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: '6px',
+                  cursor: historyStep === 0 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: historyStep === 0 ? '#4b5563' : '#9ca3af',
+                  transition: 'all 0.2s',
+                  opacity: historyStep === 0 ? 0.5 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  if (historyStep !== 0) {
+                    e.currentTarget.style.background = '#374151';
+                    e.currentTarget.style.color = '#e5e7eb';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (historyStep !== 0) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = '#9ca3af';
+                  }
+                }}
+              >
+                <Undo size={20} />
+              </button>
 
               {/* Divider */}
               <div 
-                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                style={{ 
+                  width: '1px',
+                  height: '32px',
+                  background: '#4b5563',
+                  margin: '0 4px'
+                }}
               />
 
               {/* === CLEAR ALL BUTTON === */}
-              <button
-                onClick={() => setShowClearOptions(true)}
-                title="Clear All Annotations"
-                className="h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0 text-gray-300 hover:text-red-400"
-                style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(211, 47, 47, 0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                }}
-              >
-                <Trash2 className="h-5 w-5" />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowClearOptions(!showClearOptions)}
+                  title="Clear Annotations"
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    border: 'none',
+                    background: showClearOptions ? '#7f1d1d' : 'transparent',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: showClearOptions ? '#fca5a5' : '#9ca3af',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!showClearOptions) {
+                      e.currentTarget.style.background = '#7f1d1d';
+                      e.currentTarget.style.color = '#fca5a5';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!showClearOptions) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#9ca3af';
+                    }
+                  }}
+                >
+                  <Trash2 size={20} />
+                </button>
 
-              {/* Divider */}
-              <div 
-                className={toolbarOrientation === 'horizontal' ? "w-px h-8" : "h-px w-8"}
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-              />
-
-              {/* === CLOSE/MINIMIZE BUTTON === */}
-              <button
-                onClick={() => setToolbarVisible(false)}
-                title="Minimize Toolbar"
-                className="h-10 w-10 rounded-lg transition-all active:scale-95 flex items-center justify-center group border-0 text-gray-400 hover:text-gray-200"
-                style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                }}
-                aria-label="Minimize toolbar"
-              >
-                <Minimize2 className="h-4.5 w-4.5" />
-              </button>
+                {/* Clear Options Dropdown */}
+                {showClearOptions && (
+                  <div
+                    className="absolute z-[70] top-full mt-2 right-0"
+                    style={{
+                      background: '#1f2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      padding: '8px',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+                      minWidth: '200px',
+                    }}
+                  >
+                    {isTutor ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            clearByAuthor("all");
+                            setShowClearOptions(false);
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            border: 'none',
+                            background: 'transparent',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            color: '#e5e7eb',
+                            fontSize: '14px',
+                            transition: 'all 0.2s',
+                            textAlign: 'left',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#374151';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          <Trash2 size={16} />
+                          Remove All Drawings
+                        </button>
+                        <button
+                          onClick={() => {
+                            clearByAuthor("teacher");
+                            setShowClearOptions(false);
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            border: 'none',
+                            background: 'transparent',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            color: '#e5e7eb',
+                            fontSize: '14px',
+                            transition: 'all 0.2s',
+                            textAlign: 'left',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#374151';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          <Trash2 size={16} />
+                          Remove My Drawings
+                        </button>
+                        <button
+                          onClick={() => {
+                            clearByAuthor("students");
+                            setShowClearOptions(false);
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            border: 'none',
+                            background: 'transparent',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            color: '#e5e7eb',
+                            fontSize: '14px',
+                            transition: 'all 0.2s',
+                            textAlign: 'left',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#374151';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          <Trash2 size={16} />
+                          Remove Students' Drawings
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          clearCanvas();
+                          setShowClearOptions(false);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: 'none',
+                          background: 'transparent',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          color: '#e5e7eb',
+                          fontSize: '14px',
+                          transition: 'all 0.2s',
+                          textAlign: 'left',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#374151';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <Trash2 size={16} />
+                        Clear All Annotations
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* Clear Options Modal - Zoom-style Confirmation Dialog */}
-      {showClearOptions && (
+      {false && showClearOptions && (
         <div 
           className="fixed inset-0 z-[10000] flex items-center justify-center backdrop-blur-sm"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
