@@ -1,5 +1,22 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { connect } from 'react-redux';
+import {
+    Box,
+    Typography,
+    Card as MuiCard,
+    CardContent as MuiCardContent,
+    Button as MuiButton,
+    Stack,
+    Chip,
+    List,
+    ListItem,
+    ListItemAvatar,
+    Avatar,
+    ListItemText,
+    Divider,
+    Badge,
+    CircularProgress,
+} from '@mui/material';
 
 import { IReduxState } from '../../../app/types';
 import Icon from '../../../base/icons/components/Icon';
@@ -136,214 +153,294 @@ function StudentHomeworkList({
 
     if (loading) {
         return (
-            <div className = 'homework-loading'>
-                <div className = 'spinner' />
-            </div>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+                <CircularProgress size={60} />
+            </Box>
         );
     }
 
     return (
-        <div className = 'homework-screen'>
-            <div className = 'homework-header'>
-                <div style = {{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '20px' }}>
-                    <button
-                        className = 'homework-back-button'
-                        onClick = { onBack }
-                        style = {{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '12px 24px',
-                            background: 'rgba(61, 124, 201, 0.9)',
-                            border: 'none',
-                            borderRadius: '12px',
-                            color: '#ffffff',
-                            fontSize: '15px',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            boxShadow: '0 4px 12px rgba(61, 124, 201, 0.3)'
-                        }}>
-                        <Icon
-                            size = { 20 }
-                            src = { IconArrowLeft } />
-                        <span>Back to Welcome Page</span>
-                    </button>
-
-                    {/* Theme Toggle */}
-                    {onThemeChange && (
-                        <ThemeToggle
-                            onThemeChange = { onThemeChange }
-                            theme = { theme } />
-                    )}
-                </div>
-
-                <div className = 'homework-header-card'>
-                    <div className = 'homework-header-content'>
-                        <div className = 'homework-header-icon'>
-                            <Icon
-                                size = { 40 }
-                                src = { IconBook } />
-                        </div>
-                        <div className = 'homework-header-text'>
-                            <h1>{studentName}'s Homework</h1>
-                            <p>Complete your assignments to improve your skills</p>
-                        </div>
-                    </div>
-
-                    {/* Rating Display */}
-                    {rating !== null && rating !== undefined && (
-                        <div className = 'homework-rating-section'>
-                            <div className = 'homework-rating-badge'>
-                                <Icon
-                                    size = { 24 }
-                                    src = { IconTrophy } />
-                                <div className = 'rating-content'>
-                                    <div className = 'rating-value'>{rating}%</div>
-                                    <div className = 'rating-label'>Overall Rating</div>
-                                </div>
-                            </div>
-                            <button
-                                className = 'homework-leaderboard-button'
-                                onClick = { () => window.location.href = `/student-leaderboard.html?student=${studentId}` }>
-                                <Icon
-                                    size = { 16 }
-                                    src = { IconTrophy } />
-                                <span>View Leaderboard</span>
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Stats */}
-                    <div className = 'homework-stats'>
-                        <div className = 'homework-stat-item stat-total'>
-                            <div className = 'stat-value'>{totalCount}</div>
-                            <div className = 'stat-label'>Total</div>
-                        </div>
-                        <div className = 'homework-stat-item stat-completed'>
-                            <div className = 'stat-value'>{completedCount}</div>
-                            <div className = 'stat-label'>Completed</div>
-                        </div>
-                        <div className = 'homework-stat-item stat-pending'>
-                            <div className = 'stat-value'>{totalCount - completedCount}</div>
-                            <div className = 'stat-label'>Pending</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Assignments List */}
-            <div className = 'homework-assignments-list'>
-                {assignments.length === 0 ? (
-                    <div className = 'homework-empty-state'>
-                        <Icon
-                            size = { 64 }
-                            src = { IconBook } />
-                        <p>No homework assignments yet.</p>
-                        <span>Your teacher will assign homework for you to complete.</span>
-                    </div>
-                ) : (
-                    assignments.map(assignment => {
-                        const statusInfo = getHomeworkStatus(assignment);
-                        const questionInfo = questionCounts[assignment.id];
-
-                        return (
-                            <div
-                                className = { `homework-assignment-card ${statusInfo.status}` }
-                                key = { assignment.id }>
-                                <div className = 'assignment-header'>
-                                    <div className = 'assignment-title-section'>
-                                        <h3>{assignment.title || 'Homework Assignment'}</h3>
-
-                                        {/* Course/Chapter Info */}
-                                        {(assignment.courseName || assignment.chapterName) && (
-                                            <div className = 'assignment-meta-info'>
-                                                {assignment.courseName && (
-                                                    <div className = 'meta-badge course-badge'>
-                                                        <span className = 'badge-label'>COURSE</span>
-                                                        <span className = 'badge-value'>{assignment.courseName}</span>
-                                                    </div>
-                                                )}
-                                                {assignment.chapterName && (
-                                                    <div className = 'meta-badge chapter-badge'>
-                                                        <span className = 'badge-label'>CHAPTER</span>
-                                                        <span className = 'badge-value'>{assignment.chapterName}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        <div className = 'assignment-info'>
-                                            <div className = 'info-item'>
-                                                <Icon
-                                                    size = { 16 }
-                                                    src = { IconClock } />
-                                                <span>{formatDate(assignment.assignedAt)}</span>
-                                            </div>
-                                            {questionInfo && (
-                                                <div className = 'info-item'>
-                                                    <span>{questionInfo.total} question{questionInfo.total !== 1 ? 's' : ''}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className = 'assignment-status-section'>
-                                        <div className = { `status-badge ${statusInfo.status}` }>
-                                            {statusInfo.status === 'completed' ? (
-                                                <>
-                                                    <Icon
-                                                        size = { 16 }
-                                                        src = { IconCheck } />
-                                                    <span>Completed</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Icon
-                                                        size = { 16 }
-                                                        src = { IconClock } />
-                                                    <span>Pending</span>
-                                                </>
-                                            )}
-                                        </div>
-                                        {statusInfo.score !== null && (
-                                            <div className = 'assignment-score'>
-                                                <Icon
-                                                    size = { 20 }
-                                                    src = { IconTrophy } />
-                                                <span>{statusInfo.score}%</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className = 'assignment-actions'>
-                                    {statusInfo.status === 'completed' ? (
-                                        <button
-                                            className = 'homework-button secondary'
-                                            onClick = { () => onViewResults(assignment.id) }>
-                                            <Icon
-                                                size = { 16 }
-                                                src = { IconEye } />
-                                            <span>View Results</span>
-                                        </button>
-                                    ) : (
-                                        <button
-                                            className = 'homework-button primary'
-                                            onClick = { () => onStartHomework(assignment.id) }>
-                                            <Icon
-                                                size = { 16 }
-                                                src = { IconPlay } />
-                                            <span>Start Homework</span>
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })
+        <Box sx={{ p: 3, minHeight: '100vh', bgcolor: theme === 'dark' ? '#0f1720' : '#f5f5f5' }}>
+            {/* Back Button and Theme Toggle */}
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                <MuiButton
+                    startIcon={<Icon size={20} src={IconArrowLeft} />}
+                    onClick={onBack}
+                    sx={{
+                        color: theme === 'dark' ? '#a8b6c8' : '#666',
+                        '&:hover': { bgcolor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
+                    }}
+                >
+                    Back to Welcome Page
+                </MuiButton>
+                {onThemeChange && (
+                    <ThemeToggle
+                        onThemeChange={onThemeChange}
+                        theme={theme}
+                    />
                 )}
-            </div>
-        </div>
+            </Stack>
+
+            <MuiCard 
+                sx={{ 
+                    maxWidth: 980, 
+                    mx: 'auto', 
+                    borderRadius: 3, 
+                    boxShadow: 6,
+                    bgcolor: theme === 'dark' ? '#111827' : '#ffffff'
+                }}
+            >
+                <MuiCardContent>
+                    {/* Header Section */}
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }} flexWrap="wrap" gap={2}>
+                        <Stack>
+                            <Typography 
+                                variant="h5" 
+                                sx={{ 
+                                    fontWeight: 700, 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: 1,
+                                    color: theme === 'dark' ? '#e6eef8' : '#000'
+                                }}
+                            >
+                                <Icon size={28} src={IconBook} />
+                                {studentName}'s Homework
+                            </Typography>
+                            <Typography 
+                                variant="body2" 
+                                sx={{ color: theme === 'dark' ? '#a8b6c8' : '#666' }}
+                            >
+                                Track your assignments and progress
+                            </Typography>
+                        </Stack>
+
+                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                            <Chip 
+                                label={`Total: ${totalCount}`} 
+                                sx={{ 
+                                    bgcolor: '#2b90d9',
+                                    color: 'white',
+                                    fontWeight: 600
+                                }} 
+                            />
+                            <Chip 
+                                label={`Completed: ${completedCount}`}
+                                variant="outlined"
+                                sx={{
+                                    borderColor: '#10b981',
+                                    color: '#10b981',
+                                    fontWeight: 600
+                                }}
+                            />
+                            <Chip 
+                                label={`Pending: ${totalCount - completedCount}`}
+                                variant="outlined"
+                                sx={{
+                                    borderColor: '#f59e0b',
+                                    color: '#f59e0b',
+                                    fontWeight: 600
+                                }}
+                            />
+                            
+                            {/* Rating Badge */}
+                            {rating !== null && rating !== undefined && (
+                                <Chip
+                                    icon={<Icon size={16} src={IconTrophy} />}
+                                    label={`${rating}%`}
+                                    sx={{
+                                        bgcolor: '#f59e0b',
+                                        color: 'white',
+                                        fontWeight: 700,
+                                        '& .MuiChip-icon': { color: 'white' }
+                                    }}
+                                    onClick={() => window.location.href = `/student-leaderboard.html?student=${studentId}`}
+                                />
+                            )}
+                        </Stack>
+                    </Stack>
+
+                    <Divider sx={{ my: 2, bgcolor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
+
+                    {/* Empty State */}
+                    {assignments.length === 0 ? (
+                        <Box sx={{ textAlign: 'center', py: 8 }}>
+                            <Icon size={64} src={IconBook} />
+                            <Typography 
+                                variant="h6" 
+                                sx={{ mt: 2, color: theme === 'dark' ? '#a8b6c8' : '#666' }}
+                            >
+                                No homework assignments yet.
+                            </Typography>
+                            <Typography 
+                                variant="body2" 
+                                sx={{ mt: 1, color: theme === 'dark' ? '#6b7280' : '#999' }}
+                            >
+                                Your teacher will assign homework for you to complete.
+                            </Typography>
+                        </Box>
+                    ) : (
+                        /* Homework List */
+                        <List>
+                            {assignments.map((assignment) => {
+                                const statusInfo = getHomeworkStatus(assignment);
+                                const questionInfo = questionCounts[assignment.id];
+                                const isCompleted = statusInfo.status === 'completed';
+
+                                return (
+                                    <div key={assignment.id}>
+                                        <ListItem
+                                            sx={{
+                                                bgcolor: isCompleted 
+                                                    ? 'rgba(16, 185, 129, 0.1)' 
+                                                    : 'rgba(245, 158, 11, 0.1)',
+                                                borderRadius: 2,
+                                                mb: 2,
+                                                border: '1px solid',
+                                                borderColor: isCompleted 
+                                                    ? theme === 'dark' ? 'rgba(16, 185, 129, 0.3)' : '#10b981'
+                                                    : theme === 'dark' ? 'rgba(245, 158, 11, 0.3)' : '#f59e0b',
+                                                flexDirection: 'column',
+                                                alignItems: 'stretch',
+                                                px: 2,
+                                                py: 2,
+                                            }}
+                                        >
+                                            {/* Main Content Row */}
+                                            <Stack direction="row" spacing={2} sx={{ width: '100%', mb: 2 }}>
+                                                <ListItemAvatar>
+                                                    <Badge
+                                                        badgeContent={
+                                                            isCompleted 
+                                                                ? <Icon size={16} src={IconCheck} />
+                                                                : <Icon size={16} src={IconClock} />
+                                                        }
+                                                        color={isCompleted ? "success" : "warning"}
+                                                        overlap="circular"
+                                                    >
+                                                        <Avatar 
+                                                            sx={{ 
+                                                                bgcolor: '#2b90d9', 
+                                                                width: 48, 
+                                                                height: 48 
+                                                            }}
+                                                        >
+                                                            {(assignment.title || "H").charAt(0).toUpperCase()}
+                                                        </Avatar>
+                                                    </Badge>
+                                                </ListItemAvatar>
+
+                                                <ListItemText
+                                                    primary={
+                                                        <Typography 
+                                                            sx={{ 
+                                                                fontWeight: 700, 
+                                                                fontSize: '1.1rem',
+                                                                color: theme === 'dark' ? '#e6eef8' : '#000'
+                                                            }}
+                                                        >
+                                                            {assignment.title || assignment.topicName || "Homework"}
+                                                        </Typography>
+                                                    }
+                                                    secondary={
+                                                        <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                                                            {assignment.courseName && (
+                                                                <Typography 
+                                                                    component="span" 
+                                                                    variant="body2"
+                                                                    sx={{ color: theme === 'dark' ? '#a8b6c8' : '#666' }}
+                                                                >
+                                                                    📚 {assignment.courseName}
+                                                                    {assignment.chapterName && ` > ${assignment.chapterName}`}
+                                                                </Typography>
+                                                            )}
+                                                            <Typography 
+                                                                component="span" 
+                                                                variant="body2"
+                                                                sx={{ color: theme === 'dark' ? '#a8b6c8' : '#666' }}
+                                                            >
+                                                                📅 Assigned: {formatDate(assignment.assignedAt)}
+                                                            </Typography>
+                                                            {questionInfo && (
+                                                                <Typography 
+                                                                    component="span" 
+                                                                    variant="body2"
+                                                                    sx={{ color: theme === 'dark' ? '#a8b6c8' : '#666' }}
+                                                                >
+                                                                    ❓ {questionInfo.total} question{questionInfo.total !== 1 ? 's' : ''}
+                                                                </Typography>
+                                                            )}
+                                                            {isCompleted && statusInfo.score !== null && (
+                                                                <Stack direction="row" alignItems="center" spacing={1}>
+                                                                    <Icon size={16} src={IconTrophy} />
+                                                                    <Typography 
+                                                                        component="span" 
+                                                                        variant="body2" 
+                                                                        sx={{ fontWeight: 700, color: '#f59e0b' }}
+                                                                    >
+                                                                        Score: {statusInfo.score}%
+                                                                    </Typography>
+                                                                </Stack>
+                                                            )}
+                                                        </Stack>
+                                                    }
+                                                />
+
+                                                <Stack alignItems="flex-end" justifyContent="center">
+                                                    <Chip
+                                                        label={isCompleted ? "Completed" : "Pending"}
+                                                        color={isCompleted ? "success" : "warning"}
+                                                        size="small"
+                                                        sx={{ fontWeight: 700 }}
+                                                    />
+                                                </Stack>
+                                            </Stack>
+
+                                            {/* Action Buttons */}
+                                            <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
+                                                {isCompleted ? (
+                                                    <MuiButton
+                                                        variant="contained"
+                                                        startIcon={<Icon size={16} src={IconEye} />}
+                                                        onClick={() => onViewResults(assignment.id)}
+                                                        fullWidth
+                                                        sx={{ bgcolor: '#2b90d9', '&:hover': { bgcolor: '#2070b9' } }}
+                                                    >
+                                                        View Results
+                                                    </MuiButton>
+                                                ) : (
+                                                    <MuiButton
+                                                        variant="contained"
+                                                        startIcon={<Icon size={16} src={IconPlay} />}
+                                                        onClick={() => onStartHomework(assignment.id)}
+                                                        fullWidth
+                                                        sx={{ bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' } }}
+                                                    >
+                                                        Start Homework
+                                                    </MuiButton>
+                                                )}
+                                            </Stack>
+                                        </ListItem>
+                                    </div>
+                                );
+                            })}
+                        </List>
+                    )}
+
+                    {/* Footer Note */}
+                    <Typography 
+                        variant="body2" 
+                        sx={{ 
+                            textAlign: 'center', 
+                            mt: 3,
+                            color: theme === 'dark' ? '#6b7280' : '#999'
+                        }}
+                    >
+                        📝 Answer quiz questions to complete your homework and see your score
+                    </Typography>
+                </MuiCardContent>
+            </MuiCard>
+        </Box>
     );
 }
 

@@ -2257,74 +2257,6 @@ export default function AnnotationOverlay({
           >
             <div className="flex items-center gap-2 p-3">
               
-              {/* === CLOSE BUTTON === */}
-              <button
-                onClick={() => setToolbarVisible(false)}
-                title="Close Toolbar"
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  border: 'none',
-                  background: 'transparent',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#9ca3af',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#7f1d1d';
-                  e.currentTarget.style.color = '#fca5a5';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = '#9ca3af';
-                }}
-              >
-                <X size={20} />
-              </button>
-
-              {/* === DRAG HANDLE === */}
-              <button
-                className={isDraggingToolbar ? "cursor-grabbing" : "cursor-grab"}
-                title="Drag Toolbar"
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  border: 'none',
-                  background: 'transparent',
-                  borderRadius: '6px',
-                  cursor: isDraggingToolbar ? 'grabbing' : 'grab',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#9ca3af',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#374151';
-                  e.currentTarget.style.color = '#e5e7eb';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = '#9ca3af';
-                }}
-              >
-                <Move size={20} />
-              </button>
-
-              {/* Divider */}
-              <div 
-                style={{ 
-                  width: '1px',
-                  height: '32px',
-                  background: '#4b5563',
-                  margin: '0 4px'
-                }}
-              />
-              
               {/* === MOUSE POINTER TOOL === */}
               <button
                 onClick={() => setTool("pointer")}
@@ -2966,6 +2898,62 @@ export default function AnnotationOverlay({
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Divider */}
+              <div 
+                style={{ 
+                  width: '1px',
+                  height: '32px',
+                  background: '#4b5563',
+                  margin: '0 4px'
+                }}
+              />
+
+              {/* === CLOSE BUTTON === */}
+              <button
+                onClick={() => setToolbarVisible(false)}
+                title="Close Toolbar"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#9ca3af',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#7f1d1d';
+                  e.currentTarget.style.color = '#fca5a5';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#9ca3af';
+                }}
+              >
+                <X size={20} />
+              </button>
+
+              {/* === DRAG HANDLE (Static Icon) === */}
+              <div
+                title="Drag Toolbar"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#6b7280',
+                  cursor: isDraggingToolbar ? 'grabbing' : 'grab',
+                  pointerEvents: 'none',
+                }}
+              >
+                <Move size={18} />
               </div>
             </div>
           </div>
