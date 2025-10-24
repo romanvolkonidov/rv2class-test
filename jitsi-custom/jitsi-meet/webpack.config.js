@@ -190,10 +190,22 @@ function getConfig(options = {}) {
         },
         optimization: {
             concatenateModules: isProduction,
-            minimize: isProduction
+            minimize: isProduction,
+            splitChunks: {
+                chunks: 'async',
+                cacheGroups: {
+                    excalidraw: {
+                        test: /[\\/]node_modules[\\/]@jitsi[\\/]excalidraw/,
+                        name: 'excalidraw',
+                        chunks: 'async',
+                        priority: 10
+                    }
+                }
+            }
         },
         output: {
             filename: `[name]${isProduction ? '.min' : ''}.js`,
+            chunkFilename: `[name]${isProduction ? '.min' : ''}.js`,
             path: `${__dirname}/build`,
             publicPath: '/libs/',
             sourceMapFilename: '[file].map'
