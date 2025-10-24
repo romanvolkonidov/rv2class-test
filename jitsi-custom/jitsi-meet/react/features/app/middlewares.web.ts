@@ -22,7 +22,7 @@ import '../talk-while-muted/middleware';
 import '../toolbox/middleware';
 import '../face-landmarks/middleware';
 import '../gifs/middleware';
-// import '../whiteboard/middleware.web'; // Disabled - causes Excalidraw loading errors
+import '../whiteboard/middleware.web'; // Re-enabled with static imports
 import '../file-sharing/middleware.web';
 import '../teacher-auth/middleware';
 
