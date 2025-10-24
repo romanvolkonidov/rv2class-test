@@ -1,0 +1,75 @@
+/**
+ * Fix for toolbar and avatar positioning when annotations are enabled
+ * This prevents UI elements from being pushed up unnecessarily
+ */
+
+// Fix prejoin avatar/initials positioning
+.premeeting-screen {
+    #new-toolbox {
+        // Ensure toolbar stays at bottom without extra spacing
+        bottom: 0 !important;
+        
+        .toolbox-content {
+            margin-bottom: 16px;
+        }
+        
+        // Disable shift-up in prejoin
+        &.shift-up {
+            bottom: 0 !important;
+            
+            .toolbox-content {
+                margin-bottom: 16px !important;
+            }
+        }
+    }
+    
+    // Fix avatar container positioning
+    .avatar-container {
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+    }
+}
+
+// Fix conference mode toolbar and thumbnail positioning
+.horizontal-filmstrip {
+    .filmstrip {
+        bottom: 0 !important;
+        
+        &.reduce-height {
+            // Don't shift down unnecessarily
+            bottom: 0 !important;
+        }
+    }
+    
+    .filmstrip__videos {
+        bottom: 0 !important;
+        
+        &#filmstripLocalVideo,
+        &#filmstripLocalScreenShare {
+            margin-bottom: 8px !important;
+        }
+    }
+}
+
+// Fix main toolbar positioning
+.new-toolbox {
+    // Keep toolbar at bottom
+    &.visible {
+        bottom: 0 !important;
+    }
+    
+    // Disable annotation-triggered shift-up
+    &.shift-up {
+        bottom: 0 !important;
+        
+        .toolbox-content {
+            // Restore normal margin
+            margin-bottom: 16px !important;
+        }
+    }
+}
+
+// Ensure thumbnails don't get pushed up
+.filmstrip__videos .videocontainer {
+    margin-bottom: 0 !important;
+}
