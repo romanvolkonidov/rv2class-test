@@ -144,18 +144,14 @@ MiddlewareRegistry.register(store => next => action => {
             // Server-side will grant owner/moderator role automatically
             return next(action);
         } else {
-            console.log('👨‍🎓 [TeacherAuth] STUDENT detected - will be sent to lobby');
+            console.log('👨‍🎓 [TeacherAuth] STUDENT detected - allowing connection, lobby will handle routing');
             
-            // With server-side enable-auto-owner: false, students should automatically
-            // be sent to lobby even if they're first to join
+            // DON'T block the connection - students need to connect to XMPP/MUC to knock
+            // The Prosody lobby module will route them to the lobby room automatically
+            // This is how Zoom works: connection allowed, but routed to waiting room
             
-            // Check if server has already enabled members-only (lobby)
-            const isMembersOnly = conference?.isMembersOnly && conference.isMembersOnly();
-            
-            console.log('[TeacherAuth] Server lobby active?', isMembersOnly);
-            
-            // Let student proceed to join - they'll automatically be put in lobby state
-            // by the server or by our lobby logic
+            // Let the student connect - they'll be put in lobby by server
+            console.log('[TeacherAuth] ✅ Allowing student to connect - Prosody lobby will route to waiting room');
             return next(action);
         }
     }
@@ -298,18 +294,33 @@ function _conferenceJoined(store: IStore, next: Function, action: AnyAction) {
             }
         }
         
-        // Enable lobby so any future students must wait for approval
+        // Enable lobby IMMEDIATELY so students who try to join will be blocked
+        // Don't wait - enable it right away
+        if (conference) {
+            try {
+                conference.enableLobby();
+                console.log('[TeacherAuth] ✅ Lobby enabled IMMEDIATELY - students will now knock before joining');
+            } catch (error) {
+                // Lobby might already be enabled by server, that's fine
+                console.log('[TeacherAuth] Lobby enable result:', error);
+            }
+        }
+        
+        // Also ensure teacher becomes moderator if they're not already
         setTimeout(() => {
-            if (conference) {
+            const updatedState = store.getState();
+            const updatedParticipant = getLocalParticipant(updatedState);
+            
+            if (updatedParticipant?.role !== PARTICIPANT_ROLE.MODERATOR && conference) {
+                console.log('[TeacherAuth] ⚠️  Teacher still not moderator after 1s, requesting role');
                 try {
-                    conference.enableLobby();
-                    console.log('[TeacherAuth] ✅ Lobby enabled - students will now knock before joining');
+                    conference.grantOwner(updatedParticipant?.id);
+                    console.log('[TeacherAuth] Requested moderator role for teacher');
                 } catch (error) {
-                    // Lobby might already be enabled, that's fine
-                    console.log('[TeacherAuth] Lobby enable status:', error);
+                    console.error('[TeacherAuth] Error granting moderator role:', error);
                 }
             }
-        }, 1000); // Wait 1 second for teacher to fully join
+        }, 1000);
     }
     
     return result;
