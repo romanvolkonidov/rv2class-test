@@ -25,19 +25,25 @@ jobs:
     
     - name: Deploy to Server 2
       env:
-        SERVER_PASSWORD: ${{ secrets.SERVER2_PASSWORD }}
+        SERVER_IP: ${{ secrets.SERVER_IP }}
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |
         echo "🚀 Deploying to Server 2 (app.rv2class.com)..."
         
-        if [ -z "$SERVER_PASSWORD" ]; then
-          echo "❌ ERROR: SERVER2_PASSWORD secret is not set!"
+        if [ -z "$SERVER_IP" ]; then
+          echo "❌ ERROR: SERVER_IP secret is not set!"
           exit 1
         fi
         
-        echo "✅ Password verified. Deploying to 45.77.76.123"
+        if [ -z "$SSH_PRIVATE_KEY" ]; then
+          echo "❌ ERROR: SSH_PRIVATE_KEY secret is not set!"
+          exit 1
+        fi
         
-        # SSH and deploy using password authentication
-        sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no root@45.77.76.123 << 'ENDSSH'
+        echo "✅ Secrets verified. Deploying to $SERVER_IP"
+        
+        # Use SSH_PRIVATE_KEY as password with sshpass
+        sshpass -p "$SSH_PRIVATE_KEY" ssh -o StrictHostKeyChecking=no root@$SERVER_IP << 'ENDSSH'
         # Exit on error, but allow some commands to fail gracefully
         set -e
         
