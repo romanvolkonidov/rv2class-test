@@ -551,10 +551,12 @@ const TeacherStudentsPage: React.FC = () => {
                     if (user && user.email) {
                         setTeacherEmail(user.email);
                         setTeacherUid(user.uid); // Store UID
-                        console.log('Teacher authenticated:', { email: user.email, uid: user.uid });
+                        console.log('✅ Teacher authenticated:', { email: user.email, uid: user.uid });
+                        console.log('🏠 Teacher\'s permanent room will be: teacher-' + user.uid.substring(0, 8));
                     } else {
                         // No user logged in, set defaults for testing
-                        console.warn('No user logged in, using default values');
+                        console.warn('⚠️  No user logged in, using default values');
+                        console.warn('⚠️  Students added now will have WRONG teacherUid!');
                         setTeacherEmail('teacher@rv2class.com');
                         setTeacherUid('romanvolkonidov'); // Default UID for testing
                     }

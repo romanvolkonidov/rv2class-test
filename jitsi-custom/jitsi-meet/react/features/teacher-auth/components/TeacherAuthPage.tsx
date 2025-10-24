@@ -330,7 +330,9 @@ const TeacherAuthPage = () => {
         localStorage.setItem('teacherFirstName', teacherFirstName);
         localStorage.setItem('teacherRoomId', roomName);
         
-        console.log('Teacher starting permanent room:', roomName);
+        console.log('🔑 Teacher UID:', teacherUid);
+        console.log('🏠 Teacher permanent room:', roomName);
+        console.log('⚠️  Make sure students have teacherUid:', teacherUid, 'in their Firestore documents!');
         
         // Add userType=teacher parameter so middleware can identify teacher
         const teacherEmail = user?.email || 'romanvolkonidov@gmail.com';

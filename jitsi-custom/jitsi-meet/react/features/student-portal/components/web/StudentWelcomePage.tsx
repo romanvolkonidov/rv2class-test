@@ -167,10 +167,28 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
             return;
         }
 
-        const teacherUid = student.teacherUid || 'romanvolkonidov';
+        let teacherUid = student.teacherUid || 'romanvolkonidov';
+        
+        // REDIRECT FIX: Map old/wrong teacherUid to correct room
+        // If student has 'romanvolkonidov' (old string), redirect to actual Firebase UID room
+        const teacherUidMapping: { [key: string]: string } = {
+            'romanvolkonidov': '7mVDpkpy'  // Map old UID to actual Firebase UID
+        };
+        
+        if (teacherUidMapping[teacherUid]) {
+            console.log('🔄 REDIRECTING: Old UID', teacherUid, '→ New UID', teacherUidMapping[teacherUid]);
+            teacherUid = teacherUidMapping[teacherUid];
+        }
+        
         const teacherRoom = `teacher-${teacherUid.substring(0, 8)}`;
 
-        console.log('Joining room:', teacherRoom);
+        console.log('🔑 Student\'s teacher UID from database:', student.teacherUid);
+        console.log('🔑 Using teacherUid:', teacherUid);
+        console.log('🏠 Joining room:', teacherRoom);
+        
+        if (!student.teacherUid) {
+            console.warn('⚠️  WARNING: Student has no teacherUid in database! Using fallback.');
+        }
 
         // Store teacher info in localStorage for room
         const teacherFirstName = (student.teacher || 'Roman').split(' ')[0];

@@ -116,35 +116,51 @@ MiddlewareRegistry.register(store => next => action => {
         const isTeacher = isUserTeacher(store);
         const email = getUserEmailFromURL(store);
         const state = store.getState();
+        const conference = action.conference;
+        
+        console.log('[TeacherAuth] CONFERENCE_WILL_JOIN - isTeacher:', isTeacher, 'email:', email);
+        console.log('[TeacherAuth] Conference object:', conference ? 'exists' : 'null');
+        console.log('[TeacherAuth] Is members-only (lobby)?:', conference?.isMembersOnly ? conference.isMembersOnly() : 'unknown');
         
         if (isTeacher) {
-            console.log('[TeacherAuth] Teacher detected, will join directly as moderator:', email);
+            console.log('[TeacherAuth] Teacher detected, will join directly as moderator');
             
             // Teachers always bypass lobby
             store.dispatch(hideLobbyScreen());
             
             // Pass action through - teacher joins directly
+            // Server-side will grant owner/moderator role automatically
             return next(action);
         } else {
-            console.log('[TeacherAuth] Student detected, BLOCKING join and forcing to lobby:', email || 'anonymous');
+            console.log('[TeacherAuth] Student detected - checking if lobby is enforced by server');
             
-            // DO NOT pass action through for students!
-            // This prevents them from actually joining the conference
-            // Instead, show lobby screen and start knocking
+            // Check if server has already enabled members-only (lobby)
+            const isMembersOnly = conference?.isMembersOnly && conference.isMembersOnly();
             
-            // Check if lobby is already visible (to avoid re-opening)
-            const { lobbyEnabled, knocking } = state['features/lobby'];
-            
-            if (!lobbyEnabled && !knocking) {
-                console.log('[TeacherAuth] Opening lobby screen for student');
+            if (isMembersOnly) {
+                console.log('[TeacherAuth] ✅ Server lobby is active - student will knock normally');
+                // Let the normal flow handle it - student will automatically be sent to lobby
+                return next(action);
+            } else {
+                console.log('[TeacherAuth] ⚠️  Server lobby NOT active - BLOCKING student and showing lobby screen');
+                
+                // Server hasn't enabled lobby yet (race condition or config issue)
+                // Force the student to wait
                 store.dispatch(openLobbyScreen());
+                
+                // Try to enable lobby client-side as fallback
+                if (conference && typeof conference.enableLobby === 'function') {
+                    console.log('[TeacherAuth] Enabling lobby client-side as fallback');
+                    conference.enableLobby();
+                }
+                
+                // Start knocking manually
                 store.dispatch(startKnocking());
+                
+                // BLOCK the join - don't call next(action)
+                console.log('[TeacherAuth] Student JOIN BLOCKED - must wait in lobby');
+                return action;
             }
-            
-            // Return WITHOUT calling next(action) - this blocks the conference join
-            // The student will stay in lobby until admitted by a teacher
-            console.log('[TeacherAuth] Student blocked from joining - waiting in lobby');
-            return action;
         }
     }
     case CONFERENCE_JOINED:
