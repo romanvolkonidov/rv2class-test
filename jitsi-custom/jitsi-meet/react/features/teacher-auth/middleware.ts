@@ -144,14 +144,17 @@ MiddlewareRegistry.register(store => next => action => {
             // Server-side will grant owner/moderator role automatically
             return next(action);
         } else {
-            console.log('👨‍🎓 [TeacherAuth] STUDENT detected - allowing connection, lobby will handle routing');
+            console.log('👨‍🎓 [TeacherAuth] STUDENT detected - allowing XMPP connection (Zoom-style)');
             
-            // DON'T block the connection - students need to connect to XMPP/MUC to knock
-            // The Prosody lobby module will route them to the lobby room automatically
-            // This is how Zoom works: connection allowed, but routed to waiting room
+            // ZOOM APPROACH:
+            // 1. Allow connection to XMPP (next(action)) ✅
+            // 2. Prosody will route student to lobby MUC automatically ✅
+            // 3. Student connects but is held in lobby room ✅
+            // 4. Student can knock from there ✅
             
-            // Let the student connect - they'll be put in lobby by server
-            console.log('[TeacherAuth] ✅ Allowing student to connect - Prosody lobby will route to waiting room');
+            console.log('[TeacherAuth] ✅ Allowing student XMPP connection - Prosody will route to lobby');
+            
+            // Let the connection proceed - Prosody lobby will handle routing
             return next(action);
         }
     }
@@ -243,27 +246,11 @@ function _conferenceJoined(store: IStore, next: Function, action: AnyAction) {
     console.log('[TeacherAuth] email:', email);
     console.log('[TeacherAuth] role:', localParticipant?.role);
     
-    // CRITICAL: If a student somehow joined the conference (bypassed our block), kick them out!
+    // Students should never reach CONFERENCE_JOINED
+    // They should be held in the lobby screen
     if (!isTeacher) {
-        console.error('🚨 [TeacherAuth] STUDENT BYPASSED LOBBY BLOCK - This should not happen!');
-        console.error('[TeacherAuth] Student role:', localParticipant?.role);
-        console.error('[TeacherAuth] Conference:', conference ? 'exists' : 'null');
-        
-        // Force student back to lobby
-        if (conference) {
-            console.log('[TeacherAuth] Forcing student back to lobby...');
-            store.dispatch(openLobbyScreen());
-            conference.leave();
-            
-            // DON'T try to enable lobby - student isn't moderator
-            // The teacher will enable lobby when they join
-            
-            // Start knocking again
-            setTimeout(() => {
-                store.dispatch(startKnocking());
-            }, 500);
-        }
-        
+        console.log('[TeacherAuth] 👨‍🎓 Student was admitted by teacher, allowing join');
+        // Student was admitted - this is the normal flow
         return result;
     }
     
