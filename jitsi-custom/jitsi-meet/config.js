@@ -59,7 +59,7 @@ var config = {
         'chat',
         'closedcaptions',
         'desktop',
-        // 'annotations', // DISABLED - causes UI positioning issues
+        'annotations',
         'download',
         'embedmeeting',
         'etherpad',
