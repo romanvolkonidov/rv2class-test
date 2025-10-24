@@ -4,20 +4,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { WithTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 
-// Lazy load Excalidraw only when whiteboard is opened
-let ExcalidrawAppPromise: Promise<any> | null = null;
-
-const loadExcalidraw = () => {
-    if (!ExcalidrawAppPromise) {
-        ExcalidrawAppPromise = import('@jitsi/excalidraw')
-            .then(module => module.ExcalidrawApp)
-            .catch(error => {
-                console.error('Failed to load Excalidraw:', error);
-                return null;
-            });
-    }
-    return ExcalidrawAppPromise;
-};
+// Import Excalidraw directly (no code splitting to avoid missing chunk files)
+import { ExcalidrawApp } from '@jitsi/excalidraw';
 
 // @ts-expect-error
 import Filmstrip from '../../../../../modules/UI/videolayout/Filmstrip';
@@ -59,7 +47,6 @@ const Whiteboard = (props: WithTranslation): JSX.Element => {
     const excalidrawRef = useRef<any>(null);
     const excalidrawAPIRef = useRef<any>(null);
     const collabAPIRef = useRef<any>(null);
-    const [ ExcalidrawApp, setExcalidrawApp ] = useState<any>(null);
 
     const isOpen = useSelector(isWhiteboardOpen);
     const isVisible = useSelector(isWhiteboardVisible);
@@ -73,17 +60,6 @@ const Whiteboard = (props: WithTranslation): JSX.Element => {
     const collabServerUrl = useSelector(getCollabServerUrl);
     const { defaultRemoteDisplayName } = useSelector((state: IReduxState) => state['features/base/config']);
     const localParticipantName = useSelector(getLocalParticipant)?.name || defaultRemoteDisplayName || 'Fellow Jitster';
-
-    // Lazy load Excalidraw when whiteboard is opened
-    useEffect(() => {
-        if (isOpen && !ExcalidrawApp) {
-            loadExcalidraw().then(app => {
-                if (app) {
-                    setExcalidrawApp(() => app);
-                }
-            });
-        }
-    }, [ isOpen, ExcalidrawApp ]);
 
     useEffect(() => {
         if (!collabAPIRef.current) {
@@ -151,7 +127,7 @@ const Whiteboard = (props: WithTranslation): JSX.Element => {
                 display: `${isInTileView || !isVisible ? 'none' : 'block'}`
             }}>
             {
-                isOpen && ExcalidrawApp && (
+                isOpen && (
                     <div className = 'excalidraw-wrapper'>
                         {/*
                           * Excalidraw renders a few lvl 2 headings. This is
@@ -181,20 +157,6 @@ const Whiteboard = (props: WithTranslation): JSX.Element => {
                             }}
                             getCollabAPI = { getCollabAPI }
                             getExcalidrawAPI = { getExcalidrawAPI } />
-                    </div>
-                )
-            }
-            {
-                isOpen && !ExcalidrawApp && (
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        height: '100%',
-                        color: '#fff',
-                        fontSize: '18px'
-                    }}>
-                        Loading whiteboard...
                     </div>
                 )
             }
