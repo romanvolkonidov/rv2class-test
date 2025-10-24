@@ -190,18 +190,18 @@ function getConfig(options = {}) {
         },
         optimization: {
             concatenateModules: isProduction,
-            minimize: isProduction,
-            splitChunks: {
-                chunks: 'async',
-                maxSize: 5000000
-            }
+            minimize: isProduction
         },
         output: {
             filename: `[name]${isProduction ? '.min' : ''}.js`,
-            chunkFilename: `[id]${isProduction ? '.min' : ''}.js`,
             path: `${__dirname}/build`,
             publicPath: '/libs/',
             sourceMapFilename: '[file].map'
+        },
+        performance: {
+            hints: false,
+            maxAssetSize: 10000000,
+            maxEntrypointSize: 10000000
         },
         plugins: [
             detectCircularDeps
