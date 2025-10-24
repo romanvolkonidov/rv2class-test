@@ -124,7 +124,7 @@ MiddlewareRegistry.register(store => next => action => {
         const state = store.getState();
         const conference = action.conference;
         const locationURL = state['features/base/connection'].locationURL;
-        const urlParams = parseURLParams(locationURL);
+        const urlParams = locationURL ? parseURLParams(locationURL) : {};
         
         console.log('=== [TeacherAuth] CONFERENCE_WILL_JOIN ===');
         console.log('[TeacherAuth] URL params:', urlParams);
