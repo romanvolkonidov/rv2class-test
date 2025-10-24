@@ -42,8 +42,14 @@ jobs:
         
         echo "✅ Secrets verified. Deploying to $SERVER_IP"
         
+        # Add server to known hosts to avoid prompts
+        ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts 2>/dev/null || true
+        
+        # Give server a moment before connecting
+        sleep 2
+        
         # Use SSH_PRIVATE_KEY as password with sshpass
-        sshpass -p "$SSH_PRIVATE_KEY" ssh -o StrictHostKeyChecking=no root@$SERVER_IP << 'ENDSSH'
+        sshpass -p "$SSH_PRIVATE_KEY" ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 root@$SERVER_IP << 'ENDSSH'
         # Exit on error, but allow some commands to fail gracefully
         set -e
         
