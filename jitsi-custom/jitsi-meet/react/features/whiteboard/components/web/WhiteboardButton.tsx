@@ -38,6 +38,9 @@ class WhiteboardButton extends AbstractButton<IProps> {
     override _handleClick() {
         const { dispatch, _toggled } = this.props;
 
+        console.log('🎨 Whiteboard button clicked! Current toggled state:', _toggled);
+        console.log('🎨 Setting whiteboard open to:', !_toggled);
+        
         dispatch(setWhiteboardOpen(!_toggled));
         dispatch(setOverflowMenuVisible(false));
     }

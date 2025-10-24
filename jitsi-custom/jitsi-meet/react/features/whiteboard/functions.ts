@@ -71,8 +71,21 @@ export const isWhiteboardOpen = (state: IReduxState): boolean => getWhiteboardSt
  * @param {IReduxState} state - The state from the Redux store.
  * @returns {boolean}
  */
-export const isWhiteboardButtonVisible = (state: IReduxState): boolean =>
-    isWhiteboardEnabled(state) && (isLocalParticipantModerator(state) || isWhiteboardOpen(state));
+export const isWhiteboardButtonVisible = (state: IReduxState): boolean => {
+    const enabled = isWhiteboardEnabled(state);
+    const isMod = isLocalParticipantModerator(state);
+    const isOpen = isWhiteboardOpen(state);
+    const visible = enabled && (isMod || isOpen);
+    
+    console.log('🎨 Whiteboard button visibility check:', {
+        enabled,
+        isModerator: isMod,
+        isOpen,
+        visible
+    });
+    
+    return visible;
+};
 
 /**
  * Indicates whether the whiteboard is present as a meeting participant.

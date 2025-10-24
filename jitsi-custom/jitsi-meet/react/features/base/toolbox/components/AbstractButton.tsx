@@ -357,6 +357,9 @@ export default class AbstractButton<P extends IProps, S = any> extends Component
     _onClick(e?: React.MouseEvent | GestureResponderEvent) {
         const { afterClick, buttonKey, handleClick, notifyMode } = this.props;
 
+        console.log('🔘 AbstractButton._onClick called for button:', buttonKey);
+        console.log('🔘 notifyMode:', notifyMode, 'handleClick:', !!handleClick);
+
         if (typeof APP !== 'undefined' && notifyMode) {
             APP.API.notifyToolbarButtonClicked(
                 buttonKey, notifyMode === NOTIFY_CLICK_MODE.PREVENT_AND_NOTIFY
@@ -365,9 +368,11 @@ export default class AbstractButton<P extends IProps, S = any> extends Component
 
         if (notifyMode !== NOTIFY_CLICK_MODE.PREVENT_AND_NOTIFY) {
             if (handleClick) {
+                console.log('🔘 Calling handleClick');
                 handleClick();
             }
 
+            console.log('🔘 Calling _handleClick');
             this._handleClick();
         }
 
