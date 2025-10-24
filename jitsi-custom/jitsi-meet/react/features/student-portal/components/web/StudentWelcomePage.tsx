@@ -184,7 +184,8 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
 
         // Redirect to Jitsi room with student name in URL config
         // Jitsi prejoin page will show camera/mic preview before joining
-        const roomUrl = `/${teacherRoom}#config.prejoinPageEnabled=true&userInfo.displayName=${encodeURIComponent(student.name)}`;
+        // Add userType=student parameter so middleware can identify student
+        const roomUrl = `/${teacherRoom}#config.prejoinPageEnabled=true&userInfo.displayName=${encodeURIComponent(student.name)}&userInfo.userType=student`;
 
         console.log('Redirecting to prejoin:', roomUrl);
         window.location.href = roomUrl;

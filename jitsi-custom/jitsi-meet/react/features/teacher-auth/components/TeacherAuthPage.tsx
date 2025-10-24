@@ -331,7 +331,10 @@ const TeacherAuthPage = () => {
         localStorage.setItem('teacherRoomId', roomName);
         
         console.log('Teacher starting permanent room:', roomName);
-        window.location.href = `/${roomName}`;
+        
+        // Add userType=teacher parameter so middleware can identify teacher
+        const teacherEmail = user?.email || 'romanvolkonidov@gmail.com';
+        window.location.href = `/${roomName}#userInfo.userType=teacher&userInfo.email=${encodeURIComponent(teacherEmail)}&userInfo.displayName=${encodeURIComponent(user?.displayName || 'Teacher')}`;
     };
 
     const handleViewStudents = () => {
