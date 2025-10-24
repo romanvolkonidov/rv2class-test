@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect, useLayoutEffect } from "react";
 import { makeStyles } from 'tss-react/mui';
 import { Button } from "./ui/button";
 import Icon from '../../base/icons/components/Icon';
-import { IconPencil } from '../../base/icons/svg/index';
 import { 
   Pencil, 
   Undo, 
@@ -2693,7 +2692,6 @@ export default function AnnotationOverlay({
                           style={{ 
                             background: `linear-gradient(135deg, ${c.value} 0%, ${c.value}dd 100%)`,
                             boxShadow: color === c.value ? `0 4px 20px ${c.value}70` : `0 2px 8px ${c.value}30`,
-                            ringOffsetColor: 'rgba(28, 32, 36, 1)',
                           }}
                           onClick={() => {
                             setColor(c.value);
