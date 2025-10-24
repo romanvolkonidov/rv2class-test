@@ -1,13 +1,87 @@
 /**
- * Minimal toolbar positioning fixes
- * NOTE: 'annotations' button disabled in config.js to prevent shift-up behavior
+ * COMPREHENSIVE LAYOUT FIX
+ * Prevents all content from being pushed up
  */
 
+/* Fix body and root containers */
+html, body {
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    top: 0 !important;
+    overflow: hidden !important;
+}
+
+#videoconference_page {
+    top: 0 !important;
+    transform: translate3d(0, 0, 0) !important;
+}
+
+/* Fix main video container */
+#videospace {
+    top: 0 !important;
+    bottom: 0 !important;
+    position: absolute !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Fix filmstrip positioning */
+.filmstrip {
+    bottom: 0 !important;
+    transform: none !important;
+}
+
+.horizontal-filmstrip .filmstrip {
+    bottom: 0 !important;
+}
+
+/* Fix toolbar positioning - all states */
 .new-toolbox {
     bottom: 0 !important;
     transform: none !important;
+    position: fixed !important;
+    margin: 0 !important;
     
     &.shift-up {
         bottom: 0 !important;
+        transform: none !important;
+    }
+    
+    &.visible {
+        bottom: 0 !important;
+    }
+}
+
+/* Fix prejoin/premeeting screen */
+.premeeting-screen {
+    top: 0 !important;
+    transform: none !important;
+    margin-top: 0 !important;
+    
+    .content {
+        margin-top: 0 !important;
+        transform: none !important;
+    }
+    
+    #preview {
+        top: 0 !important;
+        transform: none !important;
+    }
+}
+
+/* Fix prejoin third party screens */
+.prejoin-third-party {
+    top: 0 !important;
+    transform: none !important;
+    
+    .content {
+        margin-top: 0 !important;
+        margin-bottom: auto !important;
+    }
+    
+    #preview {
+        top: 0 !important;
     }
 }
