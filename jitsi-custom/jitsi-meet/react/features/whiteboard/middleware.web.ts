@@ -34,13 +34,17 @@ import { WhiteboardStatus } from './types';
 import './middleware.any';
 
 const focusWhiteboard = (store: IStore) => {
+    console.log('🎨 focusWhiteboard called');
     const { dispatch, getState } = store;
     const state = getState();
     const conference = getCurrentConference(state);
     const stageFilmstrip = isStageFilmstripAvailable(state);
     const isPresent = isWhiteboardPresent(state);
 
+    console.log('🎨 focusWhiteboard state:', { stageFilmstrip, isPresent });
+
     if (!isPresent) {
+        console.log('🎨 Adding whiteboard as fake participant');
         dispatch(participantJoined({
             conference,
             fakeParticipant: FakeParticipant.Whiteboard,
@@ -49,8 +53,10 @@ const focusWhiteboard = (store: IStore) => {
         }));
     }
     if (stageFilmstrip) {
+        console.log('🎨 Adding whiteboard to stage');
         dispatch(addStageParticipant(WHITEBOARD_ID, true));
     } else {
+        console.log('🎨 Pinning whiteboard participant');
         dispatch(pinParticipant(WHITEBOARD_ID));
     }
 };
@@ -68,12 +74,15 @@ MiddlewareRegistry.register((store: IStore) => (next: Function) => (action: AnyA
 
     switch (action.type) {
     case SET_WHITEBOARD_OPEN: {
+        console.log('🎨 SET_WHITEBOARD_OPEN action received, isOpen:', action.isOpen);
         const existingCollabDetails = getCollabDetails(state);
+        console.log('🎨 existingCollabDetails:', existingCollabDetails);
         const enforceUserLimit = shouldEnforceUserLimit(state);
         const notifyUserLimit = shouldNotifyUserLimit(state);
         const iAmRecorder = Boolean(state['features/base/config'].iAmRecorder);
 
         if (enforceUserLimit) {
+            console.log('🎨 User limit enforced, blocking whiteboard');
             dispatch(restrictWhiteboard(false));
             dispatch(openDialog(WhiteboardLimitDialog));
             iAmRecorder && setTimeout(() => dispatch(hideDialog(WhiteboardLimitDialog)), 3000);
@@ -82,12 +91,14 @@ MiddlewareRegistry.register((store: IStore) => (next: Function) => (action: AnyA
         }
 
         if (!existingCollabDetails) {
+            console.log('🎨 No existing collab details, calling setNewWhiteboardOpen');
             setNewWhiteboardOpen(store);
 
             return next(action);
         }
 
         if (action.isOpen) {
+            console.log('🎨 Existing collab details found, opening existing whiteboard');
             if (enforceUserLimit) {
                 dispatch(restrictWhiteboard());
 
@@ -102,6 +113,7 @@ MiddlewareRegistry.register((store: IStore) => (next: Function) => (action: AnyA
                 dispatch(hideDialog(WhiteboardLimitDialog));
             }
 
+            console.log('🎨 Calling focusWhiteboard');
             focusWhiteboard(store);
             raiseWhiteboardNotification(WhiteboardStatus.SHOWN);
 
