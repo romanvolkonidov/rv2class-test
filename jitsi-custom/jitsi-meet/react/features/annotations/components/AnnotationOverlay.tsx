@@ -1562,31 +1562,22 @@ export default function AnnotationOverlay({
   // Receive annotation data from other participants
   useEffect(() => {
     if (!conference) {
-      console.warn('⚠️ No conference available for annotation listener');
       return;
     }
     
-    console.log('✅ Setting up annotation command listener');
-    
     const handleMessage = (values: any, participantId: string) => {
       try {
-        console.log('📨 Raw message received:', values);
-        console.log('📨 From participant:', participantId);
         
         // Jitsi sends the data in the 'value' property
         const dataString = values.value || values.attributes?.value;
-        console.log('📨 dataString:', dataString);
         
         if (!dataString) {
-          console.warn('⚠️ No data found in message', values);
           return;
         }
         
         const message = JSON.parse(dataString);
-        console.log('📨 Parsed message:', message);
         if (message.type === 'annotation-data') {
           const payload = message.payload;
-          console.log('📥 Received annotation data:', payload);
           
           if (payload.type === "annotate" && canvasRef.current) {
             const action = payload.action;
