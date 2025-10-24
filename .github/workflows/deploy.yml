@@ -20,37 +20,24 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       
-    - name: Deploy to Vultr Server
+    - name: Install sshpass
+      run: sudo apt-get update && sudo apt-get install -y sshpass
+    
+    - name: Deploy to Server 2
       env:
-        SERVER_IP: ${{ secrets.SERVER_IP }}
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SERVER_PASSWORD: ${{ secrets.SERVER2_PASSWORD }}
       run: |
-        echo "🚀 Deploying to production server..."
+        echo "🚀 Deploying to Server 2 (app.rv2class.com)..."
         
-        # Debug: Check if secrets are set
-        if [ -z "$SERVER_IP" ]; then
-          echo "❌ ERROR: SERVER_IP secret is not set!"
-          echo "Please add SERVER_IP=108.61.245.179 to GitHub Secrets"
+        if [ -z "$SERVER_PASSWORD" ]; then
+          echo "❌ ERROR: SERVER2_PASSWORD secret is not set!"
           exit 1
         fi
         
-        if [ -z "$SSH_PRIVATE_KEY" ]; then
-          echo "❌ ERROR: SSH_PRIVATE_KEY secret is not set!"
-          exit 1
-        fi
+        echo "✅ Password verified. Deploying to 45.77.76.123"
         
-        echo "✅ Secrets verified. Deploying to: $SERVER_IP"
-        
-        # Setup SSH key
-        mkdir -p ~/.ssh
-        echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-        chmod 600 ~/.ssh/deploy_key
-        
-        # Add server to known hosts
-        ssh-keyscan -H "$SERVER_IP" >> ~/.ssh/known_hosts 2>/dev/null
-        
-        # SSH and deploy using key authentication
-        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "root@$SERVER_IP" << 'ENDSSH'
+        # SSH and deploy using password authentication
+        sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no root@45.77.76.123 << 'ENDSSH'
         # Exit on error, but allow some commands to fail gracefully
         set -e
         
