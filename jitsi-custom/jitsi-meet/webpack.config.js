@@ -198,11 +198,7 @@ function getConfig(options = {}) {
             publicPath: '/libs/',
             sourceMapFilename: '[file].map'
         },
-        performance: {
-            hints: false,
-            maxAssetSize: 10000000,
-            maxEntrypointSize: 10000000
-        },
+        performance: false,
         plugins: [
             detectCircularDeps
                 && new CircularDependencyPlugin({
