@@ -197,6 +197,7 @@ declare global {
     interface Window {
         firebaseAuth: any;
         firebaseApp: any;
+        firebaseFirestore: any;
     }
 }
 
@@ -225,9 +226,11 @@ const TeacherAuthPage = () => {
                 appScript.textContent = `
                     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
                     import * as firebaseAuth from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+                    import * as firebaseFirestore from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
                     
                     window.firebaseApp = initializeApp;
                     window.firebaseAuth = firebaseAuth;
+                    window.firebaseFirestore = firebaseFirestore;
                     window.dispatchEvent(new Event('firebaseLoaded'));
                 `;
                 document.head.appendChild(appScript);
@@ -289,7 +292,30 @@ const TeacherAuthPage = () => {
             const auth = window.firebaseAuth.getAuth(app);
             const provider = new window.firebaseAuth.GoogleAuthProvider();
             
-            await window.firebaseAuth.signInWithPopup(auth, provider);
+            const result = await window.firebaseAuth.signInWithPopup(auth, provider);
+            const signedInUser = result.user;
+            
+            // Create/update user document in Firestore
+            if (signedInUser) {
+                const db = window.firebaseFirestore.getFirestore(app);
+                const userRef = window.firebaseFirestore.doc(db, 'users', signedInUser.uid);
+                const userDoc = await window.firebaseFirestore.getDoc(userRef);
+                
+                if (!userDoc.exists()) {
+                    // Create new user document
+                    console.log('✨ Creating new teacher user document:', signedInUser.uid);
+                    await window.firebaseFirestore.setDoc(userRef, {
+                        email: signedInUser.email,
+                        name: signedInUser.displayName,
+                        role: 'service_provider',
+                        createdAt: window.firebaseFirestore.serverTimestamp(),
+                        isActive: true
+                    });
+                    console.log('✅ Teacher user created in Firestore');
+                } else {
+                    console.log('ℹ️ User already exists in Firestore');
+                }
+            }
         } catch (err: any) {
             console.error('Sign in error:', err);
             setError('Failed to sign in. Please try again.');

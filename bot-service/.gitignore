@@ -1,0 +1,16 @@
+# Bot Service Logs
+logs/
+*.log
+
+# Environment
+.env
+
+# Dependencies
+node_modules/
+
+# PM2
+.pm2/
+
+# OS
+.DS_Store
+Thumbs.db
