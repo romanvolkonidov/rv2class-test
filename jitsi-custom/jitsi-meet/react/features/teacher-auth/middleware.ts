@@ -105,81 +105,43 @@ function isUserTeacher(store: IStore): boolean {
 }
 
 /**
- * Middleware for teacher access control - handles lobby bypass and auto-moderator.
+ * Middleware for teacher access control - JITSI DEFAULT BEHAVIOR
  * 
- * NEW STRATEGY (Updated):
- * 1. Teachers ALWAYS bypass lobby and become moderators (even if not first)
- * 2. Students ALWAYS go to lobby screen (even if first to join)
- * 3. When teacher joins, lobby is enabled for students
- * 4. Teachers can admit students from participants panel
+ * Strategy: Use Jitsi's standard lobby system
+ * 1. First person joins → becomes moderator automatically (enable-auto-owner: true)
+ * 2. Moderator enables lobby via UI
+ * 3. Future joiners → held in lobby
+ * 4. Moderator admits them
  * 
- * This ensures teachers never need to be admitted by anyone, and students
- * always wait for teacher approval, regardless of who joins first.
+ * This middleware just logs user type for debugging.
+ * All actual lobby logic is handled by Jitsi/Prosody default behavior.
  */
 MiddlewareRegistry.register(store => next => action => {
     switch (action.type) {
     case CONFERENCE_WILL_JOIN: {
         const isTeacher = isUserTeacher(store);
-        const email = getUserEmailFromURL(store);
         const state = store.getState();
-        const conference = action.conference;
         const locationURL = state['features/base/connection'].locationURL;
         const urlParams = locationURL ? parseURLParams(locationURL) : {};
         
-        console.log('=== [TeacherAuth] CONFERENCE_WILL_JOIN ===');
-        console.log('[TeacherAuth] URL params:', urlParams);
+        console.log('=== [TeacherAuth] CONFERENCE_WILL_JOIN (Default Jitsi Behavior) ===');
         console.log('[TeacherAuth] userInfo.userType:', urlParams['userInfo.userType']);
         console.log('[TeacherAuth] isTeacher:', isTeacher);
-        console.log('[TeacherAuth] email:', email);
-        console.log('[TeacherAuth] Conference object:', conference ? 'exists' : 'null');
-        console.log('[TeacherAuth] Is members-only (lobby)?:', conference?.isMembersOnly ? conference.isMembersOnly() : 'unknown');
+        console.log('[TeacherAuth] Allowing all users to join normally - server handles lobby');
         
-        if (isTeacher) {
-            console.log('👨‍🏫 [TeacherAuth] TEACHER detected, will join directly as moderator');
-            
-            // Teachers always bypass lobby
-            store.dispatch(hideLobbyScreen());
-            
-            // Pass action through - teacher joins directly
-            // Server-side will grant owner/moderator role automatically
-            return next(action);
-        } else {
-            console.log('👨‍🎓 [TeacherAuth] STUDENT detected - allowing XMPP connection (Zoom-style)');
-            
-            // ZOOM APPROACH:
-            // 1. Allow connection to XMPP (next(action)) ✅
-            // 2. Prosody will route student to lobby MUC automatically ✅
-            // 3. Student connects but is held in lobby room ✅
-            // 4. Student can knock from there ✅
-            
-            console.log('[TeacherAuth] ✅ Allowing student XMPP connection - Prosody will route to lobby');
-            
-            // Let the connection proceed - Prosody lobby will handle routing
-            return next(action);
-        }
+        // Just pass through - Jitsi handles everything
+        return next(action);
     }
     case CONFERENCE_JOINED:
         return _conferenceJoined(store, next, action);
     case CONFERENCE_FAILED: {
+        // Just log for debugging
         const { error } = action;
         const isTeacher = isUserTeacher(store);
-        const email = getUserEmailFromURL(store);
         
-        // If teacher hits lobby restriction (room already has lobby enabled)
-        if (error?.name === JitsiConferenceErrors.MEMBERS_ONLY_ERROR && isTeacher) {
-            console.log('[TeacherAuth] Teacher hit lobby, bypassing and auto-approving:', email);
-            
-            // Hide lobby screen for teacher
-            store.dispatch(hideLobbyScreen());
-            
-            // Clear the password join failed flag
-            store.dispatch(setPasswordJoinFailed(false));
-            
-            // Teacher should knock and be auto-approved server-side
-            // or just rejoin depending on server configuration
-            store.dispatch(startKnocking());
-        }
+        console.log('[TeacherAuth] CONFERENCE_FAILED - isTeacher:', isTeacher, 'error:', error?.name);
         
+        // Let default Jitsi error handling take over
         break;
     }
     }
@@ -188,44 +150,8 @@ MiddlewareRegistry.register(store => next => action => {
 });
 
 /**
- * Handle CONFERENCE_FAILED - check if it's lobby-related and bypass for teachers.
- *
- * @param {IStore} store - The Redux store.
- * @param {Function} next - The Redux next function.
- * @param {AnyAction} action - The Redux action.
- * @returns {any}
- */
-function _conferenceFailed(store: IStore, next: Function, action: AnyAction) {
-    const { error } = action;
-    const state = store.getState();
-    const email = getUserEmailFromURL(store);
-    
-    // If teacher hits lobby restriction, bypass it
-    if (error?.name === JitsiConferenceErrors.MEMBERS_ONLY_ERROR
-        && email && isTeacherEmail(email)) {
-        console.log('[TeacherAuth] Teacher hit lobby restriction, bypassing...', email);
-        
-        // Hide the lobby screen
-        store.dispatch(hideLobbyScreen());
-        
-        // Clear the password join failed flag
-        store.dispatch(setPasswordJoinFailed(false));
-        
-        // Try to rejoin - teachers should be allowed through
-        const { conference } = state['features/base/conference'];
-        if (conference) {
-            // Re-join without showing lobby
-            store.dispatch(conferenceWillJoin(conference));
-        }
-        
-        return next(action);
-    }
-    
-    return next(action);
-}
-
-/**
- * Handle CONFERENCE_JOINED - ensure teacher is moderator and enable lobby.
+ * Handle CONFERENCE_JOINED - just log for debugging.
+ * All lobby functionality is handled by Jitsi default behavior.
  *
  * @param {IStore} store - The Redux store.
  * @param {Function} next - The Redux next function.
@@ -236,112 +162,14 @@ function _conferenceJoined(store: IStore, next: Function, action: AnyAction) {
     const result = next(action);
     
     const isTeacher = isUserTeacher(store);
-    const email = getUserEmailFromURL(store);
     const state = store.getState();
     const localParticipant = getLocalParticipant(state);
-    const { conference } = state['features/base/conference'];
     
     console.log('=== [TeacherAuth] CONFERENCE_JOINED ===');
     console.log('[TeacherAuth] isTeacher:', isTeacher);
-    console.log('[TeacherAuth] email:', email);
     console.log('[TeacherAuth] role:', localParticipant?.role);
-    
-    // Students should never reach CONFERENCE_JOINED
-    // They should be held in the lobby screen
-    if (!isTeacher) {
-        console.log('[TeacherAuth] 👨‍🎓 Student was admitted by teacher, allowing join');
-        // Student was admitted - this is the normal flow
-        return result;
-    }
-    
-    if (isTeacher) {
-        console.log('👨‍🏫 [TeacherAuth] Teacher joined conference:', {
-            email,
-            role: localParticipant?.role,
-            isPreJoinVisible: isPrejoinPageVisible(state)
-        });
-        
-        // Ensure teacher is moderator
-        if (localParticipant?.role === PARTICIPANT_ROLE.MODERATOR) {
-            console.log('[TeacherAuth] ✅ Teacher is moderator - excellent!');
-        } else {
-            console.log('[TeacherAuth] ⚠️  Teacher is NOT moderator, requesting moderator role');
-            
-            // Request moderator role for teacher
-            // In Jitsi, the first participant is automatically moderator
-            // If a student joined first, we need to grant teacher moderator role
-            if (conference) {
-                try {
-                    // Try to grant moderator role (if supported by server)
-                    conference.grantOwner(localParticipant?.id);
-                    console.log('[TeacherAuth] Requested moderator role for teacher');
-                } catch (error) {
-                    console.error('[TeacherAuth] Error granting moderator role:', error);
-                }
-            }
-        }
-        
-        // Enable lobby IMMEDIATELY so students who try to join will be blocked
-        // Don't wait - enable it right away
-        if (conference) {
-            try {
-                conference.enableLobby();
-                console.log('[TeacherAuth] ✅ Lobby enabled IMMEDIATELY - students will now knock before joining');
-            } catch (error) {
-                // Lobby might already be enabled by server, that's fine
-                console.log('[TeacherAuth] Lobby enable result:', error);
-            }
-        }
-        
-        // Also ensure teacher becomes moderator if they're not already
-        setTimeout(() => {
-            const updatedState = store.getState();
-            const updatedParticipant = getLocalParticipant(updatedState);
-            
-            if (updatedParticipant?.role !== PARTICIPANT_ROLE.MODERATOR && conference) {
-                console.log('[TeacherAuth] ⚠️  Teacher still not moderator after 1s, requesting role');
-                try {
-                    conference.grantOwner(updatedParticipant?.id);
-                    console.log('[TeacherAuth] Requested moderator role for teacher');
-                } catch (error) {
-                    console.error('[TeacherAuth] Error granting moderator role:', error);
-                }
-            }
-        }, 1000);
-    }
+    console.log('[TeacherAuth] First person becomes moderator automatically (enable-auto-owner: true)');
     
     return result;
 }
-
-/**
- * Register a state listener to monitor the local participant's role for teachers.
- */
-StateListenerRegistry.register(
-    state => {
-        const localParticipant = getLocalParticipant(state);
-        return localParticipant?.role;
-    },
-    (role, { getState, dispatch }) => {
-        const locationURL = getState()['features/base/connection'].locationURL;
-        
-        if (!locationURL) {
-            return;
-        }
-        
-        const urlParams = locationURL ? parseURLParams(locationURL) : {};
-        const userType = urlParams['userInfo.userType'];
-        const isTeacher = userType === 'teacher';
-        const email = urlParams['userInfo.email'] || getState()['features/base/settings'].email;
-        
-        if (isTeacher && email) {
-            console.log('[TeacherAuth] Teacher role changed to:', role);
-            
-            if (role === PARTICIPANT_ROLE.MODERATOR) {
-                console.log('[TeacherAuth] Teacher successfully became moderator');
-            } else if (role) {
-                console.log('[TeacherAuth] Warning: Teacher does not have moderator role');
-            }
-        }
-    }
-);
 
