@@ -180,7 +180,7 @@ const StudentWelcomePageInner: React.FC<IPageProps> = ({ studentId: propStudentI
         // REDIRECT FIX: Map old/wrong teacherUid to correct room
         // If student has 'romanvolkonidov' (old string), redirect to actual Firebase UID room
         const teacherUidMapping: { [key: string]: string } = {
-            'romanvolkonidov': '7mVDpkpy'  // Map old UID to actual Firebase UID
+            'romanvolkonidov': '7mVDpkpy9nMMhIZgalKd67F0K8e2'  // Map old UID to actual Firebase Auth UID
         };
         
         if (teacherUidMapping[teacherUid]) {
